@@ -1,0 +1,96 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+
+# Kotlin
+*.kotlin_module
+.kotlin/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Local configuration
+local.properties
+*.local
+
+# Logs
+*.log
+
+# Generated files
+generated/
+
+# Kotlin/Native
+.konan/
+*.kexe
+*.klib
+
+# Android
+*.apk
+*.aab
+*.dex
+*.class
+captures/
+.externalNativeBuild/
+.cxx/
+
+# iOS/Xcode
+xcuserdata/
+*.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+Pods/
+
+# Test results
+test-results/
+test-output/
+
+# Coverage
+coverage/
+*.exec
+*.ec
+
+# Detekt
+build/reports/detekt/
+
+# Spotless
+.spotless/
+
+# Secrets (never commit these!)
+*.jks
+*.keystore
+*.gpg
+google-services.json
+*.p12
+*.pem
+secrets/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# npm (if using Kotlin/JS)
+node_modules/
+package-lock.json
+
+# Documentation build
+docs/_build/
+site/

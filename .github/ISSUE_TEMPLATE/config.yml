@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/TEMPLATE_ORG/TEMPLATE_REPO#readme
+    about: Please read the documentation before opening an issue
+  - name: Discussions
+    url: https://github.com/TEMPLATE_ORG/TEMPLATE_REPO/discussions
+    about: Ask questions and discuss ideas
