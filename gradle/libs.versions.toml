@@ -17,7 +17,7 @@ junit = "4.13.2"
 coroutines = "1.9.0"
 
 # AndroidX
-androidx-activityCompose = "1.9.3"
+androidx-activityCompose = "1.12.4"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
