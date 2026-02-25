@@ -5,7 +5,19 @@ name: Publish
 
 on:
   release:
-    types: [released, prereleased]
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.2.0)'
+        required: true
+        type: string
+
+env:
+  MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+  MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+  SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
+  SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
 
 jobs:
   # Run tests first
@@ -42,18 +54,34 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Decode GPG Key
+        run: |
+          echo "${{ secrets.GPG_KEY_CONTENTS }}" | base64 -d > /tmp/signing-key.asc
+
       - name: Publish to Maven Central
-        run: ./gradlew publishToMavenCentral --no-configuration-cache
         env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_KEY_CONTENTS }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+        run: |
+          export ORG_GRADLE_PROJECT_signingInMemoryKey=$(cat /tmp/signing-key.asc)
+          ./gradlew :cmp-library:publishAllPublicationsToMavenCentralRepository \
+            --no-daemon \
+            --no-configuration-cache
+          rm /tmp/signing-key.asc
 
-      - name: Notify on success
+      - name: Create Summary
         if: success()
-        run: echo "Successfully published to Maven Central!"
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Published successfully to Maven Central!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Installation:" >> $GITHUB_STEP_SUMMARY
+          echo '```kotlin' >> $GITHUB_STEP_SUMMARY
+          echo 'implementation("io.github.mobilebytelabs:kmp-toolkit:${{ github.event.release.tag_name || inputs.version }}")' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure
         if: failure()
