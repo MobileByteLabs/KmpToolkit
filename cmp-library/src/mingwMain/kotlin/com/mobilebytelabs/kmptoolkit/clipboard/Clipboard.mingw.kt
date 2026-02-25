@@ -40,7 +40,7 @@ actual fun copyToClipboard(text: String): Boolean {
 
         val bytes = text.encodeToByteArray()
         val size = (bytes.size + 1).toULong()
-        val hMem = GlobalAlloc(GMEM_MOVEABLE, size)
+        val hMem = GlobalAlloc(GMEM_MOVEABLE.toUInt(), size)
 
         if (hMem == null) {
             CloseClipboard()
