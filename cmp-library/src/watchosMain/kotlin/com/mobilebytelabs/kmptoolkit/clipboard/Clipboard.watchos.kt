@@ -1,37 +1,21 @@
 package com.mobilebytelabs.kmptoolkit.clipboard
 
-import platform.UIKit.UIPasteboard
-
 /**
- * watchOS implementation of clipboard operations using UIPasteboard.
+ * watchOS implementation of clipboard operations.
  *
- * This implementation provides full clipboard support on watchOS devices
- * using the system's general pasteboard.
+ * Note: watchOS does not have clipboard/pasteboard support like iOS.
+ * UIPasteboard is not available on watchOS. These are no-op implementations.
+ *
+ * See: https://developer.apple.com/documentation/uikit/uipasteboard
+ * UIPasteboard is only available on iOS and iPadOS, not watchOS.
  */
 
-actual fun copyToClipboard(text: String): Boolean = try {
-    UIPasteboard.generalPasteboard.string = text
-    true
-} catch (e: Exception) {
-    false
-}
+actual fun copyToClipboard(text: String): Boolean = false
 
-actual fun getFromClipboard(): String? = try {
-    UIPasteboard.generalPasteboard.string
-} catch (e: Exception) {
-    null
-}
+actual fun getFromClipboard(): String? = null
 
-actual fun hasClipboardText(): Boolean = try {
-    UIPasteboard.generalPasteboard.hasStrings
-} catch (e: Exception) {
-    false
-}
+actual fun hasClipboardText(): Boolean = false
 
 actual fun clearClipboard() {
-    try {
-        UIPasteboard.generalPasteboard.string = ""
-    } catch (e: Exception) {
-        // Silently ignore errors
-    }
+    // No-op: watchOS does not support clipboard operations
 }
