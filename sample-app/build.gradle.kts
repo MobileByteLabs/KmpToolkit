@@ -54,19 +54,26 @@ kotlin {
         }
 
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.resources)
-            implementation(libs.compose.ui.tooling.preview)
+            @Suppress("DEPRECATION")
+            implementation(compose.runtime)
+            @Suppress("DEPRECATION")
+            implementation(compose.foundation)
+            @Suppress("DEPRECATION")
+            implementation(compose.material3)
+            @Suppress("DEPRECATION")
+            implementation(compose.ui)
+            @Suppress("DEPRECATION")
+            implementation(compose.components.resources)
+            @Suppress("DEPRECATION")
+            implementation(compose.components.uiToolingPreview)
 
             // Include the library
             implementation(project(":cmp-library"))
         }
 
         desktopMain.dependencies {
-            implementation(libs.compose.desktop.currentOs)
+            @Suppress("DEPRECATION")
+            implementation(compose.desktop.currentOs)
         }
     }
 }
