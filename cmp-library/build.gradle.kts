@@ -8,10 +8,10 @@ plugins {
 }
 
 // ============================================================================
-// TEMPLATE CONFIGURATION - Update these values using customizer.sh or manually
+// LIBRARY CONFIGURATION
 // ============================================================================
-group = "io.github.template"
-version = "1.0.0"
+group = "io.github.mobilebytelabs"
+version = "0.1.0"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
@@ -27,7 +27,7 @@ kotlin {
     // Android Target
     // ========================================================================
     androidLibrary {
-        namespace = "io.github.template"
+        namespace = "io.github.mobilebytelabs.kmptoolkit"
         compileSdk =
             libs.versions.android.compileSdk
                 .get()
@@ -127,19 +127,18 @@ kotlin {
 
 // ============================================================================
 // MAVEN CENTRAL PUBLISHING CONFIGURATION
-// Update these values for your library
 // ============================================================================
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "template-library", version.toString())
+    coordinates(group.toString(), "kmp-toolkit", version.toString())
 
     pom {
-        name = "TEMPLATE_LIBRARY_NAME"
-        description = "TEMPLATE_DESCRIPTION"
-        inceptionYear = "2024"
-        url = "https://github.com/TEMPLATE_ORG/TEMPLATE_REPO/"
+        name = "KMP Toolkit"
+        description = "Cross-platform utilities for Kotlin Multiplatform - Clipboard, and more"
+        inceptionYear = "2025"
+        url = "https://github.com/MobileByteLabs/KmpToolkit/"
 
         licenses {
             license {
@@ -151,16 +150,16 @@ mavenPublishing {
 
         developers {
             developer {
-                id = "DEVELOPER_ID"
-                name = "DEVELOPER_NAME"
-                url = "https://github.com/DEVELOPER_ID"
+                id = "MobileByteLabs"
+                name = "MobileByteLabs"
+                url = "https://github.com/MobileByteLabs"
             }
         }
 
         scm {
-            url = "https://github.com/TEMPLATE_ORG/TEMPLATE_REPO/"
-            connection = "scm:git:git://github.com/TEMPLATE_ORG/TEMPLATE_REPO.git"
-            developerConnection = "scm:git:ssh://git@github.com/TEMPLATE_ORG/TEMPLATE_REPO.git"
+            url = "https://github.com/MobileByteLabs/KmpToolkit/"
+            connection = "scm:git:git://github.com/MobileByteLabs/KmpToolkit.git"
+            developerConnection = "scm:git:ssh://git@github.com/MobileByteLabs/KmpToolkit.git"
         }
     }
 }

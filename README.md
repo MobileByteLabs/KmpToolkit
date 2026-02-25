@@ -1,11 +1,11 @@
-# KMP Library Template
+# KMP Toolkit
 
-[![CI](https://github.com/MobileByteLabs/mbl-library-template-kmp/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/mbl-library-template-kmp/actions/workflows/gradle.yml)
-[![GitHub Release](https://img.shields.io/github/v/release/MobileByteLabs/mbl-library-template-kmp?include_prereleases)](https://github.com/MobileByteLabs/mbl-library-template-kmp/releases)
+[![CI](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmp-toolkit)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmp-toolkit)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A template for creating Kotlin Multiplatform libraries with full platform support and Compose Multiplatform sample app.
+Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works immediately on all platforms.
 
 ## Supported Platforms
 
@@ -22,6 +22,26 @@ A template for creating Kotlin Multiplatform libraries with full platform suppor
 | JavaScript | js (Browser, Node.js) | Supported |
 | WebAssembly | wasmJs (Browser, Node.js), wasmWasi (Node.js) | Supported |
 
+## Features
+
+### Clipboard
+
+Cross-platform clipboard operations with zero configuration.
+
+| Platform | Copy | Read | Notes |
+|----------|:----:|:----:|-------|
+| Android  | ✅   | ✅   | Auto-initialized via ContentProvider |
+| iOS      | ✅   | ✅   | Full support |
+| macOS    | ✅   | ✅   | Full support |
+| tvOS     | ✅   | ✅   | Full support |
+| watchOS  | ✅   | ✅   | Full support |
+| JVM      | ✅   | ✅   | Uses AWT Toolkit |
+| JS       | ✅   | ❌   | Async API, write-only for sync |
+| Wasm JS  | ✅   | ❌   | Async API, write-only for sync |
+| Linux    | ✅   | ✅   | Requires xclip or xsel |
+| Windows  | ✅   | ✅   | Uses Win32 API |
+| WASI     | ❌   | ❌   | No clipboard in WASI runtime |
+
 ## Installation
 
 Add the dependency to your `build.gradle.kts`:
@@ -31,7 +51,7 @@ Add the dependency to your `build.gradle.kts`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("TEMPLATE_PACKAGE:template-library:1.0.0")
+            implementation("io.github.mobilebytelabs:kmp-toolkit:0.1.0")
         }
     }
 }
@@ -39,35 +59,32 @@ kotlin {
 
 ### Platform-specific setup
 
-<details>
-<summary>Android</summary>
-
-No additional setup required.
-
-</details>
-
-<details>
-<summary>iOS</summary>
-
-No additional setup required.
-
-</details>
+**No setup required!** The library automatically initializes on all platforms.
 
 ## Quick Start
 
+### Clipboard
+
 ```kotlin
-import TEMPLATE_PACKAGE.Greeting
+import com.mobilebytelabs.kmptoolkit.clipboard.copyToClipboard
+import com.mobilebytelabs.kmptoolkit.clipboard.getFromClipboard
+import com.mobilebytelabs.kmptoolkit.clipboard.hasClipboardText
+import com.mobilebytelabs.kmptoolkit.clipboard.clearClipboard
 
-fun main() {
-    val greeting = Greeting()
-    println(greeting.greet()) // Hello from [Platform]!
-    println(greeting.greet("World")) // Hello, World! Welcome from [Platform].
+// Copy text to clipboard
+val success = copyToClipboard("Hello, World!")
+
+// Read text from clipboard (where supported)
+val text = getFromClipboard()
+
+// Check if clipboard has text
+if (hasClipboardText()) {
+    println("Clipboard has content")
 }
+
+// Clear clipboard
+clearClipboard()
 ```
-
-## Documentation
-
-For detailed documentation, visit [Documentation Link].
 
 ## Getting Started with Development
 
@@ -81,16 +98,11 @@ For detailed documentation, visit [Documentation Link].
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/TEMPLATE_ORG/TEMPLATE_REPO.git
-cd TEMPLATE_REPO
+git clone https://github.com/MobileByteLabs/KmpToolkit.git
+cd KmpToolkit
 ```
 
-2. Customize the template (first time only):
-```bash
-bash customizer.sh com.yourpackage.library YourLibraryName your-org
-```
-
-3. Set up git hooks:
+2. Set up git hooks:
 ```bash
 bash scripts/setup-hooks.sh
 ```

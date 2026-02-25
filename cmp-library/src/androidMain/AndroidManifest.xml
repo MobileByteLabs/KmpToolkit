@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+        ClipboardInitProvider automatically initializes the clipboard module
+        when the app starts. This allows users to call clipboard functions
+        directly without any setup code.
+
+        The provider has no authority as it doesn't serve any content -
+        it exists solely to get the application context at startup.
+        -->
+        <provider
+            android:name="com.mobilebytelabs.kmptoolkit.clipboard.ClipboardInitProvider"
+            android:authorities="${applicationId}.kmptoolkit.clipboard.init"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
+
+</manifest>
