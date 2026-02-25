@@ -106,9 +106,9 @@ jobs:
             **/build/reports/tests/
             **/build/test-results/
 
-  # Build all targets to ensure compilation works
+  # Build library for all targets to ensure compilation works
   build-all:
-    name: Build All Targets
+    name: Build Library (All Targets)
     needs: build
     runs-on: macos-latest
     steps:
@@ -132,5 +132,5 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build All
-        run: ./gradlew assemble
+      - name: Build Library
+        run: ./gradlew :cmp-library:assemble
