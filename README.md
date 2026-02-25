@@ -90,7 +90,7 @@ clearClipboard()
 
 ### Prerequisites
 
-- JDK 17 or higher
+- JDK 21 or higher
 - Android SDK (for Android development)
 - Xcode 15+ (for iOS development, macOS only)
 
