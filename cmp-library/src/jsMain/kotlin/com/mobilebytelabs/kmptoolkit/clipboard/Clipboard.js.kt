@@ -24,24 +24,22 @@ import org.w3c.dom.HTMLTextAreaElement
  * - Older browsers: Falls back to execCommand (deprecated but widely supported)
  */
 
-actual fun copyToClipboard(text: String): Boolean {
-    return try {
-        // Try modern Clipboard API first (async, fire-and-forget)
-        val clipboard = window.navigator.asDynamic().clipboard
-        if (clipboard != null) {
-            clipboard.writeText(text)
-            true
-        } else {
-            // Fallback to execCommand for older browsers
-            copyWithExecCommand(text)
-        }
-    } catch (e: Exception) {
-        // Fallback to execCommand if Clipboard API fails
-        try {
-            copyWithExecCommand(text)
-        } catch (e2: Exception) {
-            false
-        }
+actual fun copyToClipboard(text: String): Boolean = try {
+    // Try modern Clipboard API first (async, fire-and-forget)
+    val clipboard = window.navigator.asDynamic().clipboard
+    if (clipboard != null) {
+        clipboard.writeText(text)
+        true
+    } else {
+        // Fallback to execCommand for older browsers
+        copyWithExecCommand(text)
+    }
+} catch (e: Exception) {
+    // Fallback to execCommand if Clipboard API fails
+    try {
+        copyWithExecCommand(text)
+    } catch (e2: Exception) {
+        false
     }
 }
 
@@ -49,21 +47,19 @@ actual fun copyToClipboard(text: String): Boolean {
  * Fallback copy method using deprecated execCommand.
  * Works in older browsers and some restricted contexts.
  */
-private fun copyWithExecCommand(text: String): Boolean {
-    return try {
-        val textArea = document.createElement("textarea") as HTMLTextAreaElement
-        textArea.value = text
-        textArea.style.position = "fixed"
-        textArea.style.left = "-9999px"
-        textArea.style.top = "-9999px"
-        document.body?.appendChild(textArea)
-        textArea.select()
-        val result = document.execCommand("copy")
-        document.body?.removeChild(textArea)
-        result
-    } catch (e: Exception) {
-        false
-    }
+private fun copyWithExecCommand(text: String): Boolean = try {
+    val textArea = document.createElement("textarea") as HTMLTextAreaElement
+    textArea.value = text
+    textArea.style.position = "fixed"
+    textArea.style.left = "-9999px"
+    textArea.style.top = "-9999px"
+    document.body?.appendChild(textArea)
+    textArea.select()
+    val result = document.execCommand("copy")
+    document.body?.removeChild(textArea)
+    result
+} catch (e: Exception) {
+    false
 }
 
 actual fun getFromClipboard(): String? {

@@ -1,10 +1,8 @@
 package com.mobilebytelabs.kmptoolkit.clipboard
 
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.alloc
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
 import kotlinx.cinterop.toKString
 import platform.posix.FILE
 import platform.posix.fgets

@@ -14,37 +14,31 @@ import java.awt.datatransfer.StringSelection
  * may not support clipboard operations.
  */
 
-actual fun copyToClipboard(text: String): Boolean {
-    return try {
-        val selection = StringSelection(text)
-        val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-        clipboard.setContents(selection, selection)
-        true
-    } catch (e: Exception) {
-        false
-    }
+actual fun copyToClipboard(text: String): Boolean = try {
+    val selection = StringSelection(text)
+    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+    clipboard.setContents(selection, selection)
+    true
+} catch (e: Exception) {
+    false
 }
 
-actual fun getFromClipboard(): String? {
-    return try {
-        val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-        if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
-            clipboard.getData(DataFlavor.stringFlavor) as? String
-        } else {
-            null
-        }
-    } catch (e: Exception) {
+actual fun getFromClipboard(): String? = try {
+    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+    if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+        clipboard.getData(DataFlavor.stringFlavor) as? String
+    } else {
         null
     }
+} catch (e: Exception) {
+    null
 }
 
-actual fun hasClipboardText(): Boolean {
-    return try {
-        val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-        clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)
-    } catch (e: Exception) {
-        false
-    }
+actual fun hasClipboardText(): Boolean = try {
+    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+    clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)
+} catch (e: Exception) {
+    false
 }
 
 actual fun clearClipboard() {

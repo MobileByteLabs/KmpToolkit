@@ -10,31 +10,25 @@ import platform.AppKit.NSPasteboardTypeString
  * using the system's general pasteboard.
  */
 
-actual fun copyToClipboard(text: String): Boolean {
-    return try {
-        val pasteboard = NSPasteboard.generalPasteboard
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType = NSPasteboardTypeString)
-        true
-    } catch (e: Exception) {
-        false
-    }
+actual fun copyToClipboard(text: String): Boolean = try {
+    val pasteboard = NSPasteboard.generalPasteboard
+    pasteboard.clearContents()
+    pasteboard.setString(text, forType = NSPasteboardTypeString)
+    true
+} catch (e: Exception) {
+    false
 }
 
-actual fun getFromClipboard(): String? {
-    return try {
-        NSPasteboard.generalPasteboard.stringForType(NSPasteboardTypeString)
-    } catch (e: Exception) {
-        null
-    }
+actual fun getFromClipboard(): String? = try {
+    NSPasteboard.generalPasteboard.stringForType(NSPasteboardTypeString)
+} catch (e: Exception) {
+    null
 }
 
-actual fun hasClipboardText(): Boolean {
-    return try {
-        NSPasteboard.generalPasteboard.stringForType(NSPasteboardTypeString) != null
-    } catch (e: Exception) {
-        false
-    }
+actual fun hasClipboardText(): Boolean = try {
+    NSPasteboard.generalPasteboard.stringForType(NSPasteboardTypeString) != null
+} catch (e: Exception) {
+    false
 }
 
 actual fun clearClipboard() {

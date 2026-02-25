@@ -1,11 +1,7 @@
 package com.mobilebytelabs.kmptoolkit.clipboard
 
 import kotlinx.cinterop.ByteVar
-import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.set
@@ -98,9 +94,7 @@ actual fun getFromClipboard(): String? {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual fun hasClipboardText(): Boolean {
-    return IsClipboardFormatAvailable(CF_TEXT.toUInt()) != 0
-}
+actual fun hasClipboardText(): Boolean = IsClipboardFormatAvailable(CF_TEXT.toUInt()) != 0
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun clearClipboard() {

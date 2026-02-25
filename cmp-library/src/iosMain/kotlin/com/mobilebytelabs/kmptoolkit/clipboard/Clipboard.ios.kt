@@ -9,29 +9,23 @@ import platform.UIKit.UIPasteboard
  * using the system's general pasteboard.
  */
 
-actual fun copyToClipboard(text: String): Boolean {
-    return try {
-        UIPasteboard.generalPasteboard.string = text
-        true
-    } catch (e: Exception) {
-        false
-    }
+actual fun copyToClipboard(text: String): Boolean = try {
+    UIPasteboard.generalPasteboard.string = text
+    true
+} catch (e: Exception) {
+    false
 }
 
-actual fun getFromClipboard(): String? {
-    return try {
-        UIPasteboard.generalPasteboard.string
-    } catch (e: Exception) {
-        null
-    }
+actual fun getFromClipboard(): String? = try {
+    UIPasteboard.generalPasteboard.string
+} catch (e: Exception) {
+    null
 }
 
-actual fun hasClipboardText(): Boolean {
-    return try {
-        UIPasteboard.generalPasteboard.hasStrings
-    } catch (e: Exception) {
-        false
-    }
+actual fun hasClipboardText(): Boolean = try {
+    UIPasteboard.generalPasteboard.hasStrings
+} catch (e: Exception) {
+    false
 }
 
 actual fun clearClipboard() {
