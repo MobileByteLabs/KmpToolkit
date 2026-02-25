@@ -1,6 +1,6 @@
 package com.mobilebytelabs.kmptoolkit.clipboard
 
-/**
+/*
  * Cross-platform clipboard utilities for Kotlin Multiplatform.
  *
  * Provides simple functions to interact with the system clipboard across
