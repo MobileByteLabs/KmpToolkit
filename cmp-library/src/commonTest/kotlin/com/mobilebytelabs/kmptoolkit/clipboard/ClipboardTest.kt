@@ -2,6 +2,7 @@ package com.mobilebytelabs.kmptoolkit.clipboard
 
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Common tests for clipboard functionality.
@@ -69,9 +70,10 @@ class ClipboardTest {
             // On others, it may be null
             retrieved?.let {
                 // If we got text back, verify it matches
-                assert(it.contains("KmpToolkit")) {
-                    "Retrieved text should contain 'KmpToolkit'"
-                }
+                assertTrue(
+                    it.contains("KmpToolkit"),
+                    "Retrieved text should contain 'KmpToolkit'",
+                )
             }
         }
     }
