@@ -1,11 +1,14 @@
 # KMP Toolkit
 
-[![CI](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmp-toolkit)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmp-toolkit)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![CI](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.2.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GitHub Wiki](https://img.shields.io/badge/docs-Wiki-blue)](https://github.com/MobileByteLabs/KmpToolkit/wiki)
 
 Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works immediately on all platforms.
+
+> **Documentation**: See the [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki) for comprehensive guides and API reference.
 
 ## Supported Platforms
 
@@ -24,23 +27,29 @@ Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works imm
 
 ## Features
 
+| Feature | Description | Documentation |
+|---------|-------------|---------------|
+| **Clipboard** | Copy, paste, check & clear clipboard | [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
+
 ### Clipboard
 
-Cross-platform clipboard operations with zero configuration.
+Cross-platform clipboard operations with zero configuration. [Full documentation →](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard)
 
 | Platform | Copy | Read | Notes |
 |----------|:----:|:----:|-------|
 | Android  | ✅   | ✅   | Auto-initialized via ContentProvider |
 | iOS      | ✅   | ✅   | Full support |
 | macOS    | ✅   | ✅   | Full support |
-| tvOS     | ✅   | ✅   | Full support |
-| watchOS  | ✅   | ✅   | Full support |
+| tvOS     | ⚠️   | ⚠️   | No-op (no clipboard API) |
+| watchOS  | ⚠️   | ⚠️   | No-op (no clipboard API) |
 | JVM      | ✅   | ✅   | Uses AWT Toolkit |
 | JS       | ✅   | ❌   | Async API, write-only for sync |
-| Wasm JS  | ✅   | ❌   | Async API, write-only for sync |
+| Wasm JS  | ⚠️   | ⚠️   | No-op |
 | Linux    | ✅   | ✅   | Requires xclip or xsel |
 | Windows  | ✅   | ✅   | Uses Win32 API |
 | WASI     | ❌   | ❌   | No clipboard in WASI runtime |
+
+**Legend:** ✅ Full support | ⚠️ No-op (fails gracefully) | ❌ Not supported
 
 ## Installation
 
@@ -51,11 +60,13 @@ Add the dependency to your `build.gradle.kts`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.mobilebytelabs:kmp-toolkit:0.1.0")
+            implementation("io.github.mobilebytelabs:kmp-toolkit:<version>")
         }
     }
 }
 ```
+
+> Replace `<version>` with the latest version from the [Maven Central badge](#kmp-toolkit) above.
 
 ### Platform-specific setup
 
@@ -157,14 +168,16 @@ A Compose Multiplatform sample app is included to test the library on all platfo
 
 ### Prerequisites
 
-1. Create a [Sonatype account](https://central.sonatype.com/)
+1. Create a [Sonatype Central Portal account](https://central.sonatype.com/)
 2. Generate a GPG key for signing
-3. Configure GitHub secrets:
-   - `MAVEN_CENTRAL_USERNAME` - Sonatype username
-   - `MAVEN_CENTRAL_PASSWORD` - Sonatype password
-   - `SIGNING_KEY_ID` - GPG key ID
-   - `SIGNING_PASSWORD` - GPG key password
+3. Configure GitHub secrets (organization level):
+   - `MAVEN_CENTRAL_USERNAME` - Central Portal **user token name** (not email)
+   - `MAVEN_CENTRAL_PASSWORD` - Central Portal **user token password** (not login password)
+   - `SIGNING_KEY_ID` - GPG key ID (last 8 characters)
+   - `SIGNING_PASSWORD` - GPG key passphrase
    - `GPG_KEY_CONTENTS` - Base64 encoded GPG private key
+
+> **Note**: Generate user tokens from Central Portal → Account Settings → Generate User Token
 
 ### Release Process
 
@@ -211,6 +224,10 @@ A Compose Multiplatform sample app is included to test the library on all platfo
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Adding New Features
+
+See the [Adding New Features](https://github.com/MobileByteLabs/KmpToolkit/wiki/Adding-New-Features) wiki page for a step-by-step guide on implementing and documenting new features.
 
 ## License
 
