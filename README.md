@@ -11,7 +11,6 @@ Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works imm
 
 - [Installation](#installation)
 - [Features](#features)
-- [Quick Start](#quick-start)
 - [Platform Support](#platform-support)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -38,25 +37,6 @@ kotlin {
 | Feature | Description | Docs |
 |---------|-------------|:----:|
 | [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) | Copy, paste, check & clear clipboard | [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
-
-## Quick Start
-
-### Clipboard
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.clipboard.*
-
-// Copy text
-copyToClipboard("Hello, World!")
-
-// Read text
-val text = getFromClipboard()
-
-// Check & clear
-if (hasClipboardText()) {
-    clearClipboard()
-}
-```
 
 ## Platform Support
 
