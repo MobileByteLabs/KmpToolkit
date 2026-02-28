@@ -34,7 +34,7 @@ import kotlin.coroutines.resumeWithException
  * 3. Compares versions to determine if update available
  * 4. Opens App Store for update if requested
  *
- * @since 0.3.0
+ * @since 0.5.0
  */
 actual object AppUpdate {
     /**
@@ -42,11 +42,15 @@ actual object AppUpdate {
      */
     @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
     actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult {
+        // Check if iOS is enabled in config
+        if (!config.iosEnabled) {
+            return UpdateResult.NotSupported("iOS updates disabled in configuration")
+        }
+
         val currentVersion = getCurrentVersion()
         val bundleId = NSBundle.mainBundle.bundleIdentifier
             ?: return UpdateResult.Error("Bundle identifier not found")
 
-        val appStoreId = config.appStoreId
         val countryCode = config.countryCode
 
         // Use custom URL if provided, otherwise use iTunes Lookup API
@@ -80,6 +84,11 @@ actual object AppUpdate {
      * Opens the App Store to the app's page for update.
      */
     actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
+        // Check if iOS is enabled in config
+        if (!config.iosEnabled) {
+            return UpdateResult.NotSupported("iOS updates disabled in configuration")
+        }
+
         // iOS doesn't support in-app updates like Android
         // We can only redirect to the App Store
         val opened = openStoreForUpdate(config)
@@ -101,7 +110,12 @@ actual object AppUpdate {
      */
     @OptIn(ExperimentalForeignApi::class)
     actual fun openStoreForUpdate(config: AppUpdateConfig): Boolean {
-        val appStoreId = config.appStoreId
+        // Check if iOS is enabled in config
+        if (!config.iosEnabled) {
+            return false
+        }
+
+        val appStoreId = config.iosAppStoreId
         val bundleId = NSBundle.mainBundle.bundleIdentifier
 
         // Try App Store ID first if provided

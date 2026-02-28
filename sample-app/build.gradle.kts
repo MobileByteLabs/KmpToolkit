@@ -1,6 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -10,12 +10,13 @@ plugins {
 }
 
 kotlin {
-    androidTarget()
-
-    jvm("desktop")
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_11)
+        }
+    }
 
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64(),
     ).forEach { iosTarget ->
@@ -25,6 +26,8 @@ kotlin {
         }
     }
 
+    jvm("desktop")
+
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         outputModuleName.set("sampleApp")
@@ -33,14 +36,6 @@ kotlin {
             val projectDirPath = project.projectDir.path
             commonWebpackConfig {
                 outputFileName = "sampleApp.js"
-                devServer =
-                    (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                        static =
-                            (static ?: mutableListOf()).apply {
-                                add(rootDirPath)
-                                add(projectDirPath)
-                            }
-                    }
             }
         }
         binaries.executable()
@@ -50,30 +45,31 @@ kotlin {
         val desktopMain by getting
 
         androidMain.dependencies {
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
         }
 
         commonMain.dependencies {
-            @Suppress("DEPRECATION")
-            implementation(compose.runtime)
-            @Suppress("DEPRECATION")
-            implementation(compose.foundation)
-            @Suppress("DEPRECATION")
-            implementation(compose.material3)
-            @Suppress("DEPRECATION")
-            implementation(compose.ui)
-            @Suppress("DEPRECATION")
-            implementation(compose.components.resources)
-            @Suppress("DEPRECATION")
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.ui.tooling.preview)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.runtime.compose)
 
             // Include the library
             implementation(project(":cmp-library"))
         }
 
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
+
         desktopMain.dependencies {
-            @Suppress("DEPRECATION")
             implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutines.swing)
         }
     }
 }
@@ -106,7 +102,7 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("release") {
             isMinifyEnabled = false
         }
     }
@@ -115,6 +111,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+dependencies {
+    debugImplementation(libs.compose.ui.tooling)
 }
 
 compose.desktop {

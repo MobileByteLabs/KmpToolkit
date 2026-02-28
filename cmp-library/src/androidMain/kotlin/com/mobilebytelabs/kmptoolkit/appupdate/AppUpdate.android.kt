@@ -68,6 +68,11 @@ actual object AppUpdate {
      * Checks if an update is available from Google Play.
      */
     actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult {
+        // Check if Android is enabled in config
+        if (!config.androidEnabled) {
+            return UpdateResult.NotSupported("Android updates disabled in configuration")
+        }
+
         val context = appContext
             ?: return UpdateResult.Error("Context not available. App not properly initialized.")
 
@@ -164,6 +169,11 @@ actual object AppUpdate {
         updateType: com.mobilebytelabs.kmptoolkit.appupdate.UpdateType,
         config: AppUpdateConfig,
     ): UpdateResult {
+        // Check if Android is enabled in config
+        if (!config.androidEnabled) {
+            return UpdateResult.NotSupported("Android updates disabled in configuration")
+        }
+
         val context = appContext
             ?: return UpdateResult.Error("Context not available. App not properly initialized.")
 
@@ -213,6 +223,11 @@ actual object AppUpdate {
      * Opens Google Play Store to the app's page.
      */
     actual fun openStoreForUpdate(config: AppUpdateConfig): Boolean {
+        // Check if Android is enabled in config
+        if (!config.androidEnabled) {
+            return false
+        }
+
         val context = appContext ?: return false
         val packageName = config.packageName ?: context.packageName
 

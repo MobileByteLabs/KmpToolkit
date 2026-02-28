@@ -8,16 +8,23 @@ import platform.Foundation.NSBundle
  * In-app updates are not supported on tvOS as the platform
  * handles app updates through the tvOS App Store automatically.
  *
- * @since 0.3.0
+ * @since 0.5.0
  */
 actual object AppUpdate {
     /**
      * Returns NotSupported as tvOS doesn't support in-app updates.
      */
-    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult = UpdateResult.NotSupported(
-        "In-app updates are not supported on tvOS. " +
-            "Updates are handled automatically by the tvOS App Store.",
-    )
+    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult {
+        // Check if tvOS is disabled in config
+        if (!config.tvosEnabled) {
+            return UpdateResult.NotSupported("tvOS updates disabled in configuration")
+        }
+
+        return UpdateResult.NotSupported(
+            "In-app updates are not supported on tvOS. " +
+                "Updates are handled automatically by the tvOS App Store.",
+        )
+    }
 
     /**
      * Gets the currently installed app version from Info.plist.
@@ -37,10 +44,16 @@ actual object AppUpdate {
     /**
      * Returns NotSupported as tvOS doesn't support in-app updates.
      */
-    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult =
-        UpdateResult.NotSupported(
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
+        // Check if tvOS is disabled in config
+        if (!config.tvosEnabled) {
+            return UpdateResult.NotSupported("tvOS updates disabled in configuration")
+        }
+
+        return UpdateResult.NotSupported(
             "In-app updates are not supported on tvOS.",
         )
+    }
 
     /**
      * Returns false as tvOS doesn't support opening App Store for updates.

@@ -11,43 +11,94 @@ import java.net.URL
 import java.util.Properties
 
 /**
- * JVM implementation of AppUpdate using custom version check endpoint.
+ * JVM implementation of AppUpdate.
  *
- * This implementation requires a custom version check URL that returns
- * version information in JSON format.
+ * Supports multiple version checking methods (in order of priority):
+ * 1. [VersionResolver] - GitHub, Supabase, or custom implementation
+ * 2. Custom version check URL - Direct JSON endpoint
  *
- * ## Expected JSON Format
+ * ## Usage with Version Resolver (Recommended)
  *
- * ```json
- * {
- *   "version": "1.2.3",
- *   "updateType": "FLEXIBLE",
- *   "releaseNotes": "Bug fixes and improvements",
- *   "downloadUrl": "https://example.com/download"
- * }
+ * ```kotlin
+ * // GitHub Releases
+ * val config = AppUpdateConfig.builder()
+ *     .github(owner = "user", repo = "my-app")
+ *     .build()
+ *
+ * // Supabase
+ * val config = AppUpdateConfig.builder()
+ *     .supabase(projectUrl = "https://xxx.supabase.co", anonKey = "...")
+ *     .build()
  * ```
  *
- * @since 0.3.0
+ * ## Usage with Custom URL
+ *
+ * ```kotlin
+ * val config = AppUpdateConfig.builder()
+ *     .jvm(
+ *         versionCheckUrl = "https://api.example.com/version",
+ *         downloadUrl = "https://example.com/download",
+ *     )
+ *     .build()
+ * ```
+ *
+ * @since 0.5.0
  */
 actual object AppUpdate {
     private var currentVersionOverride: AppVersion? = null
 
     /**
-     * Checks if an update is available from a custom endpoint.
+     * Checks if an update is available.
      *
-     * Requires [AppUpdateConfig.customVersionCheckUrl] to be set.
+     * Version check priority:
+     * 1. [AppUpdateConfig.versionResolver] (GitHub, Supabase, custom)
+     * 2. [AppUpdateConfig.jvmVersionCheckUrl] or [AppUpdateConfig.customVersionCheckUrl]
      */
     actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult {
-        val versionCheckUrl = config.customVersionCheckUrl
-            ?: return UpdateResult.NotSupported(
-                "JVM requires customVersionCheckUrl in AppUpdateConfig",
-            )
+        // Check if JVM is enabled
+        if (!config.jvmEnabled) {
+            return UpdateResult.NotSupported("JVM updates disabled in configuration")
+        }
 
         val currentVersion = getCurrentVersion()
 
+        // Priority 1: Use version resolver if configured
+        config.versionResolver?.let { resolver ->
+            return try {
+                val versionInfo = resolver.resolve()
+                val latestVersion = versionInfo.toAppVersion()
+                    ?: return UpdateResult.Error("Failed to parse version: ${versionInfo.version}")
+
+                // Use configured downloadUrl if available, otherwise use resolver's
+                val downloadUrl = config.jvmDownloadUrl ?: versionInfo.downloadUrl
+
+                if (currentVersion.isOlderThan(latestVersion)) {
+                    UpdateResult.Success(
+                        UpdateInfo.available(
+                            currentVersion = currentVersion,
+                            latestVersion = latestVersion,
+                            updateType = versionInfo.updateType,
+                            releaseNotes = versionInfo.releaseNotes,
+                            storeUrl = downloadUrl ?: versionInfo.storeUrl,
+                        ),
+                    )
+                } else {
+                    UpdateResult.Success(UpdateInfo.noUpdate(currentVersion))
+                }
+            } catch (e: Exception) {
+                UpdateResult.Error("Failed to check for updates: ${e.message}", e)
+            }
+        }
+
+        // Priority 2: Use custom version check URL
+        val versionCheckUrl = config.getEffectiveJvmVersionCheckUrl()
+            ?: return UpdateResult.NotSupported(
+                "JVM requires versionResolver (github/supabase) or versionCheckUrl in AppUpdateConfig",
+            )
+
         return try {
             val response = fetchUrl(versionCheckUrl)
-            parseVersionResponse(response, currentVersion)
+            parseVersionResponse(response, currentVersion, config)
         } catch (e: Exception) {
             UpdateResult.Error("Failed to check for updates: ${e.message}", e)
         }
@@ -101,16 +152,35 @@ actual object AppUpdate {
      * Opens the download URL for the update.
      */
     actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
-        val versionCheckUrl = config.customVersionCheckUrl
-            ?: return UpdateResult.NotSupported(
-                "JVM requires customVersionCheckUrl in AppUpdateConfig",
-            )
+        // Check if JVM is enabled
+        if (!config.jvmEnabled) {
+            return UpdateResult.NotSupported("JVM updates disabled in configuration")
+        }
 
-        return try {
-            val response = fetchUrl(versionCheckUrl)
-            val downloadUrl = parseDownloadUrl(response)
+        // First try to use configured jvmDownloadUrl directly
+        config.jvmDownloadUrl?.let { downloadUrl ->
+            val opened = openUrl(downloadUrl)
+            return if (opened) {
+                UpdateResult.Success(
+                    UpdateInfo(
+                        isAvailable = true,
+                        currentVersion = getCurrentVersion(),
+                        updateType = updateType,
+                        storeUrl = downloadUrl,
+                    ),
+                )
+            } else {
+                UpdateResult.Error("Failed to open download URL")
+            }
+        }
 
-            if (downloadUrl != null) {
+        // Try version resolver to get download URL
+        config.versionResolver?.let { resolver ->
+            return try {
+                val versionInfo = resolver.resolve()
+                val downloadUrl = versionInfo.downloadUrl ?: versionInfo.storeUrl
+                    ?: return UpdateResult.Error("No download URL available from resolver")
+
                 val opened = openUrl(downloadUrl)
                 if (opened) {
                     UpdateResult.Success(
@@ -119,6 +189,35 @@ actual object AppUpdate {
                             currentVersion = getCurrentVersion(),
                             updateType = updateType,
                             storeUrl = downloadUrl,
+                        ),
+                    )
+                } else {
+                    UpdateResult.Error("Failed to open download URL")
+                }
+            } catch (e: Exception) {
+                UpdateResult.Error("Failed to start update: ${e.message}", e)
+            }
+        }
+
+        // Fall back to fetching version check URL
+        val versionCheckUrl = config.getEffectiveJvmVersionCheckUrl()
+            ?: return UpdateResult.NotSupported(
+                "JVM requires jvmDownloadUrl, versionResolver, or jvmVersionCheckUrl in AppUpdateConfig",
+            )
+
+        return try {
+            val response = fetchUrl(versionCheckUrl)
+            val parsedDownloadUrl = parseDownloadUrl(response)
+
+            if (parsedDownloadUrl != null) {
+                val opened = openUrl(parsedDownloadUrl)
+                if (opened) {
+                    UpdateResult.Success(
+                        UpdateInfo(
+                            isAvailable = true,
+                            currentVersion = getCurrentVersion(),
+                            updateType = updateType,
+                            storeUrl = parsedDownloadUrl,
                         ),
                     )
                 } else {
@@ -136,13 +235,18 @@ actual object AppUpdate {
      * Opens the download URL in the default browser.
      */
     actual fun openStoreForUpdate(config: AppUpdateConfig): Boolean {
-        val url = config.customVersionCheckUrl ?: return false
+        // Check if JVM is enabled
+        if (!config.jvmEnabled) {
+            return false
+        }
+
+        // Use jvmDownloadUrl if available
+        val url = config.jvmDownloadUrl ?: return false
         return openUrl(url)
     }
 
     /**
-     * In-app updates are conditionally supported on JVM.
-     * Requires customVersionCheckUrl to be configured.
+     * In-app updates are supported on JVM.
      */
     actual fun isSupported(): Boolean = true
 
@@ -179,11 +283,13 @@ actual object AppUpdate {
 
     /**
      * Parses version response JSON.
-     * Expected format: {"version": "1.2.3", "updateType": "FLEXIBLE", "releaseNotes": "...", "downloadUrl": "..."}
      */
-    private fun parseVersionResponse(response: String, currentVersion: AppVersion): UpdateResult {
+    private fun parseVersionResponse(
+        response: String,
+        currentVersion: AppVersion,
+        config: AppUpdateConfig,
+    ): UpdateResult {
         return try {
-            // Simple JSON parsing without external dependencies
             val versionMatch = Regex(""""version"\s*:\s*"([^"]+)"""").find(response)
             val updateTypeMatch = Regex(""""updateType"\s*:\s*"([^"]+)"""").find(response)
             val releaseNotesMatch = Regex(""""releaseNotes"\s*:\s*"([^"]+)"""").find(response)
@@ -202,7 +308,7 @@ actual object AppUpdate {
             }
 
             val releaseNotes = releaseNotesMatch?.groupValues?.get(1)
-            val downloadUrl = downloadUrlMatch?.groupValues?.get(1)
+            val downloadUrl = config.jvmDownloadUrl ?: downloadUrlMatch?.groupValues?.get(1)
 
             if (currentVersion.isOlderThan(latestVersion)) {
                 UpdateResult.Success(
@@ -238,7 +344,6 @@ actual object AppUpdate {
             Desktop.getDesktop().browse(URI(urlString))
             true
         } else {
-            // Try platform-specific commands
             val os = System.getProperty("os.name").lowercase()
             val command = when {
                 os.contains("win") -> arrayOf("rundll32", "url.dll,FileProtocolHandler", urlString)
