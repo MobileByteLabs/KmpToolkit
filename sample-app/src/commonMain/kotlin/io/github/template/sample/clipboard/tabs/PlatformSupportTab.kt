@@ -219,13 +219,7 @@ fun PlatformSupportTab() {
 }
 
 @Composable
-private fun PlatformRow(
-    platform: String,
-    copy: String,
-    read: String,
-    notes: String,
-    isHeader: Boolean = false,
-) {
+private fun PlatformRow(platform: String, copy: String, read: String, notes: String, isHeader: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -314,10 +308,7 @@ private fun PlatformRow(
 }
 
 @Composable
-private fun SupportIndicator(
-    supported: Boolean,
-    modifier: Modifier = Modifier,
-) {
+private fun SupportIndicator(supported: Boolean, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center,

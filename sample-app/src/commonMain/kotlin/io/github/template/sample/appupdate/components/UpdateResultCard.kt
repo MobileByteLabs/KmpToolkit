@@ -35,16 +35,19 @@ fun UpdateResultCard(result: UpdateResult) {
             if (result.updateInfo.isAvailable) "Update Available" else "Up to Date",
             if (result.updateInfo.isAvailable) "⬆️" else "✅",
         )
+
         is UpdateResult.Error -> Triple(
             MaterialTheme.colorScheme.errorContainer,
             "Error",
             "❌",
         )
+
         is UpdateResult.NotSupported -> Triple(
             MaterialTheme.colorScheme.surfaceVariant,
             "Not Supported",
             "ℹ️",
         )
+
         is UpdateResult.Cancelled -> Triple(
             MaterialTheme.colorScheme.surfaceVariant,
             "Cancelled",
@@ -79,15 +82,18 @@ fun UpdateResultCard(result: UpdateResult) {
                     }
                     Text("Update Type: ${info.updateType.name}")
                 }
+
                 is UpdateResult.Error -> {
                     Text(
                         text = result.message,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 }
+
                 is UpdateResult.NotSupported -> {
                     Text(text = result.reason)
                 }
+
                 is UpdateResult.Cancelled -> {
                     Text(text = "Update was cancelled by the user")
                 }

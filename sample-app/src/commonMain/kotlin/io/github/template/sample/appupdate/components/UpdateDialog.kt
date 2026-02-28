@@ -177,9 +177,7 @@ fun UpdateDialog(
  * Use this when you want to show the dialog UI without real update data.
  */
 @Composable
-fun UpdateDialogPreview(
-    onDismiss: () -> Unit,
-) {
+fun UpdateDialogPreview(onDismiss: () -> Unit) {
     val mockUpdateInfo = UpdateInfo.available(
         currentVersion = AppVersion.of(1, 5, 0),
         latestVersion = AppVersion.of(2, 0, 0),

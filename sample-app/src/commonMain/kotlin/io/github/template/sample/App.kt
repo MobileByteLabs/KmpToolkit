@@ -52,12 +52,15 @@ fun App() {
                     onNavigateToClipboard = { currentScreen = Screen.Clipboard },
                     onNavigateToGreeting = { currentScreen = Screen.Greeting },
                 )
+
                 Screen.AppUpdate -> AppUpdateScreen(
                     onBack = { currentScreen = Screen.Home },
                 )
+
                 Screen.Clipboard -> ClipboardScreen(
                     onBack = { currentScreen = Screen.Home },
                 )
+
                 Screen.Greeting -> GreetingScreen(
                     onBack = { currentScreen = Screen.Home },
                 )

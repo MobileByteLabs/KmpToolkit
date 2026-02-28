@@ -40,11 +40,10 @@ class TestVersionResolver(
         /**
          * Creates a resolver that always throws an exception.
          */
-        fun throwing(message: String = "Test error"): TestVersionResolver =
-            TestVersionResolver(
-                shouldThrow = true,
-                throwable = RuntimeException(message),
-            )
+        fun throwing(message: String = "Test error"): TestVersionResolver = TestVersionResolver(
+            shouldThrow = true,
+            throwable = RuntimeException(message),
+        )
 
         /**
          * Creates a resolver with full version info.

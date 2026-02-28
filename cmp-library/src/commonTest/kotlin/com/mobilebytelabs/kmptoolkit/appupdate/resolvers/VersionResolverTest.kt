@@ -4,11 +4,11 @@ import com.mobilebytelabs.kmptoolkit.appupdate.UpdateType
 import com.mobilebytelabs.kmptoolkit.appupdate.VersionInfo
 import com.mobilebytelabs.kmptoolkit.appupdate.VersionResolver
 import com.mobilebytelabs.kmptoolkit.appupdate.test.TestVersionResolver
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.runBlocking
 
 class VersionResolverTest {
 
