@@ -15,6 +15,16 @@
             android:authorities="${applicationId}.kmptoolkit.clipboard.init"
             android:exported="false"
             android:initOrder="100" />
+
+        <!--
+        AppUpdateInitProvider automatically initializes the app update module.
+        Uses Google Play In-App Updates API for seamless update experience.
+        -->
+        <provider
+            android:name="com.mobilebytelabs.kmptoolkit.appupdate.AppUpdateInitProvider"
+            android:authorities="${applicationId}.kmptoolkit.appupdate.init"
+            android:exported="false"
+            android:initOrder="99" />
     </application>
 
 </manifest>

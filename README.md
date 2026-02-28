@@ -37,6 +37,7 @@ kotlin {
 | Feature | Description | Docs |
 |---------|-------------|:----:|
 | [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) | Copy, paste, check & clear clipboard | [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
+| [App Update](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Update) | In-app update checking & store redirect | [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Update) |
 
 ## Platform Support
 
@@ -61,6 +62,7 @@ kotlin {
 |-------|------|
 | **Features** | [Wiki Home](https://github.com/MobileByteLabs/KmpToolkit/wiki) |
 | Clipboard API | [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
+| App Update API | [App Update](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Update) |
 | **Development** | |
 | Getting Started | [Development Guide](https://github.com/MobileByteLabs/KmpToolkit/wiki/Development-Guide) |
 | Project Structure | [Architecture](https://github.com/MobileByteLabs/KmpToolkit/wiki/Architecture) |

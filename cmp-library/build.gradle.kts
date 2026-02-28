@@ -11,7 +11,7 @@ plugins {
 // LIBRARY CONFIGURATION
 // ============================================================================
 group = "io.github.mobilebytelabs"
-version = "0.2.0"
+version = "0.3.0"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
@@ -116,11 +116,16 @@ kotlin {
     // ========================================================================
     sourceSets {
         commonMain.dependencies {
-            // Add your multiplatform dependencies here
+            implementation(libs.kotlinx.coroutines.core)
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+
+        androidMain.dependencies {
+            implementation(libs.play.app.update)
+            implementation(libs.play.app.update.ktx)
         }
     }
 }
@@ -136,7 +141,7 @@ mavenPublishing {
 
     pom {
         name = "KMP Toolkit"
-        description = "Cross-platform utilities for Kotlin Multiplatform - Clipboard, and more"
+        description = "Cross-platform utilities for Kotlin Multiplatform - Clipboard, App Update, and more"
         inceptionYear = "2025"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 
