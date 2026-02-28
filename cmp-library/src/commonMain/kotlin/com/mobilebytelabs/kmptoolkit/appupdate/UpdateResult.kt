@@ -24,10 +24,7 @@ sealed class UpdateResult {
      * @property message A human-readable error message
      * @property cause The underlying exception (null if not available)
      */
-    data class Error(
-        val message: String,
-        val cause: Throwable? = null,
-    ) : UpdateResult()
+    data class Error(val message: String, val cause: Throwable? = null) : UpdateResult()
 
     /**
      * In-app updates are not supported on this platform.

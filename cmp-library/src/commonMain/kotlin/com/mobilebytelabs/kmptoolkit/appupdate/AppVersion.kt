@@ -99,14 +99,13 @@ data class AppVersion(
          * @return AppVersion instance
          * @since 0.3.0
          */
-        fun of(major: Int, minor: Int, patch: Int, versionCode: Long? = null): AppVersion =
-            AppVersion(
-                major = major,
-                minor = minor,
-                patch = patch,
-                versionName = "$major.$minor.$patch",
-                versionCode = versionCode,
-            )
+        fun of(major: Int, minor: Int, patch: Int, versionCode: Long? = null): AppVersion = AppVersion(
+            major = major,
+            minor = minor,
+            patch = patch,
+            versionName = "$major.$minor.$patch",
+            versionCode = versionCode,
+        )
 
         /**
          * An unknown/invalid version placeholder.

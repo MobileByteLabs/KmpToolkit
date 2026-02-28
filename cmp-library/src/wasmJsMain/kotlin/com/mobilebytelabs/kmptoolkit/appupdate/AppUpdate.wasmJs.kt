@@ -12,11 +12,10 @@ actual object AppUpdate {
     /**
      * Returns NotSupported as WasmJs doesn't support traditional in-app updates.
      */
-    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult =
-        UpdateResult.NotSupported(
-            "In-app updates are not applicable for WebAssembly applications. " +
-                "Web apps are updated by refreshing the page or through service workers.",
-        )
+    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult = UpdateResult.NotSupported(
+        "In-app updates are not applicable for WebAssembly applications. " +
+            "Web apps are updated by refreshing the page or through service workers.",
+    )
 
     /**
      * Returns UNKNOWN as version tracking depends on the deployment setup.
@@ -26,10 +25,7 @@ actual object AppUpdate {
     /**
      * Returns NotSupported as WasmJs doesn't support traditional in-app updates.
      */
-    actual suspend fun startUpdate(
-        updateType: UpdateType,
-        config: AppUpdateConfig,
-    ): UpdateResult =
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult =
         UpdateResult.NotSupported(
             "In-app updates are not applicable for WebAssembly applications.",
         )

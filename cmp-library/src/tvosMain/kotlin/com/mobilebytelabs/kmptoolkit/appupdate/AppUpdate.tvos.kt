@@ -14,11 +14,10 @@ actual object AppUpdate {
     /**
      * Returns NotSupported as tvOS doesn't support in-app updates.
      */
-    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult =
-        UpdateResult.NotSupported(
-            "In-app updates are not supported on tvOS. " +
-                "Updates are handled automatically by the tvOS App Store.",
-        )
+    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult = UpdateResult.NotSupported(
+        "In-app updates are not supported on tvOS. " +
+            "Updates are handled automatically by the tvOS App Store.",
+    )
 
     /**
      * Gets the currently installed app version from Info.plist.
@@ -38,10 +37,7 @@ actual object AppUpdate {
     /**
      * Returns NotSupported as tvOS doesn't support in-app updates.
      */
-    actual suspend fun startUpdate(
-        updateType: UpdateType,
-        config: AppUpdateConfig,
-    ): UpdateResult =
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult =
         UpdateResult.NotSupported(
             "In-app updates are not supported on tvOS.",
         )

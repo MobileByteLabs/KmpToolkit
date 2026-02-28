@@ -79,10 +79,7 @@ actual object AppUpdate {
     /**
      * Opens the App Store to the app's page for update.
      */
-    actual suspend fun startUpdate(
-        updateType: UpdateType,
-        config: AppUpdateConfig,
-    ): UpdateResult {
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
         // iOS doesn't support in-app updates like Android
         // We can only redirect to the App Store
         val opened = openStoreForUpdate(config)
@@ -144,9 +141,11 @@ actual object AppUpdate {
                             Exception("Network error: ${error.localizedDescription}"),
                         )
                     }
+
                     data != null -> {
                         continuation.resume(data)
                     }
+
                     else -> {
                         continuation.resumeWithException(Exception("No data received"))
                     }

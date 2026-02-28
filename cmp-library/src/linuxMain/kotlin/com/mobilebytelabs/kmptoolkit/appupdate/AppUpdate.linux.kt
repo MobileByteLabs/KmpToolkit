@@ -22,29 +22,23 @@ actual object AppUpdate {
      * For update checking, use a JVM-based desktop app or integrate with
      * platform-specific update mechanisms (apt, flatpak, snap, etc.).
      */
-    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult =
-        UpdateResult.NotSupported(
-            "Automatic update checking on Linux native requires a custom implementation. " +
-                "Consider using the JVM target for desktop applications with full HTTP support, " +
-                "or integrate with your distribution's package manager.",
-        )
+    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult = UpdateResult.NotSupported(
+        "Automatic update checking on Linux native requires a custom implementation. " +
+            "Consider using the JVM target for desktop applications with full HTTP support, " +
+            "or integrate with your distribution's package manager.",
+    )
 
     /**
      * Gets the currently installed app version.
      *
      * Returns manually set override or UNKNOWN.
      */
-    actual fun getCurrentVersion(): AppVersion {
-        return currentVersionOverride ?: AppVersion.UNKNOWN
-    }
+    actual fun getCurrentVersion(): AppVersion = currentVersionOverride ?: AppVersion.UNKNOWN
 
     /**
      * Returns NotSupported for automatic updates.
      */
-    actual suspend fun startUpdate(
-        updateType: UpdateType,
-        config: AppUpdateConfig,
-    ): UpdateResult =
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult =
         UpdateResult.NotSupported(
             "Automatic updates on Linux native are not supported. " +
                 "Consider using system package managers for updates.",

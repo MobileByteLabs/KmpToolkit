@@ -100,10 +100,7 @@ actual object AppUpdate {
     /**
      * Opens the download URL for the update.
      */
-    actual suspend fun startUpdate(
-        updateType: UpdateType,
-        config: AppUpdateConfig,
-    ): UpdateResult {
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
         val versionCheckUrl = config.customVersionCheckUrl
             ?: return UpdateResult.NotSupported(
                 "JVM requires customVersionCheckUrl in AppUpdateConfig",
@@ -236,24 +233,22 @@ actual object AppUpdate {
     /**
      * Opens URL in default browser.
      */
-    private fun openUrl(urlString: String): Boolean {
-        return try {
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(URI(urlString))
-                true
-            } else {
-                // Try platform-specific commands
-                val os = System.getProperty("os.name").lowercase()
-                val command = when {
-                    os.contains("win") -> arrayOf("rundll32", "url.dll,FileProtocolHandler", urlString)
-                    os.contains("mac") -> arrayOf("open", urlString)
-                    else -> arrayOf("xdg-open", urlString)
-                }
-                Runtime.getRuntime().exec(command)
-                true
+    private fun openUrl(urlString: String): Boolean = try {
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            Desktop.getDesktop().browse(URI(urlString))
+            true
+        } else {
+            // Try platform-specific commands
+            val os = System.getProperty("os.name").lowercase()
+            val command = when {
+                os.contains("win") -> arrayOf("rundll32", "url.dll,FileProtocolHandler", urlString)
+                os.contains("mac") -> arrayOf("open", urlString)
+                else -> arrayOf("xdg-open", urlString)
             }
-        } catch (e: Exception) {
-            false
+            Runtime.getRuntime().exec(command)
+            true
         }
+    } catch (e: Exception) {
+        false
     }
 }

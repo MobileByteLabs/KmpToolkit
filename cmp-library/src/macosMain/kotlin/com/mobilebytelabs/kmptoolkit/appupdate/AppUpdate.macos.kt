@@ -71,10 +71,7 @@ actual object AppUpdate {
     /**
      * Opens the Mac App Store to the app's page for update.
      */
-    actual suspend fun startUpdate(
-        updateType: UpdateType,
-        config: AppUpdateConfig,
-    ): UpdateResult {
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
         val opened = openStoreForUpdate(config)
         return if (opened) {
             UpdateResult.Success(
@@ -132,9 +129,11 @@ actual object AppUpdate {
                             Exception("Network error: ${error.localizedDescription}"),
                         )
                     }
+
                     data != null -> {
                         continuation.resume(data)
                     }
+
                     else -> {
                         continuation.resumeWithException(Exception("No data received"))
                     }

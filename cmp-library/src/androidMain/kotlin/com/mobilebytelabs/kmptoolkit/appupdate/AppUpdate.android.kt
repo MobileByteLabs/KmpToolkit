@@ -17,32 +17,18 @@ import com.google.android.play.core.install.model.UpdateAvailability
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-/**
- * Android implementation of AppUpdate using Google Play In-App Updates API.
- *
- * This implementation uses [AppUpdateManagerFactory] to check for and download
- * updates directly from Google Play Store without leaving the app.
- *
- * ## Zero Configuration
- *
- * No initialization required! The library auto-initializes using ContentProvider:
- *
- * ```kotlin
- * // Just works - no setup needed
- * val result = AppUpdate.checkForUpdate()
- * ```
- *
- * ## Update Types
- *
- * - **FLEXIBLE**: Downloads in background, user can continue using app
- * - **IMMEDIATE**: Blocking update, user must update before continuing
- *
- * @since 0.3.0
- */
+// Android implementation of AppUpdate using Google Play In-App Updates API.
+// This implementation uses AppUpdateManagerFactory to check for and download
+// updates directly from Google Play Store without leaving the app.
+//
+// Zero Configuration:
+// No initialization required! The library auto-initializes using ContentProvider.
+//
+// Update Types:
+// - FLEXIBLE: Downloads in background, user can continue using app
+// - IMMEDIATE: Blocking update, user must update before continuing
 
-/**
- * Application context obtained automatically via ContentProvider.
- */
+/** Application context obtained automatically via ContentProvider. */
 @SuppressLint("StaticFieldLeak")
 private var appContext: Context? = null
 
@@ -73,12 +59,8 @@ class AppUpdateInitProvider : ContentProvider() {
     override fun getType(uri: Uri): String? = null
     override fun insert(uri: Uri, values: ContentValues?): Uri? = null
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = 0
-    override fun update(
-        uri: Uri,
-        values: ContentValues?,
-        selection: String?,
-        selectionArgs: Array<out String>?,
-    ): Int = 0
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int =
+        0
 }
 
 actual object AppUpdate {
@@ -283,15 +265,14 @@ actual object AppUpdate {
 /**
  * Extension to await a Task result using coroutines.
  */
-private suspend fun <T> com.google.android.gms.tasks.Task<T>.await(): T =
-    suspendCancellableCoroutine { continuation ->
-        addOnSuccessListener { result ->
-            continuation.resume(result)
-        }
-        addOnFailureListener { exception ->
-            continuation.cancel(exception)
-        }
-        addOnCanceledListener {
-            continuation.cancel()
-        }
+private suspend fun <T> com.google.android.gms.tasks.Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
+    addOnSuccessListener { result ->
+        continuation.resume(result)
     }
+    addOnFailureListener { exception ->
+        continuation.cancel(exception)
+    }
+    addOnCanceledListener {
+        continuation.cancel()
+    }
+}

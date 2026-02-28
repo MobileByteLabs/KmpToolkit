@@ -26,12 +26,11 @@ data class UpdateInfo(
          * @param currentVersion The currently installed version
          * @return UpdateInfo with isAvailable = false
          */
-        fun noUpdate(currentVersion: AppVersion): UpdateInfo =
-            UpdateInfo(
-                isAvailable = false,
-                currentVersion = currentVersion,
-                updateType = UpdateType.NONE,
-            )
+        fun noUpdate(currentVersion: AppVersion): UpdateInfo = UpdateInfo(
+            isAvailable = false,
+            currentVersion = currentVersion,
+            updateType = UpdateType.NONE,
+        )
 
         /**
          * Creates an UpdateInfo indicating an update is available.
@@ -49,14 +48,13 @@ data class UpdateInfo(
             updateType: UpdateType = UpdateType.FLEXIBLE,
             releaseNotes: String? = null,
             storeUrl: String? = null,
-        ): UpdateInfo =
-            UpdateInfo(
-                isAvailable = true,
-                currentVersion = currentVersion,
-                latestVersion = latestVersion,
-                updateType = updateType,
-                releaseNotes = releaseNotes,
-                storeUrl = storeUrl,
-            )
+        ): UpdateInfo = UpdateInfo(
+            isAvailable = true,
+            currentVersion = currentVersion,
+            latestVersion = latestVersion,
+            updateType = updateType,
+            releaseNotes = releaseNotes,
+            storeUrl = storeUrl,
+        )
     }
 }

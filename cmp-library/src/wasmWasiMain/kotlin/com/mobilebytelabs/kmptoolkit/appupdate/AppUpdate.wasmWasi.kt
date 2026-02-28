@@ -12,11 +12,10 @@ actual object AppUpdate {
     /**
      * Returns NotSupported as WASI doesn't support in-app updates.
      */
-    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult =
-        UpdateResult.NotSupported(
-            "In-app updates are not applicable for WASI applications. " +
-                "WASI runs in sandboxed environments without UI capabilities.",
-        )
+    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult = UpdateResult.NotSupported(
+        "In-app updates are not applicable for WASI applications. " +
+            "WASI runs in sandboxed environments without UI capabilities.",
+    )
 
     /**
      * Returns UNKNOWN as WASI doesn't have standard version mechanisms.
@@ -26,10 +25,7 @@ actual object AppUpdate {
     /**
      * Returns NotSupported as WASI doesn't support in-app updates.
      */
-    actual suspend fun startUpdate(
-        updateType: UpdateType,
-        config: AppUpdateConfig,
-    ): UpdateResult =
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult =
         UpdateResult.NotSupported(
             "In-app updates are not applicable for WASI applications.",
         )
