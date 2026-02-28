@@ -4,59 +4,22 @@
 [![CI](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.2.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![GitHub Wiki](https://img.shields.io/badge/docs-Wiki-blue)](https://github.com/MobileByteLabs/KmpToolkit/wiki)
 
 Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works immediately on all platforms.
 
-> **Documentation**: See the [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki) for comprehensive guides and API reference.
+## Table of Contents
 
-## Supported Platforms
-
-| Platform | Targets | Status |
-|----------|---------|--------|
-| Android  | android | Supported |
-| iOS      | iosX64, iosArm64, iosSimulatorArm64 | Supported |
-| macOS    | macosX64, macosArm64 | Supported |
-| tvOS     | tvosX64, tvosArm64, tvosSimulatorArm64 | Supported |
-| watchOS  | watchosX64, watchosArm32, watchosArm64, watchosSimulatorArm64, watchosDeviceArm64 | Supported |
-| JVM      | jvm | Supported |
-| Linux    | linuxX64, linuxArm64 | Supported |
-| Windows  | mingwX64 | Supported |
-| JavaScript | js (Browser, Node.js) | Supported |
-| WebAssembly | wasmJs (Browser, Node.js), wasmWasi (Node.js) | Supported |
-
-## Features
-
-| Feature | Description | Documentation |
-|---------|-------------|---------------|
-| **Clipboard** | Copy, paste, check & clear clipboard | [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
-
-### Clipboard
-
-Cross-platform clipboard operations with zero configuration. [Full documentation →](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard)
-
-| Platform | Copy | Read | Notes |
-|----------|:----:|:----:|-------|
-| Android  | ✅   | ✅   | Auto-initialized via ContentProvider |
-| iOS      | ✅   | ✅   | Full support |
-| macOS    | ✅   | ✅   | Full support |
-| tvOS     | ⚠️   | ⚠️   | No-op (no clipboard API) |
-| watchOS  | ⚠️   | ⚠️   | No-op (no clipboard API) |
-| JVM      | ✅   | ✅   | Uses AWT Toolkit |
-| JS       | ✅   | ❌   | Async API, write-only for sync |
-| Wasm JS  | ⚠️   | ⚠️   | No-op |
-| Linux    | ✅   | ✅   | Requires xclip or xsel |
-| Windows  | ✅   | ✅   | Uses Win32 API |
-| WASI     | ❌   | ❌   | No clipboard in WASI runtime |
-
-**Legend:** ✅ Full support | ⚠️ No-op (fails gracefully) | ❌ Not supported
+- [Installation](#installation)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Platform Support](#platform-support)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Installation
 
-Add the dependency to your `build.gradle.kts`:
-
 ```kotlin
-// In your shared module
 kotlin {
     sourceSets {
         commonMain.dependencies {
@@ -66,188 +29,76 @@ kotlin {
 }
 ```
 
-> Replace `<version>` with the latest version from the [Maven Central badge](#kmp-toolkit) above.
-
-### Platform-specific setup
+> Replace `<version>` with the latest version from the [Maven Central](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmp-toolkit) badge above.
 
 **No setup required!** The library automatically initializes on all platforms.
+
+## Features
+
+| Feature | Description | Docs |
+|---------|-------------|:----:|
+| [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) | Copy, paste, check & clear clipboard | [Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
 
 ## Quick Start
 
 ### Clipboard
 
 ```kotlin
-import com.mobilebytelabs.kmptoolkit.clipboard.copyToClipboard
-import com.mobilebytelabs.kmptoolkit.clipboard.getFromClipboard
-import com.mobilebytelabs.kmptoolkit.clipboard.hasClipboardText
-import com.mobilebytelabs.kmptoolkit.clipboard.clearClipboard
+import com.mobilebytelabs.kmptoolkit.clipboard.*
 
-// Copy text to clipboard
-val success = copyToClipboard("Hello, World!")
+// Copy text
+copyToClipboard("Hello, World!")
 
-// Read text from clipboard (where supported)
+// Read text
 val text = getFromClipboard()
 
-// Check if clipboard has text
+// Check & clear
 if (hasClipboardText()) {
-    println("Clipboard has content")
+    clearClipboard()
 }
-
-// Clear clipboard
-clearClipboard()
 ```
 
-## Getting Started with Development
+## Platform Support
 
-### Prerequisites
+| Platform | Status | Targets |
+|----------|:------:|---------|
+| Android | ✅ | android |
+| iOS | ✅ | iosX64, iosArm64, iosSimulatorArm64 |
+| macOS | ✅ | macosX64, macosArm64 |
+| JVM | ✅ | jvm |
+| Linux | ✅ | linuxX64, linuxArm64 |
+| Windows | ✅ | mingwX64 |
+| JavaScript | ✅ | js (Browser, Node.js) |
+| WebAssembly | ✅ | wasmJs, wasmWasi |
+| tvOS | ⚠️ | tvosX64, tvosArm64, tvosSimulatorArm64 |
+| watchOS | ⚠️ | watchosX64, watchosArm32, watchosArm64, watchosSimulatorArm64 |
 
-- JDK 21 or higher
-- Android SDK (for Android development)
-- Xcode 15+ (for iOS development, macOS only)
+**Legend:** ✅ Full support | ⚠️ Limited (see feature docs)
 
-### Setup
+## Documentation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/MobileByteLabs/KmpToolkit.git
-cd KmpToolkit
-```
-
-2. Set up git hooks:
-```bash
-bash scripts/setup-hooks.sh
-```
-
-4. Build the project:
-```bash
-./gradlew build
-```
-
-### Running Tests
-
-```bash
-# All platforms
-./gradlew allTests
-
-# Specific platforms
-./gradlew jvmTest
-./gradlew iosSimulatorArm64Test
-./gradlew testAndroidHostTest
-./gradlew linuxX64Test
-```
-
-### Code Quality
-
-```bash
-# Format code
-./gradlew spotlessApply
-
-# Run static analysis
-./gradlew detekt
-```
-
-### Sample App
-
-A Compose Multiplatform sample app is included to test the library on all platforms:
-
-```bash
-# Run on Desktop (macOS, Windows, Linux)
-./gradlew :sample-app:run
-
-# Run on Android
-./gradlew :sample-app:installDebug
-
-# Run on iOS (requires Xcode on macOS)
-# Open sample-app in Xcode or use KMM plugin in Android Studio
-
-# Run on Web (WebAssembly)
-./gradlew :sample-app:wasmJsBrowserRun
-```
-
-## Publishing to Maven Central
-
-### Prerequisites
-
-1. Create a [Sonatype Central Portal account](https://central.sonatype.com/)
-2. Generate a GPG key for signing
-3. Configure GitHub secrets (organization level):
-   - `MAVEN_CENTRAL_USERNAME` - Central Portal **user token name** (not email)
-   - `MAVEN_CENTRAL_PASSWORD` - Central Portal **user token password** (not login password)
-   - `SIGNING_KEY_ID` - GPG key ID (last 8 characters)
-   - `SIGNING_PASSWORD` - GPG key passphrase
-   - `GPG_KEY_CONTENTS` - Base64 encoded GPG private key
-
-> **Note**: Generate user tokens from Central Portal → Account Settings → Generate User Token
-
-### Release Process
-
-1. Update version in `cmp-library/build.gradle.kts`
-2. Create a GitHub release with a tag (e.g., `v1.0.0`)
-3. The publish workflow will automatically deploy to Maven Central
-
-## Project Structure
-
-```
-.
-├── cmp-library/                # Library module
-│   └── src/
-│       ├── commonMain/         # Common code (all platforms)
-│       ├── commonTest/         # Common tests
-│       ├── androidMain/        # Android-specific code
-│       ├── jvmMain/            # JVM-specific code
-│       ├── appleMain/          # Apple platforms (iOS, macOS, tvOS, watchOS)
-│       ├── linuxMain/          # Linux platforms (linuxX64, linuxArm64)
-│       ├── mingwMain/          # Windows (mingwX64)
-│       ├── jsMain/             # JavaScript (Browser, Node.js)
-│       ├── wasmJsMain/         # WebAssembly JS
-│       └── wasmWasiMain/       # WebAssembly WASI
-├── sample-app/                 # Compose Multiplatform sample app
-│   └── src/
-│       ├── commonMain/         # Shared UI code
-│       ├── androidMain/        # Android app entry
-│       ├── desktopMain/        # Desktop app entry
-│       ├── iosMain/            # iOS app entry
-│       └── wasmJsMain/         # Web app entry
-├── scripts/                    # Automation scripts
-│   ├── pre-commit.sh           # Pre-commit hook
-│   ├── pre-push.sh             # Pre-push hook
-│   └── setup-hooks.sh          # Hook setup script
-├── config/
-│   └── detekt/                 # Detekt configuration
-├── .github/
-│   ├── workflows/              # GitHub Actions
-│   └── ISSUE_TEMPLATE/         # Issue templates
-├── customizer.sh               # Template customization script
-└── build.gradle.kts            # Root build configuration
-```
+| Topic | Link |
+|-------|------|
+| **Features** | [Wiki Home](https://github.com/MobileByteLabs/KmpToolkit/wiki) |
+| Clipboard API | [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
+| **Development** | |
+| Getting Started | [Development Guide](https://github.com/MobileByteLabs/KmpToolkit/wiki/Development-Guide) |
+| Project Structure | [Architecture](https://github.com/MobileByteLabs/KmpToolkit/wiki/Architecture) |
+| Publishing | [Publishing Guide](https://github.com/MobileByteLabs/KmpToolkit/wiki/Publishing) |
+| **Contributing** | |
+| Contributing Guide | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Adding Features | [Adding New Features](https://github.com/MobileByteLabs/KmpToolkit/wiki/Adding-New-Features) |
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Adding New Features
-
-See the [Adding New Features](https://github.com/MobileByteLabs/KmpToolkit/wiki/Adding-New-Features) wiki page for a step-by-step guide on implementing and documenting new features.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Adding New Features](https://github.com/MobileByteLabs/KmpToolkit/wiki/Adding-New-Features) wiki guide.
 
 ## License
 
 ```
 Copyright 2025 MobileByteLabs
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Licensed under the Apache License, Version 2.0
 ```
 
-## Acknowledgments
-
-- [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html)
-- [Gradle Maven Publish Plugin](https://vanniktech.github.io/gradle-maven-publish-plugin/)
+See [LICENSE](LICENSE) for details.
