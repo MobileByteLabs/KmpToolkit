@@ -27,7 +27,7 @@ import kotlin.coroutines.resumeWithException
  * This implementation uses the iTunes Search API to check for app updates
  * and opens the Mac App Store for manual updates.
  *
- * @since 0.3.0
+ * @since 0.5.0
  */
 actual object AppUpdate {
     /**
@@ -35,6 +35,11 @@ actual object AppUpdate {
      */
     @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
     actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult {
+        // Check if macOS is enabled in config
+        if (!config.macosEnabled) {
+            return UpdateResult.NotSupported("macOS updates disabled in configuration")
+        }
+
         val currentVersion = getCurrentVersion()
         val bundleId = NSBundle.mainBundle.bundleIdentifier
             ?: return UpdateResult.Error("Bundle identifier not found")
@@ -47,7 +52,7 @@ actual object AppUpdate {
 
         return try {
             val jsonData = fetchUrl(lookupUrl)
-            parseAppStoreResponse(jsonData, currentVersion)
+            parseAppStoreResponse(jsonData, currentVersion, config)
         } catch (e: Exception) {
             UpdateResult.Error("Failed to check for updates: ${e.message}", e)
         }
@@ -72,6 +77,11 @@ actual object AppUpdate {
      * Opens the Mac App Store to the app's page for update.
      */
     actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
+        // Check if macOS is enabled in config
+        if (!config.macosEnabled) {
+            return UpdateResult.NotSupported("macOS updates disabled in configuration")
+        }
+
         val opened = openStoreForUpdate(config)
         return if (opened) {
             UpdateResult.Success(
@@ -91,7 +101,19 @@ actual object AppUpdate {
      */
     @OptIn(ExperimentalForeignApi::class)
     actual fun openStoreForUpdate(config: AppUpdateConfig): Boolean {
-        val appStoreId = config.appStoreId
+        // Check if macOS is enabled in config
+        if (!config.macosEnabled) {
+            return false
+        }
+
+        // Use macosStoreUrl if provided directly
+        if (config.macosStoreUrl != null) {
+            val url = NSURL.URLWithString(config.macosStoreUrl) ?: return false
+            return NSWorkspace.sharedWorkspace.openURL(url)
+        }
+
+        // Otherwise use macosAppStoreId
+        val appStoreId = config.macosAppStoreId
         val bundleId = NSBundle.mainBundle.bundleIdentifier
 
         val storeUrl = when {
@@ -151,7 +173,11 @@ actual object AppUpdate {
      * Parses the iTunes Lookup API response.
      */
     @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-    private fun parseAppStoreResponse(data: NSData, currentVersion: AppVersion): UpdateResult {
+    private fun parseAppStoreResponse(
+        data: NSData,
+        currentVersion: AppVersion,
+        config: AppUpdateConfig,
+    ): UpdateResult {
         return memScoped {
             val errorPtr = alloc<ObjCObjectVar<NSError?>>()
             val json = NSJSONSerialization.JSONObjectWithData(
@@ -179,7 +205,8 @@ actual object AppUpdate {
                 ?: return UpdateResult.Success(UpdateInfo.noUpdate(currentVersion))
 
             val releaseNotes = appInfo["releaseNotes"] as? String
-            val trackViewUrl = appInfo["trackViewUrl"] as? String
+            // Prefer configured storeUrl, then trackViewUrl from API
+            val trackViewUrl = config.macosStoreUrl ?: (appInfo["trackViewUrl"] as? String)
 
             if (currentVersion.isOlderThan(latestVersion)) {
                 UpdateResult.Success(

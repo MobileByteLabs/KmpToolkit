@@ -10,7 +10,7 @@ package com.mobilebytelabs.kmptoolkit.appupdate
  * For production use, consider using the JVM target for desktop
  * applications with full HTTP support.
  *
- * @since 0.3.0
+ * @since 0.5.0
  */
 actual object AppUpdate {
     private var currentVersionOverride: AppVersion? = null
@@ -22,11 +22,27 @@ actual object AppUpdate {
      * For update checking, use a JVM-based desktop app or integrate with
      * platform-specific update mechanisms (apt, flatpak, snap, etc.).
      */
-    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult = UpdateResult.NotSupported(
-        "Automatic update checking on Linux native requires a custom implementation. " +
-            "Consider using the JVM target for desktop applications with full HTTP support, " +
-            "or integrate with your distribution's package manager.",
-    )
+    actual suspend fun checkForUpdate(config: AppUpdateConfig): UpdateResult {
+        // Check if Linux is disabled
+        if (!config.linuxEnabled) {
+            return UpdateResult.NotSupported("Linux updates disabled in configuration")
+        }
+
+        // Check if version check URL is configured
+        val versionCheckUrl = config.getEffectiveLinuxVersionCheckUrl()
+        if (versionCheckUrl == null) {
+            return UpdateResult.NotSupported(
+                "Linux requires linuxVersionCheckUrl or customVersionCheckUrl in AppUpdateConfig. " +
+                    "Consider using the JVM target for desktop applications with full HTTP support.",
+            )
+        }
+
+        return UpdateResult.NotSupported(
+            "Automatic update checking on Linux native requires a custom HTTP implementation. " +
+                "Consider using the JVM target for desktop applications with full HTTP support, " +
+                "or integrate with your distribution's package manager.",
+        )
+    }
 
     /**
      * Gets the currently installed app version.
@@ -38,11 +54,17 @@ actual object AppUpdate {
     /**
      * Returns NotSupported for automatic updates.
      */
-    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult =
-        UpdateResult.NotSupported(
+    actual suspend fun startUpdate(updateType: UpdateType, config: AppUpdateConfig): UpdateResult {
+        // Check if Linux is disabled
+        if (!config.linuxEnabled) {
+            return UpdateResult.NotSupported("Linux updates disabled in configuration")
+        }
+
+        return UpdateResult.NotSupported(
             "Automatic updates on Linux native are not supported. " +
                 "Consider using system package managers for updates.",
         )
+    }
 
     /**
      * Linux native doesn't support opening URLs without additional tools.

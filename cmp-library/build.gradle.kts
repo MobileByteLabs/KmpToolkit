@@ -11,7 +11,7 @@ plugins {
 // LIBRARY CONFIGURATION
 // ============================================================================
 group = "io.github.mobilebytelabs"
-version = "0.3.0"
+version = "0.4.0"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
