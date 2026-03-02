@@ -45,7 +45,7 @@ jobs:
         run: ./gradlew detekt
 
       - name: Upload Detekt Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: detekt-report
@@ -98,7 +98,7 @@ jobs:
         run: ./gradlew ${{ matrix.target }}
 
       - name: Upload Test Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-reports-${{ matrix.name }}
