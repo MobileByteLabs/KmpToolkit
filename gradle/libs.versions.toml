@@ -18,7 +18,7 @@ junit = "4.13.2"
 coroutines = "1.10.2"
 
 # AndroidX
-androidx-activityCompose = "1.12.2"
+androidx-activityCompose = "1.12.4"
 androidx-lifecycle = "2.9.6"
 playAppUpdate = "2.1.0"
 
