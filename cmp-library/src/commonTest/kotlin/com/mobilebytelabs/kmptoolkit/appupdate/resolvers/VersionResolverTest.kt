@@ -4,7 +4,7 @@ import com.mobilebytelabs.kmptoolkit.appupdate.UpdateType
 import com.mobilebytelabs.kmptoolkit.appupdate.VersionInfo
 import com.mobilebytelabs.kmptoolkit.appupdate.VersionResolver
 import com.mobilebytelabs.kmptoolkit.appupdate.test.TestVersionResolver
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -13,21 +13,21 @@ import kotlin.test.assertTrue
 class VersionResolverTest {
 
     @Test
-    fun resolveReturnsVersionInfo() = runBlocking {
+    fun resolveReturnsVersionInfo() = runTest {
         val resolver = TestVersionResolver.withVersion("1.2.3")
         val result = resolver.resolve()
         assertEquals("1.2.3", result.version)
     }
 
     @Test
-    fun resolveWithUpdateType() = runBlocking {
+    fun resolveWithUpdateType() = runTest {
         val resolver = TestVersionResolver.withVersion("2.0.0", UpdateType.IMMEDIATE)
         val result = resolver.resolve()
         assertEquals(UpdateType.IMMEDIATE, result.updateType)
     }
 
     @Test
-    fun resolveWithFullInfo() = runBlocking {
+    fun resolveWithFullInfo() = runTest {
         val resolver = TestVersionResolver.withFullInfo(
             version = "3.0.0",
             updateType = UpdateType.FLEXIBLE,
@@ -45,7 +45,7 @@ class VersionResolverTest {
     }
 
     @Test
-    fun resolveThrowsException() = runBlocking {
+    fun resolveThrowsException() = runTest {
         val resolver = TestVersionResolver.throwing("Network error")
 
         var exceptionThrown = false
@@ -59,7 +59,7 @@ class VersionResolverTest {
     }
 
     @Test
-    fun resolveCallCountTracked() = runBlocking {
+    fun resolveCallCountTracked() = runTest {
         val resolver = TestVersionResolver.withVersion("1.0.0")
 
         assertEquals(0, resolver.resolveCallCount)
@@ -70,7 +70,7 @@ class VersionResolverTest {
     }
 
     @Test
-    fun customResolverImplementation() = runBlocking {
+    fun customResolverImplementation() = runTest {
         // Test that the interface can be implemented
         val customResolver = object : VersionResolver {
             override suspend fun resolve(): VersionInfo = VersionInfo(
@@ -85,7 +85,7 @@ class VersionResolverTest {
     }
 
     @Test
-    fun defaultUpdateTypeFlexible() = runBlocking {
+    fun defaultUpdateTypeFlexible() = runTest {
         val resolver = TestVersionResolver(
             versionInfo = VersionInfo(version = "1.0.0"),
         )
@@ -94,7 +94,7 @@ class VersionResolverTest {
     }
 
     @Test
-    fun metadataAccessible() = runBlocking {
+    fun metadataAccessible() = runTest {
         val resolver = TestVersionResolver(
             versionInfo = VersionInfo(
                 version = "1.0.0",

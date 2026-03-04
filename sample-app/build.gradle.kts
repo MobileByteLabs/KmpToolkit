@@ -59,8 +59,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
 
-            // Include the library
+            // Include the libraries
             implementation(project(":cmp-library"))
+            implementation(project(":cmp-clipboard"))
         }
 
         commonTest.dependencies {

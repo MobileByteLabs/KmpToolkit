@@ -11,7 +11,7 @@ plugins {
 // LIBRARY CONFIGURATION
 // ============================================================================
 group = "io.github.mobilebytelabs"
-version = "0.5.0"
+version = "0.1.0"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
@@ -27,7 +27,7 @@ kotlin {
     // Android Target
     // ========================================================================
     androidLibrary {
-        namespace = "io.github.mobilebytelabs.kmptoolkit"
+        namespace = "io.github.mobilebytelabs.kmptoolkit.clipboard"
         compileSdk =
             libs.versions.android.compileSdk
                 .get()
@@ -116,17 +116,11 @@ kotlin {
     // ========================================================================
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines.core)
+            // No dependencies needed for clipboard
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-            implementation(libs.kotlinx.coroutines.test)
-        }
-
-        androidMain.dependencies {
-            implementation(libs.play.app.update)
-            implementation(libs.play.app.update.ktx)
         }
     }
 }
@@ -138,11 +132,11 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-toolkit", version.toString())
+    coordinates(group.toString(), "kmp-clipboard", version.toString())
 
     pom {
-        name = "KMP Toolkit"
-        description = "Cross-platform utilities for Kotlin Multiplatform - Clipboard, App Update, and more"
+        name = "KMP Clipboard"
+        description = "Cross-platform clipboard utilities for Kotlin Multiplatform"
         inceptionYear = "2025"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

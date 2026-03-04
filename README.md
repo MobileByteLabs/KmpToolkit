@@ -10,6 +10,7 @@ Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works imm
 ## Table of Contents
 
 - [Installation](#installation)
+- [Modules](#modules)
 - [Features](#features)
 - [Platform Support](#platform-support)
 - [Documentation](#documentation)
@@ -18,19 +19,48 @@ Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works imm
 
 ## Installation
 
+KMP Toolkit is available as modular libraries. Import only what you need:
+
+### Option 1: Individual Modules (Recommended)
+
 ```kotlin
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.mobilebytelabs:kmp-toolkit:<version>")
+            // Clipboard utilities only
+            implementation("io.github.mobilebytelabs:kmp-clipboard:0.1.0")
+
+            // App Update utilities only (includes clipboard for convenience)
+            implementation("io.github.mobilebytelabs:kmp-toolkit:0.5.0")
         }
     }
 }
 ```
 
-> Replace `<version>` with the latest version from the [Maven Central](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmp-toolkit) badge above.
+### Option 2: Full Toolkit
 
-**No setup required!** The library automatically initializes on all platforms.
+```kotlin
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            // All utilities (clipboard + app-update)
+            implementation("io.github.mobilebytelabs:kmp-toolkit:0.5.0")
+            implementation("io.github.mobilebytelabs:kmp-clipboard:0.1.0")
+        }
+    }
+}
+```
+
+**No setup required!** All libraries automatically initialize on all platforms.
+
+## Modules
+
+| Module | Artifact | Description | Version |
+|--------|----------|-------------|:-------:|
+| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/clear | `0.1.0` |
+| **kmp-toolkit** | `io.github.mobilebytelabs:kmp-toolkit` | App Update checking | `0.5.0` |
+
+Each module is independently publishable and can be used standalone.
 
 ## Features
 
