@@ -16,4 +16,6 @@ dependencyResolutionManagement {
 rootProject.name = "template-library"
 include(":cmp-library")
 include(":cmp-clipboard")
-include(":sample-app")
+
+// Sample applications
+include(":samples:sample-clipboard:composeApp")
