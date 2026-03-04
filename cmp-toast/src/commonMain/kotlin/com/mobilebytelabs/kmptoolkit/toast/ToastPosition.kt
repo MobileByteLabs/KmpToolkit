@@ -22,5 +22,5 @@ enum class ToastPosition {
      * Display at the bottom of the screen.
      * Material Design snackbar style. This is the default.
      */
-    BOTTOM
+    BOTTOM,
 }

@@ -17,7 +17,9 @@ import java.awt.datatransfer.FlavorListener
  * when the data flavors change, which typically happens when new content is
  * copied to the clipboard.
  */
-internal class JvmClipboardObserver : ClipboardObserver, FlavorListener {
+internal class JvmClipboardObserver :
+    ClipboardObserver,
+    FlavorListener {
     private val _clipboardContent = MutableStateFlow<String?>(null)
     override val clipboardContent: StateFlow<String?> = _clipboardContent.asStateFlow()
 

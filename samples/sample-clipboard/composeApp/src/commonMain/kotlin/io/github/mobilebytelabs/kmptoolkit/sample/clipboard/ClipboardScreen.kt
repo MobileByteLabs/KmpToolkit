@@ -40,12 +40,12 @@ fun ClipboardScreen() {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "KMP Clipboard Demo",
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -53,7 +53,7 @@ fun ClipboardScreen() {
         Text(
             text = "Cross-platform clipboard utilities",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -64,7 +64,7 @@ fun ClipboardScreen() {
             onValueChange = { inputText = it },
             label = { Text("Enter text to copy") },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -72,7 +72,7 @@ fun ClipboardScreen() {
         // Action buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             Button(
                 onClick = {
@@ -84,7 +84,7 @@ fun ClipboardScreen() {
                     }
                     hasText = hasClipboardText()
                 },
-                enabled = inputText.isNotEmpty()
+                enabled = inputText.isNotEmpty(),
             ) {
                 Text("Copy")
             }
@@ -98,7 +98,7 @@ fun ClipboardScreen() {
                         "✗ Clipboard empty or unavailable"
                     }
                     hasText = hasClipboardText()
-                }
+                },
             ) {
                 Text("Paste")
             }
@@ -109,7 +109,7 @@ fun ClipboardScreen() {
                     clipboardContent = null
                     statusMessage = "✓ Clipboard cleared"
                     hasText = hasClipboardText()
-                }
+                },
             ) {
                 Text("Clear")
             }
@@ -126,7 +126,7 @@ fun ClipboardScreen() {
                     "Clipboard is empty"
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Check Clipboard")
         }
@@ -144,7 +144,7 @@ fun ClipboardScreen() {
                     MaterialTheme.colorScheme.error
                 } else {
                     MaterialTheme.colorScheme.onSurface
-                }
+                },
             )
         }
 
@@ -154,16 +154,16 @@ fun ClipboardScreen() {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
             ) {
                 Text(
                     text = "Clipboard Content:",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -173,7 +173,7 @@ fun ClipboardScreen() {
                         MaterialTheme.colorScheme.onSurface
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    },
                 )
             }
         }
@@ -184,27 +184,27 @@ fun ClipboardScreen() {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            ),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
             ) {
                 Text(
                     text = "Platform Info",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Running on: ${getPlatform().name}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Text(
                     text = "Has clipboard text: $hasText",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
         }

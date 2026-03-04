@@ -142,7 +142,8 @@ mavenPublishing {
 
     pom {
         name = "KMP In-App Update"
-        description = "Cross-platform in-app update checking for Kotlin Multiplatform with support for GitHub Releases, Supabase, and custom backends"
+        description =
+            "Cross-platform in-app update checking for Kotlin Multiplatform with support for GitHub Releases, Supabase, and custom backends"
         inceptionYear = "2025"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

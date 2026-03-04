@@ -19,7 +19,7 @@ fun App() {
 
             ToastHost(
                 hostState = toastState,
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
     }

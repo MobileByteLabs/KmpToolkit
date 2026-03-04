@@ -148,7 +148,8 @@ mavenPublishing {
 
     pom {
         name = "KMP Template Library"
-        description = "Template module for creating new KMP libraries - demonstrates expect/actual pattern and multiplatform setup"
+        description =
+            "Template module for creating new KMP libraries - demonstrates expect/actual pattern and multiplatform setup"
         inceptionYear = "2025"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

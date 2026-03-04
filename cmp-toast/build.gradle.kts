@@ -30,8 +30,14 @@ kotlin {
     // ========================================================================
     androidLibrary {
         namespace = "io.github.mobilebytelabs.kmptoolkit.toast"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        compileSdk =
+            libs.versions.android.compileSdk
+                .get()
+                .toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
     }
 
     // ========================================================================

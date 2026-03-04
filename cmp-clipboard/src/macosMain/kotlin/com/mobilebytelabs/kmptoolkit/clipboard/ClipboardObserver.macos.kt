@@ -3,10 +3,10 @@ package com.mobilebytelabs.kmptoolkit.clipboard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import platform.AppKit.NSApplicationDidBecomeActiveNotification
 import platform.AppKit.NSPasteboard
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
-import platform.AppKit.NSApplicationDidBecomeActiveNotification
 
 /**
  * macOS implementation of ClipboardObserver.
@@ -43,7 +43,7 @@ internal class MacosClipboardObserver : ClipboardObserver {
             queue = NSOperationQueue.mainQueue,
             usingBlock = { _ ->
                 checkForClipboardChanges()
-            }
+            },
         )
 
         // Initial read

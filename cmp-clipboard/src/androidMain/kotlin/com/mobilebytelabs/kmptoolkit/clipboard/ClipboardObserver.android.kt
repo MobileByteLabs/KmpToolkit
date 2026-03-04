@@ -19,7 +19,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * 1. The clipboard content changes while the app is in foreground
  * 2. The app returns to foreground from background
  */
-internal class AndroidClipboardObserver : ClipboardObserver, DefaultLifecycleObserver {
+internal class AndroidClipboardObserver :
+    ClipboardObserver,
+    DefaultLifecycleObserver {
     private val _clipboardContent = MutableStateFlow<String?>(null)
     override val clipboardContent: StateFlow<String?> = _clipboardContent.asStateFlow()
 

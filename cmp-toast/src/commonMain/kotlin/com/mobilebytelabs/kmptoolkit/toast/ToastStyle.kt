@@ -36,5 +36,5 @@ enum class ToastStyle {
      * Info style (blue).
      * Use for informational messages like "New update available".
      */
-    INFO
+    INFO,
 }

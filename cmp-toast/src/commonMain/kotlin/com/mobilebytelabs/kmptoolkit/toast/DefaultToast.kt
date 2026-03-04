@@ -49,9 +49,16 @@ fun DefaultToast(data: ToastData) {
 
     val backgroundColor = when (data.style) {
         ToastStyle.DEFAULT -> MaterialTheme.colorScheme.inverseSurface
-        ToastStyle.SUCCESS -> Color(0xFF2E7D32) // Green 800
-        ToastStyle.ERROR -> Color(0xFFC62828) // Red 800
-        ToastStyle.WARNING -> Color(0xFFEF6C00) // Orange 800
+
+        ToastStyle.SUCCESS -> Color(0xFF2E7D32)
+
+        // Green 800
+        ToastStyle.ERROR -> Color(0xFFC62828)
+
+        // Red 800
+        ToastStyle.WARNING -> Color(0xFFEF6C00)
+
+        // Orange 800
         ToastStyle.INFO -> Color(0xFF1565C0) // Blue 800
     }
 
@@ -79,22 +86,22 @@ fun DefaultToast(data: ToastData) {
                     },
                     onHorizontalDrag = { _, dragAmount ->
                         offsetX += dragAmount
-                    }
+                    },
                 )
             }
             .animateContentSize(),
         shape = RoundedCornerShape(8.dp),
         color = backgroundColor,
-        shadowElevation = 6.dp
+        shadowElevation = 6.dp,
     ) {
         Row(
             modifier = Modifier.padding(
                 start = 16.dp,
                 end = if (data.actionLabel != null) 8.dp else 16.dp,
                 top = 14.dp,
-                bottom = 14.dp
+                bottom = 14.dp,
             ),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = data.message,
@@ -102,7 +109,7 @@ fun DefaultToast(data: ToastData) {
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
+                modifier = Modifier.weight(1f, fill = false),
             )
 
             data.actionLabel?.let { label ->
@@ -113,13 +120,13 @@ fun DefaultToast(data: ToastData) {
                         contentColor = when (data.style) {
                             ToastStyle.DEFAULT -> MaterialTheme.colorScheme.inversePrimary
                             else -> Color.White.copy(alpha = 0.95f)
-                        }
-                    )
+                        },
+                    ),
                 ) {
                     Text(
                         text = label,
                         fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
             }

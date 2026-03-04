@@ -43,7 +43,7 @@ import kotlinx.coroutines.delay
 fun ToastHost(
     hostState: ToastHostState,
     modifier: Modifier = Modifier,
-    toast: @Composable (ToastData) -> Unit = { DefaultToast(it) }
+    toast: @Composable (ToastData) -> Unit = { DefaultToast(it) },
 ) {
     val currentToast by hostState.currentToast.collectAsState()
 
@@ -79,14 +79,14 @@ fun ToastHost(
                 .fillMaxSize()
                 .padding(
                     top = if (data.position == ToastPosition.TOP) 48.dp else 0.dp,
-                    bottom = if (data.position == ToastPosition.BOTTOM) 48.dp else 0.dp
+                    bottom = if (data.position == ToastPosition.BOTTOM) 48.dp else 0.dp,
                 ),
-            contentAlignment = alignment
+            contentAlignment = alignment,
         ) {
             AnimatedVisibility(
                 visible = true,
                 enter = enterTransition,
-                exit = exitTransition
+                exit = exitTransition,
             ) {
                 toast(data)
             }

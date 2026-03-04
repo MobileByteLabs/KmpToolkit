@@ -16,10 +16,10 @@ dependencyResolutionManagement {
 rootProject.name = "template-library"
 
 // Library modules
-include(":cmp-library")           // Template/reference module
-include(":cmp-clipboard")         // Clipboard utilities
-include(":cmp-toast")             // Toast/Snackbar UI
-include(":cmp-in-app-update")     // In-App Update checking
+include(":cmp-library") // Template/reference module
+include(":cmp-clipboard") // Clipboard utilities
+include(":cmp-toast") // Toast/Snackbar UI
+include(":cmp-in-app-update") // In-App Update checking
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")

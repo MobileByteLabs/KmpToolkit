@@ -1,4 +1,4 @@
-package io.github.mobilebytelabs.kmptoolkit.sample.appupdate
+package io.github.mobilebytelabs.kmptoolkit.sample.base
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -6,7 +6,7 @@ import androidx.compose.ui.window.application
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "In-App Update Sample"
+        title = "sample-example",
     ) {
         App()
     }

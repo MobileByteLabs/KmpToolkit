@@ -68,7 +68,7 @@ class ToastHostState {
         actionLabel: String? = null,
         duration: ToastDuration = ToastDuration.SHORT,
         position: ToastPosition = ToastPosition.BOTTOM,
-        style: ToastStyle = ToastStyle.DEFAULT
+        style: ToastStyle = ToastStyle.DEFAULT,
     ): ToastResult = mutex.withLock {
         try {
             suspendCancellableCoroutine { continuation ->
@@ -95,7 +95,7 @@ class ToastHostState {
                             currentContinuation?.resume(ToastResult.DISMISSED)
                             currentContinuation = null
                         }
-                    }
+                    },
                 )
 
                 _currentToast.value = toast

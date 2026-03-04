@@ -29,5 +29,5 @@ enum class ToastDuration(val millis: Long) {
      * Indefinite duration - toast remains until explicitly dismissed.
      * Use sparingly, typically with an action button to dismiss.
      */
-    INDEFINITE(-1L)
+    INDEFINITE(-1L),
 }

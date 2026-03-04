@@ -41,7 +41,7 @@ internal class TvosClipboardObserver : ClipboardObserver {
             queue = NSOperationQueue.mainQueue,
             usingBlock = { _ ->
                 checkForClipboardChanges()
-            }
+            },
         )
 
         // Initial read

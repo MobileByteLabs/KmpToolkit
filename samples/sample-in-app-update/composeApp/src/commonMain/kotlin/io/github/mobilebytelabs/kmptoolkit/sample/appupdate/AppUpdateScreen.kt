@@ -66,12 +66,12 @@ fun AppUpdateScreen(toastState: ToastHostState) {
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "In-App Update Demo",
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -79,7 +79,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
         Text(
             text = "Check for updates using GitHub Releases",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -88,14 +88,14 @@ fun AppUpdateScreen(toastState: ToastHostState) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Configuration",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -105,7 +105,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                     onValueChange = { owner = it },
                     label = { Text("GitHub Owner") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -115,7 +115,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                     onValueChange = { repo = it },
                     label = { Text("Repository") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -123,7 +123,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                 Text(
                     text = "Current App Version: $currentVersion",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -132,7 +132,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
 
         // Check Button
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(
                 onClick = {
@@ -161,30 +161,33 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                                             UpdateType.NONE -> ToastStyle.SUCCESS
                                             UpdateType.FLEXIBLE -> ToastStyle.INFO
                                             UpdateType.IMMEDIATE -> ToastStyle.WARNING
-                                        }
+                                        },
                                     )
                                 }
+
                                 is UpdateResult.Error -> {
                                     lastError = result.message
                                     toastState.showToast(
                                         message = "Error: ${result.message}",
                                         duration = ToastDuration.LONG,
-                                        style = ToastStyle.ERROR
+                                        style = ToastStyle.ERROR,
                                     )
                                 }
+
                                 is UpdateResult.NotSupported -> {
                                     lastError = result.reason
                                     toastState.showToast(
                                         message = "Not supported: ${result.reason}",
                                         duration = ToastDuration.MEDIUM,
-                                        style = ToastStyle.WARNING
+                                        style = ToastStyle.WARNING,
                                     )
                                 }
+
                                 is UpdateResult.Cancelled -> {
                                     toastState.showToast(
                                         message = "Update check cancelled",
                                         duration = ToastDuration.SHORT,
-                                        style = ToastStyle.DEFAULT
+                                        style = ToastStyle.DEFAULT,
                                     )
                                 }
                             }
@@ -193,19 +196,19 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                             toastState.showToast(
                                 message = "Exception: ${e.message}",
                                 duration = ToastDuration.LONG,
-                                style = ToastStyle.ERROR
+                                style = ToastStyle.ERROR,
                             )
                         }
 
                         isChecking = false
                     }
                 },
-                enabled = !isChecking && owner.isNotBlank() && repo.isNotBlank()
+                enabled = !isChecking && owner.isNotBlank() && repo.isNotBlank(),
             ) {
                 if (isChecking) {
                     CircularProgressIndicator(
                         modifier = Modifier.height(20.dp).width(20.dp),
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -216,7 +219,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                 onClick = {
                     updateInfo = null
                     lastError = null
-                }
+                },
             ) {
                 Text("Clear")
             }
@@ -233,8 +236,8 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                         UpdateType.NONE -> MaterialTheme.colorScheme.primaryContainer
                         UpdateType.FLEXIBLE -> MaterialTheme.colorScheme.secondaryContainer
                         UpdateType.IMMEDIATE -> MaterialTheme.colorScheme.errorContainer
-                    }
-                )
+                    },
+                ),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -243,20 +246,20 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                             UpdateType.FLEXIBLE -> "Optional Update Available"
                             UpdateType.IMMEDIATE -> "Critical Update Required"
                         },
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
                         text = "Current: ${info.currentVersion}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
 
                     info.latestVersion?.let { latest ->
                         Text(
                             text = "Latest: $latest",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                     }
 
@@ -264,11 +267,11 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Release Notes:",
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
                         )
                         Text(
                             text = notes.take(500) + if (notes.length > 500) "..." else "",
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
 
@@ -277,7 +280,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
                         Text(
                             text = "Download: $url",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -289,20 +292,20 @@ fun AppUpdateScreen(toastState: ToastHostState) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Error",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = error,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 }
             }
@@ -314,20 +317,20 @@ fun AppUpdateScreen(toastState: ToastHostState) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer
-            )
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            ),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Platform",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = getPlatform().name,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
         }
@@ -339,7 +342,7 @@ fun AppUpdateScreen(toastState: ToastHostState) {
             text = "Try changing the version to an older one (e.g., 0.50.0) to see update detection!",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
 }

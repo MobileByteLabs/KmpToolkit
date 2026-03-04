@@ -5,8 +5,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
-import platform.WatchKit.WKApplicationDidBecomeActiveNotification
 import platform.UIKit.UIPasteboard
+import platform.WatchKit.WKApplicationDidBecomeActiveNotification
 
 /**
  * watchOS implementation of ClipboardObserver.
@@ -41,7 +41,7 @@ internal class WatchosClipboardObserver : ClipboardObserver {
             queue = NSOperationQueue.mainQueue,
             usingBlock = { _ ->
                 checkForClipboardChanges()
-            }
+            },
         )
 
         // Initial read

@@ -54,7 +54,7 @@ fun ClipboardToastHost(
     position: ToastPosition = ToastPosition.BOTTOM,
     style: ToastStyle = ToastStyle.DEFAULT,
     maxLength: Int = 50,
-    showOnlyOnChange: Boolean = true
+    showOnlyOnChange: Boolean = true,
 ) {
     val scope = rememberCoroutineScope()
     var lastNotifiedContent by remember { mutableStateOf<String?>(null) }
@@ -85,7 +85,7 @@ fun ClipboardToastHost(
                         message = messageFormatter(displayText),
                         duration = duration,
                         position = position,
-                        style = style
+                        style = style,
                     )
                 }
             }
@@ -94,7 +94,7 @@ fun ClipboardToastHost(
 
     ToastHost(
         hostState = hostState,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -109,7 +109,7 @@ fun ClipboardToastHost(
 suspend fun ToastHostState.showCopiedToast(
     content: String,
     duration: ToastDuration = ToastDuration.SHORT,
-    maxLength: Int = 50
+    maxLength: Int = 50,
 ): ToastResult {
     val displayText = if (content.length > maxLength) {
         content.take(maxLength) + "..."
@@ -120,6 +120,6 @@ suspend fun ToastHostState.showCopiedToast(
     return showToast(
         message = "Copied: $displayText",
         duration = duration,
-        style = ToastStyle.DEFAULT
+        style = ToastStyle.DEFAULT,
     )
 }

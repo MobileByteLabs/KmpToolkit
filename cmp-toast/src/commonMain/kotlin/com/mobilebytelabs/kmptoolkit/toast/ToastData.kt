@@ -19,7 +19,7 @@ data class ToastData internal constructor(
     val style: ToastStyle,
     internal val id: Long,
     private val onAction: () -> Unit,
-    private val onDismiss: () -> Unit
+    private val onDismiss: () -> Unit,
 ) {
     /**
      * Called when the action button is clicked.
@@ -52,5 +52,5 @@ enum class ToastResult {
     /**
      * The action button was clicked.
      */
-    ACTION_PERFORMED
+    ACTION_PERFORMED,
 }

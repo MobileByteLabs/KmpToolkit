@@ -43,7 +43,7 @@ internal class IosClipboardObserver : ClipboardObserver {
             queue = NSOperationQueue.mainQueue,
             usingBlock = { _ ->
                 checkForClipboardChanges()
-            }
+            },
         )
 
         // Initial read

@@ -20,7 +20,7 @@ fun App() {
     MaterialTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+            color = MaterialTheme.colorScheme.background,
         ) {
             var selectedTab by remember { mutableStateOf(0) }
             val tabs = listOf("Manual", "Observer")
@@ -28,13 +28,13 @@ fun App() {
             Column(modifier = Modifier.fillMaxSize()) {
                 TabRow(
                     selectedTabIndex = selectedTab,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
-                            text = { Text(title) }
+                            text = { Text(title) },
                         )
                     }
                 }
