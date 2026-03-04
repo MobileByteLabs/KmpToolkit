@@ -8,10 +8,13 @@ plugins {
 }
 
 // ============================================================================
-// LIBRARY CONFIGURATION
+// TEMPLATE LIBRARY CONFIGURATION
+// ============================================================================
+// This module serves as a template/reference for creating new KMP libraries.
+// Copy this module structure when adding new library modules.
 // ============================================================================
 group = "io.github.mobilebytelabs"
-version = "0.5.0"
+version = "1.0.0-template"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
@@ -116,33 +119,36 @@ kotlin {
     // ========================================================================
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines.core)
+            // Add your common dependencies here
+            // implementation(libs.kotlinx.coroutines.core)
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-            implementation(libs.kotlinx.coroutines.test)
         }
 
-        androidMain.dependencies {
-            implementation(libs.play.app.update)
-            implementation(libs.play.app.update.ktx)
-        }
+        // Platform-specific dependencies example:
+        // androidMain.dependencies {
+        //     implementation(libs.some.android.library)
+        // }
     }
 }
 
 // ============================================================================
 // MAVEN CENTRAL PUBLISHING CONFIGURATION
 // ============================================================================
+// NOTE: This is a template module. Update coordinates and pom info when
+// copying this module to create a new library.
+// ============================================================================
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-toolkit", version.toString())
+    coordinates(group.toString(), "kmp-template", version.toString())
 
     pom {
-        name = "KMP Toolkit"
-        description = "Cross-platform utilities for Kotlin Multiplatform - Clipboard, App Update, and more"
+        name = "KMP Template Library"
+        description = "Template module for creating new KMP libraries - demonstrates expect/actual pattern and multiplatform setup"
         inceptionYear = "2025"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

@@ -116,11 +116,17 @@ kotlin {
     // ========================================================================
     sourceSets {
         commonMain.dependencies {
-            // No dependencies needed for clipboard
+            // Coroutines for Flow-based clipboard observation
+            implementation(libs.kotlinx.coroutines.core)
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+
+        androidMain.dependencies {
+            // Lifecycle for ProcessLifecycleOwner (app foreground detection)
+            implementation(libs.androidx.lifecycle.process)
         }
     }
 }

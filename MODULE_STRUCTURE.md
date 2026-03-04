@@ -10,55 +10,80 @@ KMP Toolkit uses a **modular architecture** where each feature is a standalone l
 
 ```
 kmp-toolkit/
-├── cmp-clipboard/          # Standalone clipboard utilities
-│   ├── build.gradle.kts    # io.github.mobilebytelabs:kmp-clipboard
+├── cmp-clipboard/              # Clipboard utilities
+│   ├── build.gradle.kts        # io.github.mobilebytelabs:kmp-clipboard
 │   └── src/
-│       ├── commonMain/     # expect declarations
-│       ├── commonTest/     # Common tests
-│       ├── androidMain/    # Android actual (ClipboardManager)
-│       ├── iosMain/        # iOS actual (UIPasteboard)
-│       ├── macosMain/      # macOS actual (NSPasteboard)
-│       ├── tvosMain/       # tvOS actual (no-op)
-│       ├── watchosMain/    # watchOS actual (no-op)
-│       ├── jvmMain/        # JVM actual (AWT Toolkit)
-│       ├── jsMain/         # JS actual (navigator.clipboard)
-│       ├── wasmJsMain/     # Wasm JS actual (no-op)
-│       ├── wasmWasiMain/   # Wasm WASI actual (no-op)
-│       ├── linuxMain/      # Linux actual (xclip/xsel)
-│       └── mingwMain/      # Windows actual (Win32 API)
+│       ├── commonMain/         # ClipboardObserver interface
+│       ├── androidMain/        # Android (ClipboardManager + ProcessLifecycleOwner)
+│       ├── iosMain/            # iOS (UIPasteboard)
+│       ├── macosMain/          # macOS (NSPasteboard)
+│       ├── jvmMain/            # JVM (AWT Toolkit + FlavorListener)
+│       ├── jsMain/             # JS (navigator.clipboard)
+│       ├── linuxMain/          # Linux (xclip/xsel)
+│       └── mingwMain/          # Windows (Win32 API)
 │
-├── cmp-library/            # App Update utilities
-│   ├── build.gradle.kts    # io.github.mobilebytelabs:kmp-toolkit
+├── cmp-toast/                  # Toast/Snackbar for Compose Multiplatform
+│   ├── build.gradle.kts        # io.github.mobilebytelabs:kmp-toast
 │   └── src/
-│       └── ...             # App update implementation
+│       └── commonMain/         # Pure Compose implementation
 │
-├── sample-app/             # Demo application
-│   ├── build.gradle.kts    # Depends on both modules
+├── cmp-in-app-update/          # In-App Update checking
+│   ├── build.gradle.kts        # io.github.mobilebytelabs:kmp-in-app-update
 │   └── src/
+│       ├── commonMain/         # AppUpdate, AppUpdateConfig, resolvers
+│       ├── androidMain/        # Google Play In-App Updates
+│       ├── iosMain/            # iTunes Lookup API
+│       ├── macosMain/          # Mac App Store
+│       ├── jvmMain/            # Custom version check
+│       └── ...                 # Platform implementations
 │
-└── settings.gradle.kts     # Module includes
+├── cmp-library/                # Template module for new libraries
+│   ├── build.gradle.kts        # io.github.mobilebytelabs:kmp-template
+│   ├── TEMPLATE_README.md      # Instructions for using as template
+│   └── src/
+│       ├── commonMain/         # Greeting.kt (sample)
+│       └── {platform}Main/     # Platform.*.kt (samples)
+│
+├── samples/
+│   ├── sample-clipboard/       # Clipboard + Toast demo
+│   └── sample-in-app-update/   # In-App Update demo
+│
+└── settings.gradle.kts         # Module includes
 ```
 
 ## Maven Coordinates
 
-| Module | Group | Artifact | Current Version |
-|--------|-------|----------|:---------------:|
-| cmp-clipboard | `io.github.mobilebytelabs` | `kmp-clipboard` | `0.1.0` |
-| cmp-library | `io.github.mobilebytelabs` | `kmp-toolkit` | `0.5.0` |
+| Module | Group | Artifact | Version | Description |
+|--------|-------|----------|:-------:|-------------|
+| cmp-clipboard | `io.github.mobilebytelabs` | `kmp-clipboard` | `0.1.0` | Clipboard utilities |
+| cmp-toast | `io.github.mobilebytelabs` | `kmp-toast` | `0.1.0` | Toast/Snackbar UI |
+| cmp-in-app-update | `io.github.mobilebytelabs` | `kmp-in-app-update` | `0.5.0` | App update checking |
+| cmp-library | `io.github.mobilebytelabs` | `kmp-template` | `1.0.0-template` | Template module |
 
 ## Adding a New Feature Module
 
-Follow this pattern to add new feature modules:
+### Quick Start
 
-### 1. Create Directory Structure
+1. **Copy the template module:**
+   ```bash
+   cp -r cmp-library cmp-your-feature
+   ```
 
-```bash
-mkdir -p cmp-{feature}/src/{commonMain,commonTest,androidMain,iosMain,macosMain,tvosMain,watchosMain,jvmMain,jsMain,wasmJsMain,wasmWasiMain,linuxMain,mingwMain}/kotlin/com/mobilebytelabs/kmptoolkit/{feature}
-```
+2. **Follow the instructions in `cmp-library/TEMPLATE_README.md`**
 
-### 2. Create build.gradle.kts
+3. **Add to settings.gradle.kts:**
+   ```kotlin
+   include(":cmp-your-feature")
+   ```
 
-Copy from `cmp-clipboard/build.gradle.kts` and update:
+4. **Create a sample app:**
+   ```bash
+   cp -r samples/sample-clipboard samples/sample-your-feature
+   ```
+
+### Detailed Steps
+
+#### 1. Update build.gradle.kts
 
 ```kotlin
 // Key changes for new module:
@@ -67,125 +92,108 @@ version = "0.1.0"  // Start at 0.1.0
 
 // Update namespace
 androidLibrary {
-    namespace = "io.github.mobilebytelabs.kmptoolkit.{feature}"
+    namespace = "io.github.mobilebytelabs.kmptoolkit.yourfeature"
 }
 
 // Update Maven coordinates
 mavenPublishing {
-    coordinates(group.toString(), "kmp-{feature}", version.toString())
+    coordinates(group.toString(), "kmp-your-feature", version.toString())
 
     pom {
-        name = "KMP {Feature}"
-        description = "Cross-platform {feature} utilities for Kotlin Multiplatform"
+        name = "KMP Your Feature"
+        description = "Cross-platform your-feature utilities for Kotlin Multiplatform"
+    }
+}
+
+// Add dependencies as needed
+sourceSets {
+    commonMain.dependencies {
+        implementation(libs.kotlinx.coroutines.core)
     }
 }
 ```
 
-### 3. Update settings.gradle.kts
-
-```kotlin
-include(":cmp-{feature}")
-```
-
-### 4. Implement expect/actual Pattern
+#### 2. Implement expect/actual Pattern
 
 **commonMain** - Declare expected functions:
 ```kotlin
-// Clipboard.kt
-package com.mobilebytelabs.kmptoolkit.{feature}
+package com.mobilebytelabs.kmptoolkit.yourfeature
 
-expect fun someFunction(): Result
+expect object YourFeature {
+    fun doSomething(): Result
+}
 ```
 
 **Platform source sets** - Provide actual implementations:
 ```kotlin
-// Clipboard.android.kt
-package com.mobilebytelabs.kmptoolkit.{feature}
-
-actual fun someFunction(): Result {
-    // Android-specific implementation
+// YourFeature.android.kt
+actual object YourFeature {
+    actual fun doSomething(): Result {
+        // Android-specific implementation
+    }
 }
 ```
 
-### 5. Add Tests
+#### 3. Add Tests
 
 **commonTest** - Platform-agnostic tests:
 ```kotlin
-class FeatureTest {
+class YourFeatureTest {
     @Test
     fun function_doesNotThrow() {
-        val result = someFunction()
+        val result = YourFeature.doSomething()
         assertNotNull(result)
     }
 }
 ```
 
-### 6. Update sample-app
-
-```kotlin
-// sample-app/build.gradle.kts
-commonMain.dependencies {
-    implementation(project(":cmp-{feature}"))
-}
-```
-
-### 7. Android Manifest (if needed)
-
-For features requiring auto-initialization:
-
-```xml
-<!-- cmp-{feature}/src/androidMain/AndroidManifest.xml -->
-<manifest>
-    <application>
-        <provider
-            android:name="com.mobilebytelabs.kmptoolkit.{feature}.{Feature}InitProvider"
-            android:authorities="${applicationId}.kmptoolkit.{feature}.init"
-            android:exported="false"
-            android:initOrder="100" />
-    </application>
-</manifest>
-```
-
 ## Platform Support Matrix
 
-All modules support the same platform targets:
-
-| Platform | Targets |
-|----------|---------|
-| Android | android |
-| iOS | iosX64, iosArm64, iosSimulatorArm64 |
-| macOS | macosX64, macosArm64 |
-| tvOS | tvosX64, tvosArm64, tvosSimulatorArm64 |
-| watchOS | watchosX64, watchosArm32, watchosArm64, watchosSimulatorArm64, watchosDeviceArm64 |
-| JVM | jvm |
-| JavaScript | js (browser, nodejs) |
-| WebAssembly | wasmJs (browser, nodejs), wasmWasi (nodejs) |
-| Linux | linuxX64, linuxArm64 |
-| Windows | mingwX64 |
+| Platform | Targets | Notes |
+|----------|---------|-------|
+| Android | android | Uses androidLibrary plugin |
+| iOS | iosX64, iosArm64, iosSimulatorArm64 | |
+| macOS | macosX64, macosArm64 | |
+| tvOS | tvosX64, tvosArm64, tvosSimulatorArm64 | Limited support |
+| watchOS | watchosX64, watchosArm32, watchosArm64, watchosSimulatorArm64, watchosDeviceArm64 | Limited support |
+| JVM | jvm | |
+| JavaScript | js (browser, nodejs) | |
+| WebAssembly | wasmJs (browser, nodejs), wasmWasi (nodejs) | |
+| Linux | linuxX64, linuxArm64 | |
+| Windows | mingwX64 | |
 
 ## Publishing
 
 ### Local Testing
 
 ```bash
-./gradlew :cmp-{feature}:publishToMavenLocal
+./gradlew :cmp-your-feature:publishToMavenLocal
 ```
 
-### Maven Central
+### Maven Central (via GitHub Actions)
+
+The publish workflow automatically discovers all `cmp-*` modules with the `mavenPublishing` plugin:
+
+1. Create a GitHub Release
+2. Workflow auto-discovers and publishes all modules in parallel
+
+### Manual Publishing
 
 ```bash
-./gradlew :cmp-{feature}:publishAllPublicationsToMavenCentralRepository
+./gradlew :cmp-your-feature:publishAllPublicationsToMavenCentralRepository
 ```
 
-## Planned Modules
+## Module Types
 
-| Module | Artifact | Features | Status |
-|--------|----------|----------|:------:|
-| cmp-clipboard | kmp-clipboard | Clipboard utilities | ✅ Released |
-| cmp-appupdate | kmp-appupdate | App version checking | 🔜 Planned |
-| cmp-platform | kmp-platform | Platform detection | 🔜 Planned |
-| cmp-datetime | kmp-datetime | Date/time utilities | 🔜 Planned |
-| cmp-crypto | kmp-crypto | Hashing, encoding | 🔜 Planned |
+### Pure Kotlin Modules
+- `cmp-clipboard` - Uses expect/actual for platform APIs
+- `cmp-in-app-update` - Complex multi-platform with resolvers
+
+### Compose Multiplatform Modules
+- `cmp-toast` - Pure Compose, no platform-specific code needed
+
+### Template Modules
+- `cmp-library` - Reference for creating new modules
 
 ## Design Principles
 
@@ -194,3 +202,4 @@ All modules support the same platform targets:
 3. **Consistent API** - Same function signatures across all modules
 4. **Platform Graceful Degradation** - No-op implementations where features aren't supported
 5. **Independent Versioning** - Each module has its own version lifecycle
+6. **Automatic Publishing** - New modules auto-discovered by CI/CD

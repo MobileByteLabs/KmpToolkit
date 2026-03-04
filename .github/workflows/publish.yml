@@ -1,5 +1,6 @@
 # Publish to Maven Central
-# Triggered when a new release is created
+# Automatically discovers and publishes all cmp-* library modules
+# Triggered when a new release is created or manually
 
 name: Publish
 
@@ -8,30 +9,73 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to publish (e.g., 0.2.0)'
-        required: true
+      module:
+        description: 'Specific module to publish (leave empty for all cmp-* modules)'
+        required: false
         type: string
 
-env:
-  MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-  MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-  SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
-  SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-
 jobs:
+  # Discover publishable modules
+  discover:
+    name: Discover Modules
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+      modules_list: ${{ steps.discover.outputs.modules_list }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Discover Publishable Modules
+        id: discover
+        run: |
+          # Find all cmp-* directories with mavenPublishing plugin
+          MATRIX_JSON="["
+          MODULES_LIST=""
+          FIRST=true
+
+          for dir in cmp-*/; do
+            if [ -d "$dir" ] && grep -q "mavenPublishing" "${dir}build.gradle.kts" 2>/dev/null; then
+              MODULE_NAME="${dir%/}"
+
+              # If specific module requested, only include that one
+              if [ -n "${{ inputs.module }}" ] && [ "$MODULE_NAME" != "${{ inputs.module }}" ]; then
+                continue
+              fi
+
+              if [ "$FIRST" = true ]; then
+                FIRST=false
+              else
+                MATRIX_JSON="$MATRIX_JSON,"
+                MODULES_LIST="$MODULES_LIST,"
+              fi
+              MATRIX_JSON="$MATRIX_JSON\"$MODULE_NAME\""
+              MODULES_LIST="$MODULES_LIST$MODULE_NAME"
+            fi
+          done
+
+          MATRIX_JSON="$MATRIX_JSON]"
+
+          echo "matrix={\"module\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+          echo "modules_list=$MODULES_LIST" >> $GITHUB_OUTPUT
+          echo "Discovered modules: $MODULES_LIST"
+
   # Run tests first
   test:
     name: Run Tests
+    needs: discover
     uses: ./.github/workflows/gradle.yml
 
-  # Publish to Maven Central
+  # Publish each module to Maven Central (parallel execution)
   publish:
-    name: Publish to Maven Central
-    needs: test
+    name: Publish ${{ matrix.module }}
+    needs: [discover, test]
     runs-on: macos-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
 
     steps:
       - name: Checkout
@@ -54,11 +98,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Get Module Info
+        id: info
+        run: |
+          VERSION=$(grep -m1 'version = ' ${{ matrix.module }}/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+          # Extract artifact ID from coordinates(group, "artifact-id", version) call
+          ARTIFACT=$(grep 'coordinates(' ${{ matrix.module }}/build.gradle.kts | sed 's/.*coordinates([^,]*, "\([^"]*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "artifact=$ARTIFACT" >> $GITHUB_OUTPUT
+          echo "Publishing ${{ matrix.module }} (artifact: $ARTIFACT, version: $VERSION)"
+
       - name: Decode GPG Key
         run: |
           echo "${{ secrets.GPG_KEY_CONTENTS }}" | base64 -d > /tmp/signing-key.asc
 
-      - name: Publish to Maven Central
+      - name: Publish ${{ matrix.module }} to Maven Central
         env:
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
@@ -66,23 +120,87 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
         run: |
           export ORG_GRADLE_PROJECT_signingInMemoryKey=$(cat /tmp/signing-key.asc)
-          ./gradlew :cmp-library:publishAllPublicationsToMavenCentralRepository \
+          ./gradlew :${{ matrix.module }}:publishAllPublicationsToMavenCentralRepository \
             --no-daemon \
             --no-configuration-cache
           rm /tmp/signing-key.asc
 
-      - name: Create Summary
+      - name: Module Summary
         if: success()
         run: |
-          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ ${{ matrix.module }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Published successfully to Maven Central!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** io.github.mobilebytelabs:${{ steps.info.outputs.artifact }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Installation:" >> $GITHUB_STEP_SUMMARY
-          echo '```kotlin' >> $GITHUB_STEP_SUMMARY
-          echo 'implementation("io.github.mobilebytelabs:kmp-toolkit:${{ github.event.release.tag_name || inputs.version }}")' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure
         if: failure()
-        run: echo "Failed to publish to Maven Central. Please check the logs."
+        run: |
+          echo "### ❌ ${{ matrix.module }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Failed to publish. Check logs for details." >> $GITHUB_STEP_SUMMARY
+
+  # Create final summary after all publishes complete
+  summary:
+    name: Release Summary
+    needs: [discover, publish]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Release Summary
+        run: |
+          echo "# 🚀 Maven Central Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release:** ${{ github.event.release.tag_name || 'Manual Trigger' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Published Libraries" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Module | Artifact ID | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          for dir in cmp-*/; do
+            if [ -d "$dir" ] && grep -q "mavenPublishing" "${dir}build.gradle.kts" 2>/dev/null; then
+              MODULE="${dir%/}"
+
+              # If specific module requested, only show that one
+              if [ -n "${{ inputs.module }}" ] && [ "$MODULE" != "${{ inputs.module }}" ]; then
+                continue
+              fi
+
+              VERSION=$(grep -m1 'version = ' "${dir}build.gradle.kts" | sed 's/.*"\(.*\)".*/\1/')
+              ARTIFACT=$(grep 'coordinates(' "${dir}build.gradle.kts" | sed 's/.*coordinates([^,]*, "\([^"]*\)".*/\1/')
+              echo "| $MODULE | $ARTIFACT | $VERSION |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Installation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```kotlin' >> $GITHUB_STEP_SUMMARY
+          echo '// build.gradle.kts' >> $GITHUB_STEP_SUMMARY
+          echo 'dependencies {' >> $GITHUB_STEP_SUMMARY
+
+          for dir in cmp-*/; do
+            if [ -d "$dir" ] && grep -q "mavenPublishing" "${dir}build.gradle.kts" 2>/dev/null; then
+              MODULE="${dir%/}"
+
+              # If specific module requested, only show that one
+              if [ -n "${{ inputs.module }}" ] && [ "$MODULE" != "${{ inputs.module }}" ]; then
+                continue
+              fi
+
+              VERSION=$(grep -m1 'version = ' "${dir}build.gradle.kts" | sed 's/.*"\(.*\)".*/\1/')
+              ARTIFACT=$(grep 'coordinates(' "${dir}build.gradle.kts" | sed 's/.*coordinates([^,]*, "\([^"]*\)".*/\1/')
+              echo "    implementation(\"io.github.mobilebytelabs:$ARTIFACT:$VERSION\")" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          echo '}' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Published via [GitHub Actions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*" >> $GITHUB_STEP_SUMMARY

@@ -44,6 +44,8 @@ kotlin {
 
             // KMP Clipboard library
             implementation(project(":cmp-clipboard"))
+            // KMP Toast library
+            implementation(project(":cmp-toast"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

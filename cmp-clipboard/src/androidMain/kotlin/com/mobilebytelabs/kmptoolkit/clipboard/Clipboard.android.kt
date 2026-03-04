@@ -38,7 +38,8 @@ import android.os.Build
  * This is set before any user code runs.
  */
 @SuppressLint("StaticFieldLeak")
-private var appContext: Context? = null
+internal var appContext: Context? = null
+    private set
 
 /**
  * Internal function to set the application context.
