@@ -10,7 +10,7 @@ vanniktechMavenPublish = "0.36.0"
 
 # Code Quality
 detekt = "1.23.8"
-spotless = "7.0.3"
+spotless = "8.3.0"
 ktlint = "1.8.0"
 
 # Testing
