@@ -2,7 +2,9 @@ package com.mobilebytesensei.usertickets.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.mobilebytesensei.usertickets.model.TicketCategory
 import com.mobilebytesensei.usertickets.model.TicketType
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun CreateTicketDialog(
     ticketType: TicketType,
@@ -67,7 +69,6 @@ internal fun CreateTicketDialog(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = "Create Ticket",
@@ -75,8 +76,12 @@ internal fun CreateTicketDialog(
                 fontWeight = FontWeight.Bold,
             )
 
+            Spacer(Modifier.height(12.dp))
+
+            // Type
             Text("Type", style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(Modifier.height(4.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TicketType.entries.forEach { type ->
                     FilterChip(
                         selected = selectedType == type,
@@ -86,13 +91,17 @@ internal fun CreateTicketDialog(
                 }
             }
 
+            Spacer(Modifier.height(12.dp))
+
+            // Category
             if (selectedType != TicketType.CONTACT_SUPPORT || availableCategories.size > 1) {
                 Text("Category", style = MaterialTheme.typography.labelLarge)
-                Row(
+                Spacer(Modifier.height(4.dp))
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    availableCategories.take(4).forEach { cat ->
+                    availableCategories.forEach { cat ->
                         FilterChip(
                             selected = selectedCategory == cat,
                             onClick = { selectedCategory = cat },
@@ -105,24 +114,10 @@ internal fun CreateTicketDialog(
                         )
                     }
                 }
-                if (availableCategories.size > 4) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        availableCategories.drop(4).forEach { cat ->
-                            FilterChip(
-                                selected = selectedCategory == cat,
-                                onClick = { selectedCategory = cat },
-                                label = {
-                                    Text(
-                                        "${cat.emoji} ${cat.label}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                    )
-                                },
-                            )
-                        }
-                    }
-                }
+                Spacer(Modifier.height(8.dp))
             }
 
+            // Title
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it; titleError = false },
@@ -137,6 +132,9 @@ internal fun CreateTicketDialog(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            Spacer(Modifier.height(4.dp))
+
+            // Description
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it; descriptionError = false },
@@ -147,21 +145,20 @@ internal fun CreateTicketDialog(
                 } else {
                     null
                 },
-                minLines = 4,
-                maxLines = 6,
+                minLines = 3,
+                maxLines = 5,
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            Spacer(Modifier.height(4.dp))
+
+            // Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it; emailError = false },
                 label = {
                     Text(
-                        if (selectedType.isPrivate) {
-                            "Email (required)"
-                        } else {
-                            "Email (optional)"
-                        },
+                        if (selectedType.isPrivate) "Email (required)" else "Email (optional)",
                     )
                 },
                 isError = emailError,
@@ -174,6 +171,9 @@ internal fun CreateTicketDialog(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            Spacer(Modifier.height(12.dp))
+
+            // Submit
             Button(
                 onClick = {
                     titleError = title.isBlank()
@@ -205,5 +205,4 @@ internal fun CreateTicketDialog(
             }
         }
     }
-
 }
