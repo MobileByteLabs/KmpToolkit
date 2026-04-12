@@ -28,7 +28,7 @@
 #     "key_email": "..."
 #   },
 #   "github": {
-#     "repo": "mobilebytesensei/KmpToolkit",
+#     "repo": "MobileByteLabs/KmpToolkit",
 #     "org": "mobilebytesensei",
 #     "fork": "therajanmaurya/KmpToolkit"
 #   }
@@ -106,7 +106,7 @@ load_credentials() {
         echo '      "passphrase": "...", "key_email": "..."'
         echo '    },'
         echo '    "github": {'
-        echo '      "repo": "mobilebytesensei/KmpToolkit",'
+        echo '      "repo": "MobileByteLabs/KmpToolkit",'
         echo '      "org": "mobilebytesensei",'
         echo '      "fork": "therajanmaurya/KmpToolkit"'
         echo '    }'
@@ -398,7 +398,8 @@ cmd_release() {
     git add -A
     git commit -m "chore: release v$new_version" --no-verify || true
     git tag -a "v$new_version" -m "Release v$new_version"
-    git push upstream main --tags --no-verify
+    local branch=$(git branch --show-current)
+    git push upstream "$branch" --tags --no-verify
     log_success "Tagged v$new_version and pushed"
 
     # GitHub release
@@ -409,8 +410,8 @@ cmd_release() {
             local info=$(get_module_info "$module")
             notes+="- \`$info\`\n"
         done
-        gh release create "v$new_version" -R "${GITHUB_REPO:-mobilebytesensei/KmpToolkit}" \
-            --target main --title "v$new_version" --notes "$(echo -e "$notes")" 2>/dev/null || \
+        gh release create "v$new_version" -R "${GITHUB_REPO:-MobileByteLabs/KmpToolkit}" \
+            --target "$branch" --title "v$new_version" --notes "$(echo -e "$notes")" 2>/dev/null || \
             log_warn "GitHub release creation failed (create manually)"
     fi
 
@@ -459,7 +460,7 @@ show_help() {
     echo '      "passphrase": "...", "key_email": "..."'
     echo '    },'
     echo '    "github": {'
-    echo '      "repo": "mobilebytesensei/KmpToolkit",'
+    echo '      "repo": "MobileByteLabs/KmpToolkit",'
     echo '      "org": "mobilebytesensei",'
     echo '      "fork": "therajanmaurya/KmpToolkit"'
     echo '    }'
