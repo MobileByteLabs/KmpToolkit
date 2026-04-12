@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -21,9 +22,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,45 +34,56 @@ import androidx.compose.ui.unit.dp
 import com.mobilebytesensei.usertickets.model.TicketType
 import com.mobilebytesensei.usertickets.model.UserTicket
 
+private const val DEFAULT_TICKET_EMOJI = "\uD83D\uDCDD"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun TicketDetailDialog(
+internal fun TicketDetailScreen(
+    onBackClick: () -> Unit,
     ticket: UserTicket,
-    onDismiss: () -> Unit,
     onUpvote: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val isPublic = !ticket.isPrivate
+    val typeEnum = TicketType.entries.find { it.value == ticket.ticketType }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        ticket.title,
+                        maxLines = 1,
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Navigate back",
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(padding)
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val typeEnum = TicketType.entries.find { it.value == ticket.ticketType }
-                Text(
-                    text = "${typeEnum?.emoji ?: "\uD83D\uDCDD"} ${ticket.title}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Close",
-                    )
-                }
-            }
+            // Title with emoji
+            Text(
+                text = "${typeEnum?.emoji ?: DEFAULT_TICKET_EMOJI} ${ticket.title}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
 
+            // Status, category, upvote row
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -98,16 +111,18 @@ internal fun TicketDetailDialog(
 
             HorizontalDivider()
 
+            // Full description
             Text(
                 text = ticket.description,
                 style = MaterialTheme.typography.bodyLarge,
                 color = colorScheme.onSurface,
             )
 
+            // Admin response section
             if (ticket.adminResponse != null) {
                 HorizontalDivider()
                 Text(
-                    text = "Admin Response",
+                    text = UserTicketsStrings.DETAIL_ADMIN_RESPONSE,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = colorScheme.primary,
@@ -116,6 +131,7 @@ internal fun TicketDetailDialog(
                     colors = CardDefaults.cardColors(
                         containerColor = colorScheme.primaryContainer,
                     ),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
                         text = ticket.adminResponse,
@@ -132,10 +148,11 @@ internal fun TicketDetailDialog(
                 }
             }
 
+            // Resolution section
             if (ticket.resolution != null) {
                 HorizontalDivider()
                 Text(
-                    text = "Resolution",
+                    text = UserTicketsStrings.DETAIL_RESOLUTION,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = colorScheme.primary,
@@ -148,5 +165,4 @@ internal fun TicketDetailDialog(
             }
         }
     }
-
 }

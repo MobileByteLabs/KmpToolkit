@@ -28,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Tab
@@ -36,7 +38,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -49,32 +53,39 @@ import com.mobilebytesensei.usertickets.model.TicketType
 import com.mobilebytesensei.usertickets.model.UserTicket
 import org.koin.compose.viewmodel.koinViewModel
 
+private const val DEFAULT_TICKET_EMOJI = "\uD83D\uDCDD"
+internal const val GENERAL_CATEGORY = "general"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserTicketsScreen(
     onBackClick: () -> Unit,
+    onNavigateToCreateTicket: (TicketType) -> Unit,
+    onNavigateToTicketDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
-    initialTab: TicketsTab = TicketsTab.REQUESTED,
-    initialTicketType: TicketType? = null,
     viewModel: UserTicketsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    if (initialTicketType != null && !state.showSubmitForm) {
-        viewModel.showSubmitForm(initialTicketType)
-        viewModel.selectTab(
-            if (initialTicketType == TicketType.CONTACT_SUPPORT) {
-                TicketsTab.MY_TICKETS
-            } else {
-                TicketsTab.REQUESTED
-            },
-        )
+    LaunchedEffect(state.successMessage) {
+        state.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.dismissSuccess()
+        }
+    }
+
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.dismissError()
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tickets") },
+                title = { Text(UserTicketsStrings.SCREEN_TITLE) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -84,7 +95,7 @@ fun UserTicketsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.showSubmitForm() }) {
+                    IconButton(onClick = { onNavigateToCreateTicket(TicketType.FEATURE_REQUEST) }) {
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Create ticket",
@@ -93,6 +104,7 @@ fun UserTicketsScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -116,64 +128,24 @@ fun UserTicketsScreen(
                 when (state.selectedTab) {
                     TicketsTab.REQUESTED -> TicketList(
                         tickets = state.publicTickets,
-                        emptyMessage = "No feature requests or bug reports yet.\nBe the first to submit one!",
+                        emptyMessage = UserTicketsStrings.EMPTY_REQUESTED,
                         showUpvote = true,
-                        onTicketClick = viewModel::selectTicket,
+                        onTicketClick = { ticket -> onNavigateToTicketDetail(ticket.id) },
                         onUpvote = viewModel::upvoteTicket,
                     )
 
                     TicketsTab.IMPLEMENTED -> TicketList(
                         tickets = state.resolvedTickets,
-                        emptyMessage = "No implemented features yet.\nStay tuned!",
+                        emptyMessage = UserTicketsStrings.EMPTY_IMPLEMENTED,
                         showUpvote = false,
-                        onTicketClick = viewModel::selectTicket,
-                        onUpvote = {},
-                    )
-
-                    TicketsTab.MY_TICKETS -> TicketList(
-                        tickets = state.myTickets,
-                        emptyMessage = "No support tickets.\nNeed help? Tap + to create one.",
-                        showUpvote = false,
-                        onTicketClick = viewModel::selectTicket,
+                        onTicketClick = { ticket -> onNavigateToTicketDetail(ticket.id) },
                         onUpvote = {},
                     )
                 }
             }
         }
-
-        if (state.showSubmitForm) {
-            CreateTicketDialog(
-                ticketType = state.submitFormType,
-                isSubmitting = state.isSubmitting,
-                onDismiss = viewModel::dismissSubmitForm,
-                onSubmit = viewModel::submitTicket,
-            )
-        }
-
-        state.selectedTicket?.let { ticket ->
-            TicketDetailDialog(
-                ticket = ticket,
-                onDismiss = viewModel::dismissTicketDetail,
-                onUpvote = { viewModel.upvoteTicket(ticket.id) },
-            )
-        }
-
-        state.error?.let {
-            Snackbar(
-                modifier = Modifier.padding(16.dp),
-                action = {
-                    TextButton(onClick = viewModel::dismissError) {
-                        Text("OK")
-                    }
-                },
-            ) { Text("Failed to submit ticket") }
-        }
     }
 }
-
-private const val DEFAULT_TICKET_EMOJI = "\uD83D\uDCDD"
-internal const val GENERAL_CATEGORY = "general"
-
 
 @Composable
 private fun TicketList(
@@ -282,7 +254,7 @@ private fun TicketCard(
                         onClick = {},
                         label = {
                             Text(
-                                "Responded",
+                                UserTicketsStrings.CHIP_RESPONDED,
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         },

@@ -15,19 +15,15 @@ data class UserTicketsState(
     val selectedTab: TicketsTab = TicketsTab.REQUESTED,
     val publicTickets: List<UserTicket> = emptyList(),
     val resolvedTickets: List<UserTicket> = emptyList(),
-    val myTickets: List<UserTicket> = emptyList(),
     val isLoading: Boolean = true,
-    val showSubmitForm: Boolean = false,
-    val submitFormType: TicketType = TicketType.FEATURE_REQUEST,
     val isSubmitting: Boolean = false,
-    val selectedTicket: UserTicket? = null,
     val error: String? = null,
+    val successMessage: String? = null,
 )
 
 enum class TicketsTab(val label: String) {
-    REQUESTED("Requested"),
-    IMPLEMENTED("Implemented"),
-    MY_TICKETS("Support"),
+    REQUESTED(UserTicketsStrings.TAB_REQUESTED),
+    IMPLEMENTED(UserTicketsStrings.TAB_IMPLEMENTED),
 }
 
 class UserTicketsViewModel(
@@ -45,24 +41,12 @@ class UserTicketsViewModel(
         _state.update { it.copy(selectedTab = tab) }
     }
 
-    fun showSubmitForm(type: TicketType = TicketType.FEATURE_REQUEST) {
-        _state.update { it.copy(showSubmitForm = true, submitFormType = type) }
-    }
-
-    fun dismissSubmitForm() {
-        _state.update { it.copy(showSubmitForm = false) }
-    }
-
-    fun selectTicket(ticket: UserTicket) {
-        _state.update { it.copy(selectedTicket = ticket) }
-    }
-
-    fun dismissTicketDetail() {
-        _state.update { it.copy(selectedTicket = null) }
-    }
-
     fun dismissError() {
         _state.update { it.copy(error = null) }
+    }
+
+    fun dismissSuccess() {
+        _state.update { it.copy(successMessage = null) }
     }
 
     fun submitTicket(
@@ -82,13 +66,22 @@ class UserTicketsViewModel(
                 email = email,
             )
             if (result != null) {
-                _state.update { it.copy(isSubmitting = false, showSubmitForm = false) }
+                _state.update {
+                    it.copy(
+                        isSubmitting = false,
+                        successMessage = if (type == TicketType.CONTACT_SUPPORT) {
+                            UserTicketsStrings.SUPPORT_SUCCESS
+                        } else {
+                            null
+                        },
+                    )
+                }
                 loadAll()
             } else {
                 _state.update {
                     it.copy(
                         isSubmitting = false,
-                        error = ERROR_KEY_SUBMIT_FAILED,
+                        error = UserTicketsStrings.ERROR_SUBMIT_FAILED,
                     )
                 }
             }
@@ -108,24 +101,50 @@ class UserTicketsViewModel(
         }
     }
 
+    fun getTicketById(ticketId: String): UserTicket? {
+        val state = _state.value
+        return state.publicTickets.find { it.id == ticketId }
+            ?: state.resolvedTickets.find { it.id == ticketId }
+    }
+
     private fun loadAll() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             val public = repository.getPublicTickets()
             val resolved = repository.getResolvedTickets()
-            val myTickets = repository.getMyTickets()
             _state.update {
                 it.copy(
                     publicTickets = public,
                     resolvedTickets = resolved,
-                    myTickets = myTickets,
                     isLoading = false,
                 )
             }
         }
     }
+}
 
-    internal companion object {
-        const val ERROR_KEY_SUBMIT_FAILED = "error_submit_failed"
-    }
+internal object UserTicketsStrings {
+    const val SCREEN_TITLE = "Tickets"
+    const val TAB_REQUESTED = "Requested"
+    const val TAB_IMPLEMENTED = "Implemented"
+    const val EMPTY_REQUESTED = "No feature requests or bug reports yet.\nBe the first to submit one!"
+    const val EMPTY_IMPLEMENTED = "No implemented features yet.\nStay tuned!"
+    const val CHIP_RESPONDED = "Responded"
+    const val CREATE_TITLE = "Create Ticket"
+    const val CREATE_TYPE = "Type"
+    const val CREATE_CATEGORY = "Category"
+    const val CREATE_FIELD_TITLE = "Title"
+    const val CREATE_FIELD_DESCRIPTION = "Description"
+    const val CREATE_FIELD_EMAIL_REQUIRED = "Email (required)"
+    const val CREATE_FIELD_EMAIL_OPTIONAL = "Email (optional)"
+    const val CREATE_ERROR_TITLE = "Title is required"
+    const val CREATE_ERROR_DESCRIPTION = "Description is required"
+    const val CREATE_ERROR_EMAIL = "Email is required for support tickets"
+    const val CREATE_SUBMIT = "Submit Ticket"
+    const val SUPPORT_PRIVACY = "This ticket is private and won't be visible in the app. We'll get back to you via email."
+    const val SUPPORT_SUCCESS = "Ticket submitted! We'll get back to you via email."
+    const val DETAIL_ADMIN_RESPONSE = "Admin Response"
+    const val DETAIL_RESOLUTION = "Resolution"
+    const val ERROR_SUBMIT_FAILED = "Failed to submit ticket"
+    const val OK = "OK"
 }

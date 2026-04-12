@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,14 +14,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,17 +39,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mobilebytesensei.usertickets.model.TicketCategory
 import com.mobilebytesensei.usertickets.model.TicketType
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-internal fun CreateTicketDialog(
+internal fun CreateTicketScreen(
+    onBackClick: () -> Unit,
     ticketType: TicketType,
-    isSubmitting: Boolean,
-    onDismiss: () -> Unit,
-    onSubmit: (TicketType, String, String, String, String?) -> Unit,
+    viewModel: UserTicketsViewModel = org.koin.compose.viewmodel.koinViewModel(),
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     var selectedType by remember { mutableStateOf(ticketType) }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -52,6 +64,7 @@ internal fun CreateTicketDialog(
     var titleError by remember { mutableStateOf(false) }
     var descriptionError by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf(false) }
+    var submitted by remember { mutableStateOf(false) }
 
     val availableCategories =
         TicketCategory.entries.filter { it.applicableTo.contains(selectedType) }
@@ -62,24 +75,41 @@ internal fun CreateTicketDialog(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    // Navigate back on successful submit
+    LaunchedEffect(state.isSubmitting) {
+        if (submitted && !state.isSubmitting && state.error == null) {
+            onBackClick()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(UserTicketsStrings.CREATE_TITLE) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Navigate back",
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(padding)
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp),
         ) {
-            Text(
-                text = "Create Ticket",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Spacer(Modifier.height(12.dp))
-
             // Type
-            Text("Type", style = MaterialTheme.typography.labelLarge)
+            Text(
+                UserTicketsStrings.CREATE_TYPE,
+                style = MaterialTheme.typography.labelLarge,
+            )
             Spacer(Modifier.height(4.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TicketType.entries.forEach { type ->
@@ -91,11 +121,42 @@ internal fun CreateTicketDialog(
                 }
             }
 
+            // Privacy notice for Contact Support
+            if (selectedType == TicketType.CONTACT_SUPPORT) {
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = UserTicketsStrings.SUPPORT_PRIVACY,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+            }
+
             Spacer(Modifier.height(12.dp))
 
             // Category
             if (selectedType != TicketType.CONTACT_SUPPORT || availableCategories.size > 1) {
-                Text("Category", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    UserTicketsStrings.CREATE_CATEGORY,
+                    style = MaterialTheme.typography.labelLarge,
+                )
                 Spacer(Modifier.height(4.dp))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -121,10 +182,10 @@ internal fun CreateTicketDialog(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it; titleError = false },
-                label = { Text("Title") },
+                label = { Text(UserTicketsStrings.CREATE_FIELD_TITLE) },
                 isError = titleError,
                 supportingText = if (titleError) {
-                    { Text("Title is required") }
+                    { Text(UserTicketsStrings.CREATE_ERROR_TITLE) }
                 } else {
                     null
                 },
@@ -138,10 +199,10 @@ internal fun CreateTicketDialog(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it; descriptionError = false },
-                label = { Text("Description") },
+                label = { Text(UserTicketsStrings.CREATE_FIELD_DESCRIPTION) },
                 isError = descriptionError,
                 supportingText = if (descriptionError) {
-                    { Text("Description is required") }
+                    { Text(UserTicketsStrings.CREATE_ERROR_DESCRIPTION) }
                 } else {
                     null
                 },
@@ -158,12 +219,16 @@ internal fun CreateTicketDialog(
                 onValueChange = { email = it; emailError = false },
                 label = {
                     Text(
-                        if (selectedType.isPrivate) "Email (required)" else "Email (optional)",
+                        if (selectedType.isPrivate) {
+                            UserTicketsStrings.CREATE_FIELD_EMAIL_REQUIRED
+                        } else {
+                            UserTicketsStrings.CREATE_FIELD_EMAIL_OPTIONAL
+                        },
                     )
                 },
                 isError = emailError,
                 supportingText = if (emailError) {
-                    { Text("Email is required for support tickets") }
+                    { Text(UserTicketsStrings.CREATE_ERROR_EMAIL) }
                 } else {
                     null
                 },
@@ -180,7 +245,8 @@ internal fun CreateTicketDialog(
                     descriptionError = description.isBlank()
                     emailError = selectedType.isPrivate && email.isBlank()
                     if (!titleError && !descriptionError && !emailError) {
-                        onSubmit(
+                        submitted = true
+                        viewModel.submitTicket(
                             selectedType,
                             title.trim(),
                             description.trim(),
@@ -189,18 +255,21 @@ internal fun CreateTicketDialog(
                         )
                     }
                 },
-                enabled = !isSubmitting,
+                enabled = !state.isSubmitting,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                if (isSubmitting) {
+                if (state.isSubmitting) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Submit Ticket", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        UserTicketsStrings.CREATE_SUBMIT,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
         }
