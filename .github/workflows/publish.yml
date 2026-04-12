@@ -1,10 +1,12 @@
 # Publish to Maven Central
 # Automatically discovers and publishes all cmp-* library modules
-# Triggered when a new release is created or manually
+# Triggered by: tag push (v*), GitHub release, or manual dispatch
 
 name: Publish
 
 on:
+  push:
+    tags: ['v*']
   release:
     types: [published]
   workflow_dispatch:
