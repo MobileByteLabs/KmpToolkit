@@ -20,7 +20,8 @@ include(":cmp-library") // Template/reference module
 include(":cmp-clipboard") // Clipboard utilities
 include(":cmp-toast") // Toast/Snackbar UI
 include(":cmp-in-app-update") // In-App Update checking
-include(":cmp-feature-request") // Feature Request/Bug Report/Support
+include(":cmp-user-tickets") // Feature Request/Bug Report/Contact Support
+include(":cmp-remote-config") // Remote Config
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")
