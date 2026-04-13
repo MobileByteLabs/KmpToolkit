@@ -16,7 +16,7 @@ ktlint = "1.8.0"
 # Testing
 junit = "4.13.2"
 coroutines = "1.10.2"
-supabase = "3.2.6"
+supabase = "3.5.0"
 ktor = "3.2.1"
 koin = "4.1.1"
 kermit = "2.0.5"
