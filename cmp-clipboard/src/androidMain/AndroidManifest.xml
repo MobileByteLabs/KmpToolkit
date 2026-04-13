@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Clipboard Monitor Service Permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application>
         <!--
         ClipboardInitProvider automatically initializes the clipboard module
@@ -15,6 +22,21 @@
             android:authorities="${applicationId}.kmptoolkit.clipboard.init"
             android:exported="false"
             android:initOrder="100" />
+
+        <!-- Clipboard Monitor Foreground Service -->
+        <service
+            android:name="com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false" />
+
+        <!-- Boot Receiver for auto-starting clipboard monitor -->
+        <receiver
+            android:name="com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

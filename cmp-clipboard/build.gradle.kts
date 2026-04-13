@@ -118,15 +118,20 @@ kotlin {
         commonMain.dependencies {
             // Coroutines for Flow-based clipboard observation
             implementation(libs.kotlinx.coroutines.core)
+            // DateTime for clipboard change timestamps
+            implementation(libs.kotlinx.datetime)
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
 
         androidMain.dependencies {
             // Lifecycle for ProcessLifecycleOwner (app foreground detection)
             implementation(libs.androidx.lifecycle.process)
+            // Core KTX for NotificationCompat, ContextCompat
+            implementation("androidx.core:core-ktx:1.16.0")
         }
     }
 }

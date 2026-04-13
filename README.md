@@ -25,8 +25,8 @@ KMP Toolkit is available as modular libraries. Import only what you need:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            // Clipboard utilities
-            implementation("io.github.mobilebytelabs:kmp-clipboard:0.1.0")
+            // Clipboard utilities + monitoring
+            implementation("io.github.mobilebytelabs:kmp-clipboard:0.2.0")
 
             // Toast/Snackbar for Compose Multiplatform
             implementation("io.github.mobilebytelabs:kmp-toast:0.1.0")
@@ -44,7 +44,7 @@ kotlin {
 
 | Module | Artifact | Description | Version |
 |--------|----------|-------------|:-------:|
-| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/clear/observe | `0.1.0` |
+| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/observe/monitor/URL detect | `0.2.0` |
 | **kmp-toast** | `io.github.mobilebytelabs:kmp-toast` | Toast/Snackbar for Compose Multiplatform | `0.1.0` |
 | **kmp-in-app-update** | `io.github.mobilebytelabs:kmp-in-app-update` | In-app update checking | `0.5.0` |
 
@@ -89,6 +89,43 @@ observer.clipboardContent.collect { content ->
 
 observer.stopObserving()
 ```
+
+### Clipboard Monitor (NEW in v0.2.0)
+
+Continuous clipboard monitoring with social media URL detection, floating FAB overlay, and background worker trigger. InSaver-style clipboard service for all platforms.
+
+```kotlin
+import com.mobilebytelabs.kmptoolkit.clipboard.*
+import com.mobilebytelabs.kmptoolkit.clipboard.monitor.*
+
+val monitor = createClipboardMonitor()
+
+// Add social media URL matchers (Instagram, TikTok, YouTube, etc.)
+SocialMediaUrlMatchers.all().forEach { monitor.addUrlMatcher(it) }
+
+// Optional: filter to only process URLs
+monitor.addFilter(ClipboardFilter.urlOnly())
+
+// Start monitoring (Android: starts ForegroundService + notification)
+monitor.start(ClipboardMonitorConfig.SocialMediaDownloader)
+
+// React to detected URLs
+monitor.urlDetections.collect { detection ->
+    println("${detection.matcher.name}: ${detection.url}")
+    // "Instagram: https://www.instagram.com/reel/ABC123/"
+}
+```
+
+**Features:**
+- 10 built-in URL matchers (Instagram, TikTok, YouTube, Twitter, Facebook, Snapchat, Pinterest, Reddit, LinkedIn, Threads)
+- Android: ForegroundService with persistent notification + floating FAB overlay
+- Content filters (URL-only, min/max length, pattern exclusion)
+- Async clipboard API (`getFromClipboardAsync()` — works on JS/Wasm)
+- Background worker trigger (Android WorkManager integration)
+- Custom URL matchers for any service
+- Permission management (overlay, notifications)
+
+See [Clipboard Monitor Documentation](docs/CLIPBOARD_MONITOR.md) for full API reference.
 
 ### Toast/Snackbar (Compose Multiplatform)
 
@@ -154,18 +191,18 @@ when (val result = AppUpdate.checkForUpdate(config)) {
 
 ## Platform Support
 
-| Platform | Clipboard | Toast | In-App Update |
-|----------|:---------:|:-----:|:-------------:|
-| Android | ✅ | ✅ | ✅ (Play Store) |
-| iOS | ✅ | ✅ | ✅ (App Store) |
-| macOS | ✅ | ✅ | ✅ (App Store) |
-| JVM | ✅ | ✅ | ✅ (Custom) |
-| Linux | ✅ | ❌ | ✅ (Custom) |
-| Windows | ✅ | ❌ | ✅ (Custom) |
-| JavaScript | ✅ | ❌ | ❌ |
-| WebAssembly | ✅ | ❌ | ❌ |
-| tvOS | ⚠️ | ❌ | ⚠️ |
-| watchOS | ⚠️ | ❌ | ⚠️ |
+| Platform | Clipboard | Monitor | Toast | In-App Update |
+|----------|:---------:|:-------:|:-----:|:-------------:|
+| Android | ✅ | ✅ Service+FAB | ✅ | ✅ (Play Store) |
+| iOS | ✅ | ✅ Foreground | ✅ | ✅ (App Store) |
+| macOS | ✅ | ✅ Full | ✅ | ✅ (App Store) |
+| JVM | ✅ | ✅ Full | ✅ | ✅ (Custom) |
+| Linux | ✅ | ✅ Polling | ❌ | ✅ (Custom) |
+| Windows | ✅ | ✅ Polling | ❌ | ✅ (Custom) |
+| JavaScript | ✅ | ✅ Async | ❌ | ❌ |
+| WebAssembly | ✅ | ✅ Async | ❌ | ❌ |
+| tvOS | ⚠️ | ❌ | ❌ | ⚠️ |
+| watchOS | ⚠️ | ❌ | ❌ | ⚠️ |
 
 **Legend:** ✅ Full support | ⚠️ Limited | ❌ Not supported
 
@@ -175,6 +212,7 @@ when (val result = AppUpdate.checkForUpdate(config)) {
 |-------|------|
 | **Features** | [Wiki Home](https://github.com/MobileByteLabs/KmpToolkit/wiki) |
 | Clipboard API | [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
+| Clipboard Monitor | [Clipboard Monitor](docs/CLIPBOARD_MONITOR.md) |
 | Toast API | [Toast](https://github.com/MobileByteLabs/KmpToolkit/wiki/Toast) |
 | In-App Update API | [In-App Update](https://github.com/MobileByteLabs/KmpToolkit/wiki/In-App-Update) |
 | **Development** | |
