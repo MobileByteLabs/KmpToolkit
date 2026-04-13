@@ -16,8 +16,6 @@ version = "2.0.0"
 kotlin {
     applyDefaultHierarchyTemplate()
 
-    jvm()
-
     androidLibrary {
         namespace = "com.mobilebytesensei.usertickets"
         compileSdk =
@@ -59,7 +57,6 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.ui)
             implementation(compose.materialIconsExtended)
-
             // Supabase
             implementation(libs.supabase.postgrest)
             implementation(libs.ktor.client.core)
