@@ -9,8 +9,8 @@ plugins {
     alias(libs.plugins.vanniktech.mavenPublish)
 }
 
-group = "com.mobilebytesensei.kmptoolkit"
-version = "2.0.0"
+group = "io.github.mobilebytelabs"
+version = "2.0.4"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
@@ -102,7 +102,7 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates("io.github.mobilebytesensei", "kmptoolkit-remote-config", version.toString())
+    coordinates(group.toString(), "kmptoolkit-remote-config", version.toString())
 
     pom {
         name = "KmpToolkit - Remote Config"
