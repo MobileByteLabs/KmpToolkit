@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.mobilebytesensei.kmptoolkit"
-version = "2.0.0"
+version = "2.0.1"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {

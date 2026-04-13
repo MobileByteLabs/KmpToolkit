@@ -31,6 +31,7 @@ internal class UserTicketsServiceImpl : UserTicketsService {
                     eq("is_private", false)
                     neq("status", "completed")
                     neq("status", "resolved")
+                    neq("status", "implemented")
                     neq("status", "closed")
                 }
                 order("upvotes", Order.DESCENDING)
@@ -50,6 +51,7 @@ internal class UserTicketsServiceImpl : UserTicketsService {
                     or {
                         eq("status", "completed")
                         eq("status", "resolved")
+                        eq("status", "implemented")
                     }
                 }
                 order("updated_at", Order.DESCENDING)

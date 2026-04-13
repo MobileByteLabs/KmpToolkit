@@ -284,17 +284,31 @@ internal fun StatusChip(status: String, modifier: Modifier = Modifier) {
 
         else -> colorScheme.surfaceContainerHigh
     }
+    val labelColor = when (status) {
+        TicketStatus.COMPLETED.value, TicketStatus.RESOLVED.value ->
+            colorScheme.onPrimaryContainer
+
+        TicketStatus.PLANNED.value, TicketStatus.IN_PROGRESS.value ->
+            colorScheme.onSecondaryContainer
+
+        TicketStatus.IN_REVIEW.value ->
+            colorScheme.onTertiaryContainer
+
+        else -> colorScheme.onSurface
+    }
     SuggestionChip(
         onClick = {},
         label = {
             Text(
                 statusEnum?.label ?: status,
                 style = MaterialTheme.typography.labelSmall,
+                color = labelColor,
             )
         },
         modifier = modifier,
         colors = SuggestionChipDefaults.suggestionChipColors(
             containerColor = containerColor,
+            labelColor = labelColor,
         ),
     )
 }
