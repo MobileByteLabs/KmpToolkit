@@ -38,11 +38,7 @@ private const val DEFAULT_TICKET_EMOJI = "\uD83D\uDCDD"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun TicketDetailScreen(
-    onBackClick: () -> Unit,
-    ticket: UserTicket,
-    onUpvote: () -> Unit,
-) {
+internal fun TicketDetailScreen(onBackClick: () -> Unit, ticket: UserTicket, onUpvote: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     val isPublic = !ticket.isPrivate
     val typeEnum = TicketType.entries.find { it.value == ticket.ticketType }

@@ -60,7 +60,6 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.materialIconsExtended)
 
-
             // Supabase
             implementation(libs.supabase.postgrest)
             implementation(libs.ktor.client.core)
@@ -100,7 +99,8 @@ mavenPublishing {
 
     pom {
         name = "KmpToolkit - User Tickets"
-        description = "Cross-platform user tickets module: feature requests, bug reports, and contact support for KMP apps"
+        description =
+            "Cross-platform user tickets module: feature requests, bug reports, and contact support for KMP apps"
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

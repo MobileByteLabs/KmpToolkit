@@ -1,11 +1,11 @@
 package com.mobilebytesensei.remoteconfig.di
 
-import com.mobilebytesensei.usertickets.config.FeatureRequestConfig
 import com.mobilebytesensei.remoteconfig.RemoteConfigEvaluator
 import com.mobilebytesensei.remoteconfig.local.DeviceIdProvider
 import com.mobilebytesensei.remoteconfig.local.RemoteConfigLocalStore
 import com.mobilebytesensei.remoteconfig.network.RemoteConfigService
 import com.mobilebytesensei.remoteconfig.ui.RemoteConfigViewModel
+import com.mobilebytesensei.usertickets.config.FeatureRequestConfig
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module

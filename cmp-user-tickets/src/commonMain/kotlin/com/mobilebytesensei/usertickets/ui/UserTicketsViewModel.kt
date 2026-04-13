@@ -26,9 +26,7 @@ enum class TicketsTab(val label: String) {
     IMPLEMENTED(UserTicketsStrings.TAB_IMPLEMENTED),
 }
 
-class UserTicketsViewModel(
-    private val repository: UserTicketsRepository,
-) : ViewModel() {
+class UserTicketsViewModel(private val repository: UserTicketsRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(UserTicketsState())
     val state: StateFlow<UserTicketsState> = _state.asStateFlow()
@@ -49,13 +47,7 @@ class UserTicketsViewModel(
         _state.update { it.copy(successMessage = null) }
     }
 
-    fun submitTicket(
-        type: TicketType,
-        title: String,
-        description: String,
-        category: String,
-        email: String?,
-    ) {
+    fun submitTicket(type: TicketType, title: String, description: String, category: String, email: String?) {
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true) }
             val result = repository.submitTicket(
@@ -141,7 +133,9 @@ internal object UserTicketsStrings {
     const val CREATE_ERROR_DESCRIPTION = "Description is required"
     const val CREATE_ERROR_EMAIL = "Email is required for support tickets"
     const val CREATE_SUBMIT = "Submit Ticket"
-    const val SUPPORT_PRIVACY = "This ticket is private and won't be visible in the app. We'll get back to you via email."
+    const val SUPPORT_PRIVACY =
+        "This ticket is private and won't be visible in the app. " +
+            "We'll get back to you via email."
     const val SUPPORT_SUCCESS = "Ticket submitted! We'll get back to you via email."
     const val DETAIL_ADMIN_RESPONSE = "Admin Response"
     const val DETAIL_RESOLUTION = "Resolution"

@@ -5,9 +5,7 @@ import com.mobilebytesensei.usertickets.model.TicketType
 import com.mobilebytesensei.usertickets.model.UserTicket
 import com.mobilebytesensei.usertickets.model.UserTicketInsert
 
-class UserTicketsRepository internal constructor(
-    private val service: UserTicketsService,
-) {
+class UserTicketsRepository internal constructor(private val service: UserTicketsService) {
     suspend fun getPublicTickets(): List<UserTicket> = service.getPublicTickets()
 
     suspend fun getResolvedTickets(): List<UserTicket> = service.getResolvedTickets()

@@ -2,19 +2,15 @@ package com.mobilebytesensei.remoteconfig.local
 
 import com.russhwolf.settings.Settings
 
-class RemoteConfigLocalStore(
-    private val settings: Settings = Settings(),
-) {
-    fun getImpressions(configId: String): Int =
-        settings.getInt("rc_${configId}_impressions", 0)
+class RemoteConfigLocalStore(private val settings: Settings = Settings()) {
+    fun getImpressions(configId: String): Int = settings.getInt("rc_${configId}_impressions", 0)
 
     fun incrementImpressions(configId: String, currentTimeMs: Long) {
         settings.putInt("rc_${configId}_impressions", getImpressions(configId) + 1)
         settings.putLong("rc_${configId}_last_shown", currentTimeMs)
     }
 
-    fun getLastShownMs(configId: String): Long =
-        settings.getLong("rc_${configId}_last_shown", 0L)
+    fun getLastShownMs(configId: String): Long = settings.getLong("rc_${configId}_last_shown", 0L)
 
     fun getHoursSinceLastShown(configId: String, currentTimeMs: Long): Int {
         val lastShown = getLastShownMs(configId)
@@ -22,8 +18,7 @@ class RemoteConfigLocalStore(
         return ((currentTimeMs - lastShown) / (1000 * 60 * 60)).toInt()
     }
 
-    fun isDismissed(configId: String): Boolean =
-        settings.getBoolean("rc_${configId}_dismissed", false)
+    fun isDismissed(configId: String): Boolean = settings.getBoolean("rc_${configId}_dismissed", false)
 
     fun markDismissed(configId: String) {
         settings.putBoolean("rc_${configId}_dismissed", true)

@@ -23,45 +23,41 @@ internal class UserTicketsServiceImpl : UserTicketsService {
     private val client get() = FeatureRequestClient.instance
     private val productType get() = FeatureRequestConfig.productType
 
-    override suspend fun getPublicTickets(): List<UserTicket> {
-        return try {
-            client.postgrest[TABLE]
-                .select {
-                    filter {
-                        eq("product_type", productType)
-                        eq("is_private", false)
-                        neq("status", "completed")
-                        neq("status", "resolved")
-                        neq("status", "closed")
-                    }
-                    order("upvotes", Order.DESCENDING)
+    override suspend fun getPublicTickets(): List<UserTicket> = try {
+        client.postgrest[TABLE]
+            .select {
+                filter {
+                    eq("product_type", productType)
+                    eq("is_private", false)
+                    neq("status", "completed")
+                    neq("status", "resolved")
+                    neq("status", "closed")
                 }
-                .decodeList()
-        } catch (e: Exception) {
-            Logger.e(TAG) { "getPublicTickets failed: ${e.message}" }
-            emptyList()
-        }
+                order("upvotes", Order.DESCENDING)
+            }
+            .decodeList()
+    } catch (e: Exception) {
+        Logger.e(TAG) { "getPublicTickets failed: ${e.message}" }
+        emptyList()
     }
 
-    override suspend fun getResolvedTickets(): List<UserTicket> {
-        return try {
-            client.postgrest[TABLE]
-                .select {
-                    filter {
-                        eq("product_type", productType)
-                        eq("is_private", false)
-                        or {
-                            eq("status", "completed")
-                            eq("status", "resolved")
-                        }
+    override suspend fun getResolvedTickets(): List<UserTicket> = try {
+        client.postgrest[TABLE]
+            .select {
+                filter {
+                    eq("product_type", productType)
+                    eq("is_private", false)
+                    or {
+                        eq("status", "completed")
+                        eq("status", "resolved")
                     }
-                    order("updated_at", Order.DESCENDING)
                 }
-                .decodeList()
-        } catch (e: Exception) {
-            Logger.e(TAG) { "getResolvedTickets failed: ${e.message}" }
-            emptyList()
-        }
+                order("updated_at", Order.DESCENDING)
+            }
+            .decodeList()
+    } catch (e: Exception) {
+        Logger.e(TAG) { "getResolvedTickets failed: ${e.message}" }
+        emptyList()
     }
 
     override suspend fun getMyTickets(): List<UserTicket> {
@@ -83,15 +79,13 @@ internal class UserTicketsServiceImpl : UserTicketsService {
         }
     }
 
-    override suspend fun submitTicket(ticket: UserTicketInsert): UserTicket? {
-        return try {
-            client.postgrest[TABLE]
-                .insert(ticket)
-                .decodeSingle()
-        } catch (e: Exception) {
-            Logger.e(TAG) { "submitTicket failed: ${e.message}" }
-            null
-        }
+    override suspend fun submitTicket(ticket: UserTicketInsert): UserTicket? = try {
+        client.postgrest[TABLE]
+            .insert(ticket)
+            .decodeSingle()
+    } catch (e: Exception) {
+        Logger.e(TAG) { "submitTicket failed: ${e.message}" }
+        null
     }
 
     override suspend fun upvoteTicket(ticketId: String) {

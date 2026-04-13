@@ -15,10 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class RemoteConfigState(
-    val activeConfig: RemoteConfig? = null,
-    val isLoading: Boolean = true,
-)
+data class RemoteConfigState(val activeConfig: RemoteConfig? = null, val isLoading: Boolean = true)
 
 class RemoteConfigViewModel(
     private val service: RemoteConfigService,

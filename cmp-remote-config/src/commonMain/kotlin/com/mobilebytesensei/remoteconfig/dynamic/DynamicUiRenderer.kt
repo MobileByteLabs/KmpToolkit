@@ -33,17 +33,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.mobilebytesensei.remoteconfig.dynamic.model.UiAction
 import com.mobilebytesensei.remoteconfig.dynamic.model.UiButtonStyle
 import com.mobilebytesensei.remoteconfig.dynamic.model.UiNode
 import com.mobilebytesensei.remoteconfig.dynamic.model.UiTextStyle
-import coil3.compose.AsyncImage
 
 @Composable
-fun DynamicUiRenderer(
-    node: UiNode,
-    onAction: (UiAction) -> Unit,
-) {
+fun DynamicUiRenderer(node: UiNode, onAction: (UiAction) -> Unit) {
     when (node) {
         is UiNode.Column -> DynamicColumn(node, onAction)
         is UiNode.Row -> DynamicRow(node, onAction)

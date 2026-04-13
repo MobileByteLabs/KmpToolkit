@@ -49,15 +49,9 @@ sealed class UiNode {
         val color: String? = null,
     ) : UiNode()
 
-    data class Spacer(
-        val height: Int = 0,
-        val width: Int = 0,
-    ) : UiNode()
+    data class Spacer(val height: Int = 0, val width: Int = 0) : UiNode()
 
-    data class Divider(
-        val color: String? = null,
-        val thickness: Int = 1,
-    ) : UiNode()
+    data class Divider(val color: String? = null, val thickness: Int = 1) : UiNode()
 
     data class Card(
         val children: List<UiNode> = emptyList(),
@@ -67,22 +61,12 @@ sealed class UiNode {
         val background: String? = null,
     ) : UiNode()
 
-    data class Badge(
-        val text: String,
-        val color: String? = null,
-        val backgroundColor: String? = null,
-    ) : UiNode()
+    data class Badge(val text: String, val color: String? = null, val backgroundColor: String? = null) : UiNode()
 
-    data class Icon(
-        val emoji: String,
-        val size: Int = 24,
-    ) : UiNode()
+    data class Icon(val emoji: String, val size: Int = 24) : UiNode()
 }
 
-data class UiAction(
-    val type: String,
-    val value: String? = null,
-)
+data class UiAction(val type: String, val value: String? = null)
 
 enum class UiTextStyle(val value: String) {
     HEADLINE("headline"),
@@ -93,8 +77,7 @@ enum class UiTextStyle(val value: String) {
     ;
 
     companion object {
-        fun from(value: String): UiTextStyle =
-            entries.find { it.value == value } ?: BODY
+        fun from(value: String): UiTextStyle = entries.find { it.value == value } ?: BODY
     }
 }
 
@@ -105,7 +88,6 @@ enum class UiButtonStyle(val value: String) {
     ;
 
     companion object {
-        fun from(value: String): UiButtonStyle =
-            entries.find { it.value == value } ?: PRIMARY
+        fun from(value: String): UiButtonStyle = entries.find { it.value == value } ?: PRIMARY
     }
 }

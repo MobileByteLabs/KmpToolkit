@@ -42,8 +42,7 @@ enum class DisplayType(val value: String) {
     ;
 
     companion object {
-        fun from(value: String): DisplayType =
-            entries.find { it.value == value } ?: DIALOG
+        fun from(value: String): DisplayType = entries.find { it.value == value } ?: DIALOG
     }
 }
 
@@ -63,7 +62,6 @@ enum class ActionType(val value: String) {
     ;
 
     companion object {
-        fun from(value: String): ActionType =
-            entries.find { it.value == value } ?: NONE
+        fun from(value: String): ActionType = entries.find { it.value == value } ?: NONE
     }
 }

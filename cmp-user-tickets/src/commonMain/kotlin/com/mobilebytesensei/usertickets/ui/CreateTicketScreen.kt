@@ -181,7 +181,10 @@ internal fun CreateTicketScreen(
             // Title
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it; titleError = false },
+                onValueChange = {
+                    title = it
+                    titleError = false
+                },
                 label = { Text(UserTicketsStrings.CREATE_FIELD_TITLE) },
                 isError = titleError,
                 supportingText = if (titleError) {
@@ -198,7 +201,10 @@ internal fun CreateTicketScreen(
             // Description
             OutlinedTextField(
                 value = description,
-                onValueChange = { description = it; descriptionError = false },
+                onValueChange = {
+                    description = it
+                    descriptionError = false
+                },
                 label = { Text(UserTicketsStrings.CREATE_FIELD_DESCRIPTION) },
                 isError = descriptionError,
                 supportingText = if (descriptionError) {
@@ -216,7 +222,10 @@ internal fun CreateTicketScreen(
             // Email
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it; emailError = false },
+                onValueChange = {
+                    email = it
+                    emailError = false
+                },
                 label = {
                     Text(
                         if (selectedType.isPrivate) {

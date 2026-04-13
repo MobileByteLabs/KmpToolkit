@@ -34,36 +34,32 @@ class RemoteConfigService(
         }
     }
 
-    suspend fun getActiveConfigs(): List<RemoteConfig> {
-        return try {
-            client.postgrest[TABLE]
-                .select {
-                    filter {
-                        eq("product_type", productType)
-                        eq("is_enabled", true)
-                    }
-                    order("priority", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+    suspend fun getActiveConfigs(): List<RemoteConfig> = try {
+        client.postgrest[TABLE]
+            .select {
+                filter {
+                    eq("product_type", productType)
+                    eq("is_enabled", true)
                 }
-                .decodeList<RemoteConfig>()
-        } catch (e: Exception) {
-            Logger.e(TAG) { "Failed to fetch configs: ${e.message}" }
-            emptyList()
-        }
+                order("priority", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+            }
+            .decodeList<RemoteConfig>()
+    } catch (e: Exception) {
+        Logger.e(TAG) { "Failed to fetch configs: ${e.message}" }
+        emptyList()
     }
 
-    suspend fun getDeviceImpressions(deviceId: String): List<DeviceImpression> {
-        return try {
-            client.postgrest.rpc(
-                function = "get_device_impressions",
-                parameters = buildJsonObject {
-                    put("p_device_id", deviceId)
-                    put("p_product_type", productType)
-                },
-            ).decodeList<DeviceImpression>()
-        } catch (e: Exception) {
-            Logger.e(TAG) { "Failed to get impressions: ${e.message}" }
-            emptyList()
-        }
+    suspend fun getDeviceImpressions(deviceId: String): List<DeviceImpression> = try {
+        client.postgrest.rpc(
+            function = "get_device_impressions",
+            parameters = buildJsonObject {
+                put("p_device_id", deviceId)
+                put("p_product_type", productType)
+            },
+        ).decodeList<DeviceImpression>()
+    } catch (e: Exception) {
+        Logger.e(TAG) { "Failed to get impressions: ${e.message}" }
+        emptyList()
     }
 
     suspend fun recordImpression(configId: String, deviceId: String) {

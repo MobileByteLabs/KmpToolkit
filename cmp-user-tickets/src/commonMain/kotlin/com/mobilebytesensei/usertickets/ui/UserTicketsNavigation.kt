@@ -44,9 +44,7 @@ fun NavGraphBuilder.featureWishlistDestination(
     }
 }
 
-fun NavGraphBuilder.createTicketDestination(
-    onBackClick: () -> Unit,
-) {
+fun NavGraphBuilder.createTicketDestination(onBackClick: () -> Unit) {
     composable<CreateTicketRoute> { backStackEntry ->
         val route = backStackEntry.toRoute<CreateTicketRoute>()
         val ticketType = TicketType.entries.find { it.value == route.ticketType }
@@ -58,9 +56,7 @@ fun NavGraphBuilder.createTicketDestination(
     }
 }
 
-fun NavGraphBuilder.ticketDetailDestination(
-    onBackClick: () -> Unit,
-) {
+fun NavGraphBuilder.ticketDetailDestination(onBackClick: () -> Unit) {
     composable<TicketDetailRoute> { backStackEntry ->
         val route = backStackEntry.toRoute<TicketDetailRoute>()
         val viewModel: UserTicketsViewModel = koinViewModel()

@@ -24,11 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.mobilebytesensei.remoteconfig.model.RemoteConfig
 
 @Composable
-internal fun RemoteConfigBanner(
-    config: RemoteConfig,
-    onPrimaryAction: () -> Unit,
-    onDismiss: () -> Unit,
-) {
+internal fun RemoteConfigBanner(config: RemoteConfig, onPrimaryAction: () -> Unit, onDismiss: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()

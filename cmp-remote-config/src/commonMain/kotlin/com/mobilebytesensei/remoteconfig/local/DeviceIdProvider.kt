@@ -4,9 +4,7 @@ import com.russhwolf.settings.Settings
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-class DeviceIdProvider(
-    private val settings: Settings = Settings(),
-) {
+class DeviceIdProvider(private val settings: Settings = Settings()) {
     companion object {
         private const val KEY = "rc_device_id"
     }

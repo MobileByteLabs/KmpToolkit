@@ -19,7 +19,10 @@ private const val TAG = "UiNodeParser"
 
 object UiNodeParser {
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     fun parse(jsonString: String): UiNode? {
         return try {
@@ -36,16 +39,27 @@ object UiNodeParser {
         val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: return null
         return when (type) {
             "column" -> parseColumn(obj)
+
             "row" -> parseRow(obj)
+
             "box" -> parseBox(obj)
+
             "text" -> parseText(obj)
+
             "image" -> parseImage(obj)
+
             "button" -> parseButton(obj)
+
             "spacer" -> parseSpacer(obj)
+
             "divider" -> parseDivider(obj)
+
             "card" -> parseCard(obj)
+
             "badge" -> parseBadge(obj)
+
             "icon" -> parseIcon(obj)
+
             else -> {
                 Logger.w(TAG) { "Unknown node type: $type, skipping" }
                 null
@@ -53,11 +67,9 @@ object UiNodeParser {
         }
     }
 
-    private fun parseChildren(obj: JsonObject): List<UiNode> {
-        return obj["children"]?.jsonArray?.mapNotNull {
-            parseNode(it.jsonObject)
-        } ?: emptyList()
-    }
+    private fun parseChildren(obj: JsonObject): List<UiNode> = obj["children"]?.jsonArray?.mapNotNull {
+        parseNode(it.jsonObject)
+    } ?: emptyList()
 
     private fun parseColumn(obj: JsonObject) = UiNode.Column(
         children = parseChildren(obj),
@@ -145,12 +157,9 @@ object UiNodeParser {
     private fun JsonObject.str(key: String, default: String = ""): String =
         this[key]?.jsonPrimitive?.contentOrNull ?: default
 
-    private fun JsonObject.strOrNull(key: String): String? =
-        this[key]?.jsonPrimitive?.contentOrNull
+    private fun JsonObject.strOrNull(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
 
-    private fun JsonObject.int(key: String, default: Int = 0): Int =
-        this[key]?.jsonPrimitive?.intOrNull ?: default
+    private fun JsonObject.int(key: String, default: Int = 0): Int = this[key]?.jsonPrimitive?.intOrNull ?: default
 
-    private fun JsonObject.intOrNull(key: String): Int? =
-        this[key]?.jsonPrimitive?.intOrNull
+    private fun JsonObject.intOrNull(key: String): Int? = this[key]?.jsonPrimitive?.intOrNull
 }

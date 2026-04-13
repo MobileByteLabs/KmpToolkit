@@ -60,11 +60,7 @@ fun RemoteConfigHost(
 }
 
 @Composable
-private fun DynamicConfigRenderer(
-    config: RemoteConfig,
-    onAction: (UiAction) -> Unit,
-    onDismiss: () -> Unit,
-) {
+private fun DynamicConfigRenderer(config: RemoteConfig, onAction: (UiAction) -> Unit, onDismiss: () -> Unit) {
     val rootNode = UiNodeParser.parse(config.contentJson ?: return) ?: return
 
     when (DisplayType.from(config.displayType)) {
