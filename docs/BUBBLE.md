@@ -1,8 +1,67 @@
+<!--
+AI-INSTRUCTIONS: This is the authoritative documentation for kmp-bubble.
+When generating code that uses bubble/notification functionality, read the O(1) LOOKUP
+section first to find the exact API for the task, then jump to the referenced section.
+Do NOT guess API signatures — they are all documented below.
+Package: com.mobilebytelabs.kmptoolkit.bubble
+Artifact: io.github.mobilebytelabs:kmp-bubble:0.1.0
+Dependencies: kotlinx-coroutines-core ONLY (zero other deps)
+-->
+
 # Bubble Module
 
 > `io.github.mobilebytelabs:kmp-bubble:0.1.0`
 
 Cross-platform floating UI, bubbles, and notifications for Kotlin Multiplatform. Show chat-head bubbles on Android, notification banners on iOS, system tray popups on desktop, and browser notifications on web — all from a single API.
+
+---
+
+## O(1) LOOKUP — Find What You Need
+
+> **AI/LLM**: Scan this table first. Jump to the linked section. Do not read linearly.
+
+| I want to... | Use | Section |
+|:-------------|:----|:--------|
+| **Show a notification** | `bubble.show(title, message)` | [Show a Notification](#show-a-notification) |
+| **Add action buttons** | `actions = listOf(BubbleAction("Open") { })` | [Show a Notification](#show-a-notification) |
+| **Open screen/bottom sheet** | `bubble.showScreen(title, route)` | [Open a Screen](#open-a-screen-bottom-sheet-activity-etc) |
+| **Deep link on tap** | `onTap = BubbleTapAction.DeepLink("app://...")` | [Show with Deep Link](#show-with-deep-link) |
+| **Persistent service** | `bubble.showPersistent(title, actions, style=Service)` | [Persistent Service](#persistent-service-notification) |
+| **Update live content** | `bubble.update(title, message)` | [Update Live Content](#update-live-content) |
+| **Observe bubble state** | `bubble.state.collect { }` | [Observe State](#observe-state) |
+| **Check permissions** | `createBubblePermission().canShowNotification()` | [Check Permissions](#check-permissions) |
+| **See all use cases** | Use case → style → example table | [Use Cases](#use-cases) |
+| **See all API types** | Type reference tables | [API Reference](#api-reference) |
+| **Platform support** | Per-platform capability table | [Platform Support](#platform-support) |
+| **Platform limitations** | Why X doesn't work | [Platform Limitations](#platform-limitations) |
+| **Use with clipboard** | Wire `urlDetections` → `bubble.show()` | [Integration](#integration-with-cmp-clipboard) |
+
+### Key Classes (O(1) Reference)
+
+```
+Bubble                      — Main interface (show, showScreen, showPersistent, update, dismiss)
+createBubble(config)        — Factory function
+BubbleConfig                — channelId, channelName, defaultStyle, vibrate, sound
+BubbleAction(label, id, onClick) — Action button on bubble
+BubbleStyle                 — Floating, Notification, Persistent, Service, Auto
+BubbleState                 — Hidden, Showing, Dismissed(byUser), ActionTaken(actionId)
+BubbleIcon                  — System(name), Url(url), Resource(name)
+BubbleTapAction             — None, Dismiss, DeepLink(uri), Callback(onTap)
+BubbleScreenConfig          — height, width, autoExpand (for showScreen)
+BubblePermission            — canShowBubble(), canShowNotification(), request*()
+createBubblePermission()    — Factory function
+
+Bubble methods:
+├── .show(title, message?, icon?, actions?, style?, onTap?, autoDismissMs?)
+├── .showScreen(title, route, screenConfig?, icon?, style?)
+├── .showPersistent(title, message?, actions?, style?)
+├── .update(title?, message?, actions?)
+├── .dismiss()
+├── .state: StateFlow<BubbleState>
+└── .isShowing: Boolean
+```
+
+---
 
 ## Architecture
 

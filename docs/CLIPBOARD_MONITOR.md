@@ -1,8 +1,330 @@
-# Clipboard Monitor Module
+<!--
+AI-INSTRUCTIONS: This is the authoritative documentation for kmp-clipboard.
+When generating code that uses clipboard functionality, read the O(1) LOOKUP section
+first to find the exact API for the task, then jump to the referenced section for
+code examples. Do NOT guess API signatures — they are all documented below.
+Package: com.mobilebytelabs.kmptoolkit.clipboard
+Artifact: io.github.mobilebytelabs:kmp-clipboard:0.2.0
+-->
+
+# Clipboard Module
 
 > `io.github.mobilebytelabs:kmp-clipboard:0.2.0`
 
-A cross-platform clipboard monitoring service for Kotlin Multiplatform. Continuously monitors clipboard for URL patterns (Instagram, TikTok, YouTube, etc.), triggers background workers, and shows floating overlay FABs. InSaver-style clipboard monitoring across all platforms.
+A cross-platform clipboard library for Kotlin Multiplatform. Copy, paste, observe, monitor with URL detection, clipboard history, async operations — all from a single unified `ClipboardManager` API or individual lower-level APIs.
+
+---
+
+## O(1) LOOKUP — Find What You Need
+
+> **AI/LLM**: Scan this table first. Jump to the linked section. Do not read linearly.
+
+| I want to... | Use | Section |
+|:-------------|:----|:--------|
+| **Copy/paste (simplest)** | `ClipboardManager().copy(text)` / `.paste()` | [Quick Start](#quick-start) |
+| **Observe clipboard changes** | `clipboard.content` (StateFlow) | [Quick Start](#quick-start) |
+| **Keep clipboard history** | `clipboard.history` (StateFlow, configurable max) | [Full Featured](#full-featured-url-detection--history--async) |
+| **Detect social media URLs** | `ClipboardManagerConfig.Full` + `clipboard.urlDetections` | [Full Featured](#full-featured-url-detection--history--async) |
+| **Async copy/read (JS/Wasm)** | `clipboard.copyAsync()` / `.pasteAsync()` | [Full Featured](#full-featured-url-detection--history--async) |
+| **Use in Compose** | `remember { ClipboardManager() }` + `DisposableEffect` | [Compose Usage](#compose-usage) |
+| **Use in ViewModel (MVI)** | `ClipboardViewModel` + `onAction()` pattern | [ViewModel](#viewmodel-mvi--recommended-for-production) |
+| **Choose Compose vs ViewModel** | See comparison table | [When to Use Which](#when-to-use-which-pattern) |
+| **InSaver-style service** | `ClipboardManagerConfig.SocialMediaDownloader` | [Config Presets](#config-presets) |
+| **Use lower-level APIs** | `createClipboardMonitor()`, `createClipboardObserver()` | [Lower-Level APIs](#lower-level-apis) |
+| **Android foreground service** | `showNotification = true` in config | [Android: Foreground Service](#android-foreground-service--floating-fab) |
+| **Android WorkManager** | `createClipboardWorkerTrigger()` | [Android: WorkManager](#android-workmanager-integration) |
+| **Custom URL matchers** | `RegexUrlMatcher(name, patterns)` | [Custom URL Matchers](#custom-url-matchers) |
+| **Filter clipboard content** | `ClipboardFilter.urlOnly()`, `.minLength()`, `.exclude()` | [With Filters](#with-filters) |
+| **Check permissions** | `clipboard.hasNotificationPermission()` | [Permissions](#permissions) |
+| **See all API types** | Type reference tables | [API Reference](#api-reference) |
+| **Platform support matrix** | Per-platform capability table | [Platform Support](#platform-support) |
+| **Why platform X doesn't work** | Per-platform explanation | [Platform Limitations](#platform-limitations--explanations) |
+| **Android manifest** | Auto-merged permissions | [Android Manifest](#android-manifest-auto-merged) |
+| **Migrate from v0.1.0** | Backward-compatible additions list | [Migration](#migration-from-v010) |
+
+### Key Classes (O(1) Reference)
+
+```
+ClipboardManager            — Unified API (recommended entry point)
+ClipboardManagerConfig      — Config: .Default, .Full, .SocialMediaDownloader
+├── observe: Boolean        — enable auto-observation (StateFlow)
+├── historySize: Int        — clipboard history entries (0 = disabled)
+├── detectUrls: Boolean     — enable URL pattern matching
+├── urlMatchers: List       — SocialMediaUrlMatchers.all() for 10 platforms
+├── filters: List           — ClipboardFilter.urlOnly(), .minLength(), etc.
+├── showNotification: Bool  — Android ForegroundService notification
+├── showOverlay: Boolean    — Android floating FAB overlay
+└── triggerWorkerOnUrl: Bool — auto background worker on URL match
+
+ClipboardManager methods:
+├── .copy(text): Boolean              — sync copy
+├── .paste(): String?                 — sync read (null on JS/Wasm)
+├── .copyAsync(text): Boolean         — suspend copy (all platforms)
+├── .pasteAsync(): String?            — suspend read (all platforms)
+├── .content: StateFlow<String?>      — auto-observing current content
+├── .history: StateFlow<List<Entry>>  — clipboard history (newest first)
+├── .urlDetections: SharedFlow<Det>   — URL match events
+├── .changes: SharedFlow<Change>      — all clipboard change events
+├── .monitorState: StateFlow<State>   — Idle/Monitoring/Paused/Error
+├── .start() / .stop()               — lifecycle
+├── .pause() / .resume()             — monitor control
+├── .copyFromHistory(entry)           — re-copy from history
+├── .clearHistory()                   — clear all history
+├── .addUrlMatcher(matcher)           — add URL detector
+└── .addFilter(filter)                — add content filter
+```
+
+---
+
+## ClipboardManager — Unified API (Recommended)
+
+The simplest way to use all clipboard features. One class, one `start()`, everything works.
+
+### Quick Start
+
+```kotlin
+val clipboard = ClipboardManager()
+clipboard.start()
+
+// Sync operations
+clipboard.copy("Hello!")
+val text = clipboard.paste()
+
+// Auto-observing content (StateFlow)
+clipboard.content.collect { println("Clipboard: $it") }
+
+// Clipboard history (newest first)
+clipboard.history.collect { entries -> println("${entries.size} items") }
+
+clipboard.stop()
+```
+
+### Full Featured (URL Detection + History + Async)
+
+```kotlin
+val clipboard = ClipboardManager(ClipboardManagerConfig.Full)
+clipboard.start()
+
+// Everything works through one object:
+clipboard.copy("https://instagram.com/reel/123") // sync copy
+clipboard.copyAsync("text")                       // async copy (JS/Wasm)
+clipboard.paste()                                  // sync read
+clipboard.pasteAsync()                            // async read (JS/Wasm)
+clipboard.content                                  // StateFlow<String?> (auto-observing)
+clipboard.history                                  // StateFlow<List<ClipboardHistoryEntry>>
+clipboard.urlDetections                           // SharedFlow<UrlDetection>
+clipboard.changes                                 // SharedFlow<ClipboardChange>
+clipboard.latestChange                            // StateFlow<ClipboardChange?>
+clipboard.monitorState                            // StateFlow<ClipboardMonitorState>
+
+// History operations
+clipboard.copyFromHistory(entry)                  // re-copy from history
+clipboard.removeFromHistory(entry)                // remove entry
+clipboard.clearHistory()                          // clear all
+
+// URL matchers (added via config or manually)
+clipboard.addUrlMatcher(SocialMediaUrlMatchers.instagram())
+clipboard.addAllSocialMediaMatchers()
+clipboard.addFilter(ClipboardFilter.urlOnly())
+
+clipboard.stop()
+```
+
+### Config Presets
+
+```kotlin
+// Minimal — observe + history
+ClipboardManager(ClipboardManagerConfig.Default)
+
+// Full featured — observe + history + URL detection + async
+ClipboardManager(ClipboardManagerConfig.Full)
+
+// Social media downloader — InSaver-style
+ClipboardManager(ClipboardManagerConfig.SocialMediaDownloader)
+
+// Custom
+ClipboardManager(ClipboardManagerConfig(
+    observe = true,
+    historySize = 50,
+    detectUrls = true,
+    urlMatchers = SocialMediaUrlMatchers.all(),
+    filters = listOf(ClipboardFilter.urlOnly()),
+    showNotification = true,
+    showOverlay = true,
+))
+```
+
+### Compose Usage
+
+```kotlin
+@Composable
+fun MyScreen() {
+    val clipboard = remember { ClipboardManager(ClipboardManagerConfig.Full) }
+
+    DisposableEffect(clipboard) {
+        clipboard.start()
+        onDispose { clipboard.stop() }
+    }
+
+    val content by clipboard.content.collectAsState()
+    val history by clipboard.history.collectAsState()
+
+    Column {
+        Text("Clipboard: ${content ?: "empty"}")
+        Text("History: ${history.size} items")
+
+        Button(onClick = { clipboard.copy("Hello!") }) {
+            Text("Copy")
+        }
+    }
+}
+```
+
+### ViewModel (MVI — Recommended for Production)
+
+```kotlin
+// ── State ─────────────────────────────────────────────
+data class ClipboardUiState(
+    val currentContent: String? = null,
+    val history: List<ClipboardHistoryEntry> = emptyList(),
+    val monitorState: ClipboardMonitorState = ClipboardMonitorState.Idle,
+    val urlDetections: List<String> = emptyList(),
+    val statusMessage: String = "",
+)
+
+// ── Actions ───────────────────────────────────────────
+sealed class ClipboardAction {
+    data class Copy(val text: String) : ClipboardAction()
+    data class CopyAsync(val text: String) : ClipboardAction()
+    data object PasteAsync : ClipboardAction()
+    data class CopyFromHistory(val entry: ClipboardHistoryEntry) : ClipboardAction()
+    data class RemoveFromHistory(val entry: ClipboardHistoryEntry) : ClipboardAction()
+    data object ClearHistory : ClipboardAction()
+    data object Pause : ClipboardAction()
+    data object Resume : ClipboardAction()
+}
+
+// ── ViewModel ─────────────────────────────────────────
+class ClipboardViewModel : ViewModel() {
+
+    private val clipboard = ClipboardManager(ClipboardManagerConfig.Full)
+
+    private val _uiState = MutableStateFlow(ClipboardUiState())
+    val uiState: StateFlow<ClipboardUiState> = _uiState.asStateFlow()
+
+    init {
+        clipboard.start()
+
+        // All flows → single UiState
+        viewModelScope.launch {
+            clipboard.content.collect { content ->
+                _uiState.update { it.copy(currentContent = content) }
+            }
+        }
+        viewModelScope.launch {
+            clipboard.history.collect { entries ->
+                _uiState.update { it.copy(history = entries) }
+            }
+        }
+        viewModelScope.launch {
+            clipboard.monitorState.collect { state ->
+                _uiState.update { it.copy(monitorState = state) }
+            }
+        }
+        viewModelScope.launch {
+            clipboard.urlDetections.collect { detection ->
+                _uiState.update { state ->
+                    val entry = "${detection.matcher.name}: ${detection.url}"
+                    state.copy(urlDetections = (listOf(entry) + state.urlDetections).take(10))
+                }
+            }
+        }
+    }
+
+    fun onAction(action: ClipboardAction) {
+        when (action) {
+            is ClipboardAction.Copy -> {
+                val success = clipboard.copy(action.text)
+                _uiState.update { it.copy(statusMessage = if (success) "Copied!" else "Failed") }
+            }
+            is ClipboardAction.CopyAsync -> viewModelScope.launch {
+                clipboard.copyAsync(action.text)
+                _uiState.update { it.copy(statusMessage = "Async copied!") }
+            }
+            is ClipboardAction.PasteAsync -> viewModelScope.launch {
+                val text = clipboard.pasteAsync()
+                _uiState.update { it.copy(statusMessage = "Read: ${text ?: "empty"}") }
+            }
+            is ClipboardAction.CopyFromHistory -> clipboard.copyFromHistory(action.entry)
+            is ClipboardAction.RemoveFromHistory -> clipboard.removeFromHistory(action.entry)
+            is ClipboardAction.ClearHistory -> clipboard.clearHistory()
+            is ClipboardAction.Pause -> clipboard.pause()
+            is ClipboardAction.Resume -> clipboard.resume()
+        }
+    }
+
+    override fun onCleared() {
+        clipboard.stop()
+    }
+}
+
+// ── Screen ────────────────────────────────────────────
+@Composable
+fun ClipboardScreen(viewModel: ClipboardViewModel = viewModel()) {
+    val state by viewModel.uiState.collectAsState()
+
+    Column {
+        Text("Clipboard: ${state.currentContent ?: "empty"}")
+
+        Button(onClick = { viewModel.onAction(ClipboardAction.Copy("Hello!")) }) {
+            Text("Copy")
+        }
+
+        // History
+        state.history.forEach { entry ->
+            Row {
+                Text(entry.content, Modifier.weight(1f))
+                TextButton(onClick = {
+                    viewModel.onAction(ClipboardAction.CopyFromHistory(entry))
+                }) { Text("Copy") }
+            }
+        }
+
+        // URL detections
+        state.urlDetections.forEach { Text(it) }
+    }
+}
+```
+
+### When to Use Which Pattern
+
+| Pattern | ClipboardManager lives in | Lifecycle | Best for |
+|:--------|:------------------------|:----------|:---------|
+| Compose direct | `remember { }` + `DisposableEffect` | Tied to composable | Simple screens, prototypes |
+| ViewModel | ViewModel field | Survives rotation, `onCleared()` stops | Production apps, shared state |
+
+The `ClipboardManager` itself is framework-agnostic — it exposes `StateFlow`/`SharedFlow`. Whether you collect in Compose directly or pipe through ViewModel `UiState`, the API is the same.
+
+---
+
+## Lower-Level APIs
+
+If you only need specific features, use the individual APIs directly:
+
+| API | Use Case |
+|:----|:---------|
+| `copyToClipboard()` / `getFromClipboard()` | Simple sync copy/paste |
+| `copyToClipboardAsync()` / `getFromClipboardAsync()` | Async (JS/Wasm support) |
+| `createClipboardObserver()` | Auto-detect changes via StateFlow |
+| `createClipboardMonitor()` | Continuous monitoring + URL detection |
+| `createClipboardHistory()` | Keep N clipboard entries |
+| `createClipboardPermission()` | Check/request permissions |
+
+---
+
+## Clipboard Monitor (Lower-Level)
+
+For advanced monitoring with direct control over the service lifecycle:
 
 ## Architecture
 

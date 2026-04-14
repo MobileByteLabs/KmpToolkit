@@ -58,19 +58,28 @@ Each module is independently publishable and can be used standalone.
 
 ### Clipboard
 
-Copy, paste, check, and clear clipboard across all platforms.
+Unified clipboard API — copy, paste, observe, monitor, history, URL detect, all in one.
 
 ```kotlin
-import com.mobilebytelabs.kmptoolkit.clipboard.Clipboard
+import com.mobilebytelabs.kmptoolkit.clipboard.*
 
-// Copy text
-Clipboard.copy("Hello, World!")
+val clipboard = ClipboardManager(ClipboardManagerConfig.Full)
+clipboard.start()
 
-// Paste text
-val text = Clipboard.paste()
+// Sync & async operations
+clipboard.copy("Hello!")
+val text = clipboard.pasteAsync()   // works on JS/Wasm too
 
-// Check if clipboard has text
-val hasText = Clipboard.hasText()
+// Auto-observing content
+clipboard.content.collect { println("Clipboard: $it") }
+
+// Clipboard history (newest first)
+clipboard.history.collect { entries -> println("${entries.size} items") }
+
+// URL detection (Instagram, TikTok, YouTube, etc.)
+clipboard.urlDetections.collect { det -> println("${det.matcher.name}: ${det.url}") }
+
+clipboard.stop()
 
 // Clear clipboard
 Clipboard.clear()

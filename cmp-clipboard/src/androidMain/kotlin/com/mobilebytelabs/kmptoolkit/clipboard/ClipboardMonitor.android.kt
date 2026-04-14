@@ -1,86 +1,79 @@
 package com.mobilebytelabs.kmptoolkit.clipboard
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardBootReceiver
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorConfig
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorService
-import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorServiceState
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorState
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardUrlMatcher
 import com.mobilebytelabs.kmptoolkit.clipboard.overlay.ClipboardOverlay
-import com.mobilebytelabs.kmptoolkit.clipboard.overlay.ClipboardOverlayConfig
-import com.mobilebytelabs.kmptoolkit.clipboard.worker.AndroidClipboardWorkerTrigger
 import com.mobilebytelabs.kmptoolkit.clipboard.worker.createClipboardWorkerTrigger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
  * Android implementation of ClipboardMonitor.
  *
- * Wraps [ClipboardMonitorService] (foreground service) and provides:
- * - Service lifecycle management (start/stop/pause/resume)
- * - Floating FAB overlay via [ClipboardOverlay]
- * - URL detection forwarding to [AndroidClipboardWorkerTrigger]
- * - State mapping from service state to monitor state
+ * Uses a **dual-mode approach**:
+ * 1. **In-process mode** (always): ClipboardManager listener + lifecycle observer
+ *    for reliable clipboard detection within the app.
+ * 2. **Service mode** (optional): ForegroundService with persistent notification
+ *    for background monitoring when `showNotification = true`.
  *
- * ## Architecture
- *
- * ```
- * AndroidClipboardMonitor (API layer)
- *   ├── ClipboardMonitorService (foreground service + clipboard listener)
- *   ├── ClipboardOverlay (floating FAB window)
- *   └── AndroidClipboardWorkerTrigger (background worker bridge)
- * ```
+ * The in-process mode works identically to ClipboardObserver but adds URL matching,
+ * filtering, and change metadata. It works even if the service fails to start.
  */
-internal class AndroidClipboardMonitor : ClipboardMonitor {
+internal class AndroidClipboardMonitor : ClipboardMonitor, DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var overlay: ClipboardOverlay? = null
     private var config: ClipboardMonitorConfig? = null
 
-    override val state: StateFlow<ClipboardMonitorState> =
-        ClipboardMonitorService.serviceState
-            .map { serviceState ->
-                when (serviceState) {
-                    is ClipboardMonitorServiceState.Stopped -> ClipboardMonitorState.Idle
-                    is ClipboardMonitorServiceState.Running -> ClipboardMonitorState.Monitoring
-                    is ClipboardMonitorServiceState.Paused -> ClipboardMonitorState.Paused
-                }
-            }
-            .stateIn(scope, SharingStarted.Eagerly, ClipboardMonitorState.Idle)
+    private val _state = MutableStateFlow<ClipboardMonitorState>(ClipboardMonitorState.Idle)
+    override val state: StateFlow<ClipboardMonitorState> = _state.asStateFlow()
 
-    override val changes: SharedFlow<ClipboardChange> = ClipboardMonitorService.clipboardChanges
+    private val _changes = MutableSharedFlow<ClipboardChange>(extraBufferCapacity = 64)
+    override val changes: SharedFlow<ClipboardChange> = _changes.asSharedFlow()
 
-    private val _latestChange = kotlinx.coroutines.flow.MutableStateFlow<ClipboardChange?>(null)
-    override val latestChange: StateFlow<ClipboardChange?> = _latestChange
+    private val _latestChange = MutableStateFlow<ClipboardChange?>(null)
+    override val latestChange: StateFlow<ClipboardChange?> = _latestChange.asStateFlow()
 
-    override val urlDetections: SharedFlow<UrlDetection> = ClipboardMonitorService.detectedUrls
+    private val _urlDetections = MutableSharedFlow<UrlDetection>(extraBufferCapacity = 64)
+    override val urlDetections: SharedFlow<UrlDetection> = _urlDetections.asSharedFlow()
 
     private val urlMatchers = mutableListOf<ClipboardUrlMatcher>()
     private val filters = mutableListOf<ClipboardFilter>()
 
-    init {
-        // Forward changes to latestChange
-        scope.launch {
-            changes.collect { change ->
-                _latestChange.value = change
-            }
-        }
+    // In-process clipboard monitoring
+    private var clipboardListener: ClipboardManager.OnPrimaryClipChangedListener? = null
+    private var lastContent: String? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var serviceStarted = false
 
+    private val clipboardManager: ClipboardManager?
+        get() = appContext?.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+
+    init {
         // Forward URL detections to overlay and worker trigger
         scope.launch {
             urlDetections.collect { detection ->
                 overlay?.onUrlDetected(detection)
-
-                // Trigger worker if configured
                 if (config?.triggerWorkerOnUrl == true) {
                     val trigger = createClipboardWorkerTrigger()
                     trigger.onUrlDetected(detection.url, detection.matcher, detection.change)
@@ -90,38 +83,29 @@ internal class AndroidClipboardMonitor : ClipboardMonitor {
     }
 
     override fun start(config: ClipboardMonitorConfig) {
-        val context = appContext ?: run {
-            return
-        }
-        if (state.value is ClipboardMonitorState.Monitoring) return
+        val context = appContext ?: return
+        if (_state.value is ClipboardMonitorState.Monitoring) return
 
         this.config = config
+        lastContent = getFromClipboard()
 
-        // Pass matchers and filters to service
-        ClipboardMonitorService.urlMatchers.clear()
-        ClipboardMonitorService.urlMatchers.addAll(urlMatchers)
-        ClipboardMonitorService.filters.clear()
-        ClipboardMonitorService.filters.addAll(filters)
-        ClipboardMonitorService.notificationTitle = config.notificationTitle
-        ClipboardMonitorService.notificationText = config.notificationText
-
-        // Start foreground service
-        val serviceIntent = Intent(context, ClipboardMonitorService::class.java).apply {
-            action = ClipboardMonitorService.ACTION_START
-        }
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
+        // === Mode 1: Always start in-process monitoring ===
+        clipboardListener = ClipboardManager.OnPrimaryClipChangedListener {
+            if (_state.value is ClipboardMonitorState.Monitoring) {
+                onClipboardChanged()
             }
-        } catch (e: Exception) {
-            // Service start may fail if battery optimization is aggressive
-            return
         }
+        clipboardManager?.addPrimaryClipChangedListener(clipboardListener)
 
-        // Track running state for boot receiver
-        ClipboardBootReceiver.setWasRunning(context, true)
+        // Register lifecycle for foreground detection (same fix as Observer)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
+        _state.value = ClipboardMonitorState.Monitoring
+
+        // === Mode 2: Optionally start foreground service ===
+        if (config.showNotification) {
+            tryStartService(context, config)
+        }
 
         // Show overlay if configured
         if (config.showOverlay) {
@@ -132,45 +116,150 @@ internal class AndroidClipboardMonitor : ClipboardMonitor {
     override fun stop() {
         val context = appContext ?: return
 
-        // Stop service
-        val serviceIntent = Intent(context, ClipboardMonitorService::class.java)
-        context.stopService(serviceIntent)
+        // Stop in-process monitoring
+        clipboardListener?.let { clipboardManager?.removePrimaryClipChangedListener(it) }
+        clipboardListener = null
+        handler.removeCallbacksAndMessages(null)
+
+        try {
+            ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
+        } catch (e: Exception) { }
+
+        // Stop service if started
+        if (serviceStarted) {
+            context.stopService(Intent(context, ClipboardMonitorService::class.java))
+            ClipboardBootReceiver.setWasRunning(context, false)
+            serviceStarted = false
+        }
 
         // Hide overlay
         overlay?.hide()
         overlay = null
 
-        // Track state for boot receiver
-        ClipboardBootReceiver.setWasRunning(context, false)
-
+        lastContent = null
         config = null
+        _state.value = ClipboardMonitorState.Idle
     }
 
     override fun pause() {
-        val context = appContext ?: return
-        val pauseIntent = Intent(context, ClipboardMonitorService::class.java).apply {
-            action = com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardNotification.ACTION_PAUSE
+        if (_state.value is ClipboardMonitorState.Monitoring) {
+            _state.value = ClipboardMonitorState.Paused
+            if (serviceStarted) {
+                val context = appContext ?: return
+                val intent = Intent(context, ClipboardMonitorService::class.java).apply {
+                    action = com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardNotification.ACTION_PAUSE
+                }
+                context.startService(intent)
+            }
         }
-        context.startService(pauseIntent)
     }
 
     override fun resume() {
-        val context = appContext ?: return
-        val resumeIntent = Intent(context, ClipboardMonitorService::class.java).apply {
-            action = com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardNotification.ACTION_RESUME
+        if (_state.value is ClipboardMonitorState.Paused) {
+            _state.value = ClipboardMonitorState.Monitoring
+            if (serviceStarted) {
+                val context = appContext ?: return
+                val intent = Intent(context, ClipboardMonitorService::class.java).apply {
+                    action = com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardNotification.ACTION_RESUME
+                }
+                context.startService(intent)
+            }
         }
-        context.startService(resumeIntent)
     }
 
     override fun addUrlMatcher(matcher: ClipboardUrlMatcher) {
         urlMatchers.add(matcher)
-        // Also update service if already running
-        ClipboardMonitorService.urlMatchers.add(matcher)
+        if (serviceStarted) ClipboardMonitorService.urlMatchers.add(matcher)
     }
 
     override fun addFilter(filter: ClipboardFilter) {
         filters.add(filter)
-        ClipboardMonitorService.filters.add(filter)
+        if (serviceStarted) ClipboardMonitorService.filters.add(filter)
+    }
+
+    // ── Lifecycle (foreground detection) ────────────────────────────
+
+    override fun onStart(owner: LifecycleOwner) {
+        if (_state.value is ClipboardMonitorState.Monitoring) {
+            onClipboardChanged()
+        }
+    }
+
+    override fun onResume(owner: LifecycleOwner) {
+        if (_state.value is ClipboardMonitorState.Monitoring) {
+            onClipboardChanged()
+            handler.postDelayed({ if (_state.value is ClipboardMonitorState.Monitoring) onClipboardChanged() }, 100)
+            handler.postDelayed({ if (_state.value is ClipboardMonitorState.Monitoring) onClipboardChanged() }, 300)
+            handler.postDelayed({ if (_state.value is ClipboardMonitorState.Monitoring) onClipboardChanged() }, 600)
+        }
+    }
+
+    // ── Clipboard change processing ────────────────────────────────
+
+    private fun onClipboardChanged() {
+        val content = getFromClipboard() ?: return
+        if (content == lastContent) return
+
+        val previousContent = lastContent
+        lastContent = content
+
+        // Detect content type
+        val contentType = when {
+            content.startsWith("http://") || content.startsWith("https://") -> ClipboardContentType.Uri
+            content.startsWith("<html") || content.contains("</") -> ClipboardContentType.Html
+            else -> ClipboardContentType.Text
+        }
+
+        val change = ClipboardChange(
+            content = content,
+            contentType = contentType,
+            timestamp = System.currentTimeMillis(),
+            source = ClipboardSource.External,
+            previousContent = previousContent
+        )
+
+        // Apply filters
+        if (filters.any { !it.shouldProcess(content) }) return
+
+        // Emit change
+        _changes.tryEmit(change)
+        _latestChange.value = change
+
+        // Check URL matchers
+        for (matcher in urlMatchers) {
+            if (matcher.matches(content)) {
+                val url = matcher.extractUrl(content) ?: continue
+                _urlDetections.tryEmit(UrlDetection(url = url, matcher = matcher, change = change))
+                break
+            }
+        }
+    }
+
+    // ── Service (optional background mode) ─────────────────────────
+
+    private fun tryStartService(context: Context, config: ClipboardMonitorConfig) {
+        ClipboardMonitorService.urlMatchers.clear()
+        ClipboardMonitorService.urlMatchers.addAll(urlMatchers)
+        ClipboardMonitorService.filters.clear()
+        ClipboardMonitorService.filters.addAll(filters)
+        ClipboardMonitorService.notificationTitle = config.notificationTitle
+        ClipboardMonitorService.notificationText = config.notificationText
+
+        val intent = Intent(context, ClipboardMonitorService::class.java).apply {
+            action = ClipboardMonitorService.ACTION_START
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+            serviceStarted = true
+            ClipboardBootReceiver.setWasRunning(context, true)
+        } catch (e: Exception) {
+            // Service failed — in-process mode still works
+            serviceStarted = false
+        }
     }
 }
 
