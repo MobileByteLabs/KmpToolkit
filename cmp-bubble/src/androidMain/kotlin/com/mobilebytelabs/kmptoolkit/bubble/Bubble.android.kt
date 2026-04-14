@@ -124,7 +124,7 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
             val resolvedStyle = if (style == BubbleStyle.Auto) resolveStyle(context) else style
 
             when (resolvedStyle) {
-                BubbleStyle.Floating -> showFloating(context, title, message, actions, onTap)
+                BubbleStyle.Floating -> showFloating(context, title, message, actions, onTap, icon)
                 else -> showAsNotification(context, title, message, actions, onTap)
             }
 
@@ -243,12 +243,13 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         message: String,
         actions: List<BubbleAction>,
         onTap: BubbleTapAction,
+        icon: BubbleIcon? = null,
     ) {
         // Priority: Overlay FAB (actual floating button) > Bubbles API > Notification
         if (OverlayPermission.canDrawOverlays(context)) {
             // ── Overlay FAB — the actual floating button on screen ──
             Log.i(TAG, "Using overlay FAB (API ${Build.VERSION.SDK_INT})")
-            showAsOverlayFab(context, title, onTap)
+            showAsOverlayFab(context, title, icon, onTap)
             // Also show notification with actions + bubble metadata
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 showAsBubbleApi(context, title, message, actions, onTap)
@@ -308,9 +309,9 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
     }
 
-    private fun showAsOverlayFab(context: Context, title: String, onTap: BubbleTapAction) {
+    private fun showAsOverlayFab(context: Context, title: String, icon: BubbleIcon?, onTap: BubbleTapAction) {
         overlayFab?.dismiss()
-        overlayFab = OverlayFab(context).apply {
+        overlayFab = OverlayFab(context, config).apply {
             this.onTap = {
                 when (onTap) {
                     is BubbleTapAction.DeepLink -> {
@@ -329,7 +330,7 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
                     else -> {}
                 }
             }
-            show(title)
+            show(title, icon)
         }
     }
 
