@@ -94,3 +94,4 @@ package-lock.json
 # Documentation build
 docs/_build/
 site/
+.claude/settings.local.json

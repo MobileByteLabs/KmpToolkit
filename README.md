@@ -25,11 +25,14 @@ KMP Toolkit is available as modular libraries. Import only what you need:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            // Clipboard utilities
-            implementation("io.github.mobilebytelabs:kmp-clipboard:0.1.0")
+            // Clipboard utilities + monitoring
+            implementation("io.github.mobilebytelabs:kmp-clipboard:0.2.0")
 
             // Toast/Snackbar for Compose Multiplatform
             implementation("io.github.mobilebytelabs:kmp-toast:0.1.0")
+
+            // Bubbles, floating UI, notifications
+            implementation("io.github.mobilebytelabs:kmp-bubble:0.1.0")
 
             // In-App Update checking
             implementation("io.github.mobilebytelabs:kmp-in-app-update:0.5.0")
@@ -44,7 +47,8 @@ kotlin {
 
 | Module | Artifact | Description | Version |
 |--------|----------|-------------|:-------:|
-| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/clear/observe | `0.1.0` |
+| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/observe/monitor/URL detect | `0.2.0` |
+| **kmp-bubble** | `io.github.mobilebytelabs:kmp-bubble` | Bubbles, floating UI, notifications | `0.1.0` |
 | **kmp-toast** | `io.github.mobilebytelabs:kmp-toast` | Toast/Snackbar for Compose Multiplatform | `0.1.0` |
 | **kmp-in-app-update** | `io.github.mobilebytelabs:kmp-in-app-update` | In-app update checking | `0.5.0` |
 
@@ -54,19 +58,28 @@ Each module is independently publishable and can be used standalone.
 
 ### Clipboard
 
-Copy, paste, check, and clear clipboard across all platforms.
+Unified clipboard API — copy, paste, observe, monitor, history, URL detect, all in one.
 
 ```kotlin
-import com.mobilebytelabs.kmptoolkit.clipboard.Clipboard
+import com.mobilebytelabs.kmptoolkit.clipboard.*
 
-// Copy text
-Clipboard.copy("Hello, World!")
+val clipboard = ClipboardManager(ClipboardManagerConfig.Full)
+clipboard.start()
 
-// Paste text
-val text = Clipboard.paste()
+// Sync & async operations
+clipboard.copy("Hello!")
+val text = clipboard.pasteAsync()   // works on JS/Wasm too
 
-// Check if clipboard has text
-val hasText = Clipboard.hasText()
+// Auto-observing content
+clipboard.content.collect { println("Clipboard: $it") }
+
+// Clipboard history (newest first)
+clipboard.history.collect { entries -> println("${entries.size} items") }
+
+// URL detection (Instagram, TikTok, YouTube, etc.)
+clipboard.urlDetections.collect { det -> println("${det.matcher.name}: ${det.url}") }
+
+clipboard.stop()
 
 // Clear clipboard
 Clipboard.clear()
@@ -89,6 +102,79 @@ observer.clipboardContent.collect { content ->
 
 observer.stopObserving()
 ```
+
+### Clipboard Monitor (NEW in v0.2.0)
+
+Continuous clipboard monitoring with social media URL detection, floating FAB overlay, and background worker trigger. InSaver-style clipboard service for all platforms.
+
+```kotlin
+import com.mobilebytelabs.kmptoolkit.clipboard.*
+import com.mobilebytelabs.kmptoolkit.clipboard.monitor.*
+
+val monitor = createClipboardMonitor()
+
+// Add social media URL matchers (Instagram, TikTok, YouTube, etc.)
+SocialMediaUrlMatchers.all().forEach { monitor.addUrlMatcher(it) }
+
+// Optional: filter to only process URLs
+monitor.addFilter(ClipboardFilter.urlOnly())
+
+// Start monitoring (Android: starts ForegroundService + notification)
+monitor.start(ClipboardMonitorConfig.SocialMediaDownloader)
+
+// React to detected URLs
+monitor.urlDetections.collect { detection ->
+    println("${detection.matcher.name}: ${detection.url}")
+    // "Instagram: https://www.instagram.com/reel/ABC123/"
+}
+```
+
+**Features:**
+- 10 built-in URL matchers (Instagram, TikTok, YouTube, Twitter, Facebook, Snapchat, Pinterest, Reddit, LinkedIn, Threads)
+- Android: ForegroundService with persistent notification + floating FAB overlay
+- Content filters (URL-only, min/max length, pattern exclusion)
+- Async clipboard API (`getFromClipboardAsync()` — works on JS/Wasm)
+- Background worker trigger (Android WorkManager integration)
+- Custom URL matchers for any service
+- Permission management (overlay, notifications)
+
+See [Clipboard Monitor Documentation](docs/CLIPBOARD_MONITOR.md) for full API reference.
+
+### Bubble (Floating UI & Notifications)
+
+Cross-platform bubbles, floating overlays, and notifications. Standalone — works with or without clipboard.
+
+```kotlin
+import com.mobilebytelabs.kmptoolkit.bubble.*
+
+val bubble = createBubble()
+
+// Show notification with actions
+bubble.show(
+    title = "Download Complete",
+    message = "video.mp4 saved",
+    actions = listOf(
+        BubbleAction("Open") { openFile() },
+        BubbleAction("Share") { shareFile() }
+    )
+)
+
+// Open a screen via deep link
+bubble.showScreen(
+    title = "Quick Reply",
+    route = "myapp://chat/reply/123"
+)
+```
+
+**Features:**
+- Android 30+: Bubbles API (no permission needed), falls back to notification on older versions
+- iOS: Local notification banners with up to 3 action buttons
+- macOS: UNUserNotificationCenter
+- JVM: System tray notifications
+- JS/Wasm: Browser Notification API
+- Deep link support, persistent/service modes, state observation via StateFlow
+
+See [Bubble Documentation](docs/BUBBLE.md) for full API reference.
 
 ### Toast/Snackbar (Compose Multiplatform)
 
@@ -154,18 +240,18 @@ when (val result = AppUpdate.checkForUpdate(config)) {
 
 ## Platform Support
 
-| Platform | Clipboard | Toast | In-App Update |
-|----------|:---------:|:-----:|:-------------:|
-| Android | ✅ | ✅ | ✅ (Play Store) |
-| iOS | ✅ | ✅ | ✅ (App Store) |
-| macOS | ✅ | ✅ | ✅ (App Store) |
-| JVM | ✅ | ✅ | ✅ (Custom) |
-| Linux | ✅ | ❌ | ✅ (Custom) |
-| Windows | ✅ | ❌ | ✅ (Custom) |
-| JavaScript | ✅ | ❌ | ❌ |
-| WebAssembly | ✅ | ❌ | ❌ |
-| tvOS | ⚠️ | ❌ | ⚠️ |
-| watchOS | ⚠️ | ❌ | ⚠️ |
+| Platform | Clipboard | Monitor | Bubble | Toast | In-App Update |
+|----------|:---------:|:-------:|:------:|:-----:|:-------------:|
+| Android | ✅ | ✅ Service+FAB | ✅ Bubbles/Notif | ✅ | ✅ (Play Store) |
+| iOS | ✅ | ✅ Foreground | ✅ Banner | ✅ | ✅ (App Store) |
+| macOS | ✅ | ✅ Full | ✅ Notification | ✅ | ✅ (App Store) |
+| JVM | ✅ | ✅ Full | ✅ Tray | ✅ | ✅ (Custom) |
+| Linux | ✅ | ✅ Polling | ❌ | ❌ | ✅ (Custom) |
+| Windows | ✅ | ✅ Polling | ❌ | ❌ | ✅ (Custom) |
+| JavaScript | ✅ | ✅ Async | ✅ Notif API | ❌ | ❌ |
+| WebAssembly | ✅ | ✅ Async | ✅ Notif API | ❌ | ❌ |
+| tvOS | ⚠️ | ❌ | ❌ | ❌ | ⚠️ |
+| watchOS | ⚠️ | ❌ | ❌ | ❌ | ⚠️ |
 
 **Legend:** ✅ Full support | ⚠️ Limited | ❌ Not supported
 
@@ -175,6 +261,8 @@ when (val result = AppUpdate.checkForUpdate(config)) {
 |-------|------|
 | **Features** | [Wiki Home](https://github.com/MobileByteLabs/KmpToolkit/wiki) |
 | Clipboard API | [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
+| Clipboard Monitor | [Clipboard Monitor](docs/CLIPBOARD_MONITOR.md) |
+| Bubble API | [Bubble](docs/BUBBLE.md) |
 | Toast API | [Toast](https://github.com/MobileByteLabs/KmpToolkit/wiki/Toast) |
 | In-App Update API | [In-App Update](https://github.com/MobileByteLabs/KmpToolkit/wiki/In-App-Update) |
 | **Development** | |

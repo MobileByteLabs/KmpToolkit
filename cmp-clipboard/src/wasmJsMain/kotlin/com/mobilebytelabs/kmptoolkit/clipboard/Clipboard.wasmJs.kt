@@ -3,19 +3,37 @@ package com.mobilebytelabs.kmptoolkit.clipboard
 /**
  * WebAssembly JavaScript implementation of clipboard operations.
  *
- * Note: The browser Clipboard API requires proper DOM interop and permissions
- * which are complex to set up in Kotlin/Wasm. These are no-op implementations.
+ * Uses Kotlin/Wasm JS interop to access the browser Clipboard API.
  *
- * For clipboard functionality in Wasm/JS environments, consider using
- * JavaScript interop directly in your application code.
+ * ## Limitations
+ *
+ * - Write (copy) works via navigator.clipboard.writeText (fire-and-forget)
+ * - Synchronous read is NOT possible — use [getFromClipboardAsync] instead
+ * - [hasClipboardText] always returns false (async-only check)
+ *
+ * For full clipboard read support, use the suspend functions in ClipboardAsync.
  */
 
-actual fun copyToClipboard(text: String): Boolean = false
+@JsFun("(text) => { try { navigator.clipboard.writeText(text); return true; } catch(e) { return false; } }")
+private external fun jsWriteClipboard(text: String): Boolean
 
-actual fun getFromClipboard(): String? = null
+actual fun copyToClipboard(text: String): Boolean = try {
+    jsWriteClipboard(text)
+} catch (e: Throwable) {
+    false
+}
 
-actual fun hasClipboardText(): Boolean = false
+actual fun getFromClipboard(): String? {
+    // Synchronous clipboard read is not possible in browser environments.
+    // Use getFromClipboardAsync() for async clipboard reading.
+    return null
+}
+
+actual fun hasClipboardText(): Boolean {
+    // Cannot determine synchronously in Wasm JS
+    return false
+}
 
 actual fun clearClipboard() {
-    // No-op: Wasm clipboard requires complex JS interop setup
+    copyToClipboard("")
 }

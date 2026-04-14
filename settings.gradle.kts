@@ -22,6 +22,7 @@ include(":cmp-toast") // Toast/Snackbar UI
 include(":cmp-in-app-update") // In-App Update checking
 include(":cmp-user-tickets") // Feature Request/Bug Report/Contact Support
 include(":cmp-remote-config") // Remote Config
+include(":cmp-bubble") // Floating UI, Bubbles, Notifications
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")

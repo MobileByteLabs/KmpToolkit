@@ -44,6 +44,8 @@ kotlin {
 
             // KMP Clipboard library
             implementation(project(":cmp-clipboard"))
+            // KMP Bubble library
+            implementation(project(":cmp-bubble"))
             // KMP Toast library
             implementation(project(":cmp-toast"))
         }
