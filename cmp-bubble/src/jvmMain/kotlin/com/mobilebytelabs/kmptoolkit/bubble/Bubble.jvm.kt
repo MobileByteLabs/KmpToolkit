@@ -10,6 +10,8 @@ internal class JvmBubble(private val config: BubbleConfig) : Bubble {
     private val _state = MutableStateFlow<BubbleState>(BubbleState.Hidden)
     override val state: StateFlow<BubbleState> = _state.asStateFlow()
     override val isShowing: Boolean get() = _state.value is BubbleState.Showing
+    override val capability: BubbleCapability = if (java.awt.SystemTray.isSupported()) BubbleCapability.Notification else BubbleCapability.None
+    override val capabilityReason: String = if (java.awt.SystemTray.isSupported()) "JVM SystemTray" else "Headless JVM (no SystemTray)"
 
     private var trayIcon: TrayIcon? = null
 

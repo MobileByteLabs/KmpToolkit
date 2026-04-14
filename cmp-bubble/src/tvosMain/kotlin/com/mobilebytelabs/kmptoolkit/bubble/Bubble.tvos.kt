@@ -8,6 +8,8 @@ internal class TvosBubble(private val config: BubbleConfig) : Bubble {
     private val _state = MutableStateFlow<BubbleState>(BubbleState.Hidden)
     override val state: StateFlow<BubbleState> = _state.asStateFlow()
     override val isShowing: Boolean get() = false
+    override val capability: BubbleCapability = BubbleCapability.None
+    override val capabilityReason: String = "tvOS has no notification capability"
 
     override fun show(
         title: String,

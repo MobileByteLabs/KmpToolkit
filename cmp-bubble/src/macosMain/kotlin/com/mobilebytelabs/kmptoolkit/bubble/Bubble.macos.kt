@@ -16,6 +16,8 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
     private val _state = MutableStateFlow<BubbleState>(BubbleState.Hidden)
     override val state: StateFlow<BubbleState> = _state.asStateFlow()
     override val isShowing: Boolean get() = _state.value is BubbleState.Showing
+    override val capability: BubbleCapability = BubbleCapability.Notification
+    override val capabilityReason: String = "macOS UNUserNotification"
 
     private var currentNotificationId: String? = null
 

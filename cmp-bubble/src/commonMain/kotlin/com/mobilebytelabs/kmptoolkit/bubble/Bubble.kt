@@ -50,6 +50,21 @@ interface Bubble {
     val isShowing: Boolean
 
     /**
+     * What floating UI capability this platform supports.
+     *
+     * Check this to know what will happen when you call [show] with [BubbleStyle.Floating]:
+     * - [BubbleCapability.Bubble] — Android 30+ real floating bubble
+     * - [BubbleCapability.Overlay] — Android <30 floating FAB
+     * - [BubbleCapability.FloatingWindow] — macOS/JVM floating window
+     * - [BubbleCapability.Notification] — notification only (no floating)
+     * - [BubbleCapability.None] — nothing available
+     */
+    val capability: BubbleCapability
+
+    /** Human-readable reason for the current [capability]. */
+    val capabilityReason: String
+
+    /**
      * Show a bubble with content.
      *
      * @param title Primary text / heading.

@@ -11,11 +11,18 @@ import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.mobilebytelabs.kmptoolkit.bubble.android.BubbleMetadataBuilder
+import com.mobilebytelabs.kmptoolkit.bubble.android.BubbleShortcut
+import com.mobilebytelabs.kmptoolkit.bubble.android.OverlayFab
+import com.mobilebytelabs.kmptoolkit.bubble.android.OverlayPermission
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+
+private const val TAG = "KmpBubble"
 
 @SuppressLint("StaticFieldLeak")
 internal var appContext: Context? = null
@@ -49,10 +56,30 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
     override val state: StateFlow<BubbleState> = _state.asStateFlow()
     override val isShowing: Boolean get() = _state.value is BubbleState.Showing
 
+    override val capability: BubbleCapability
+        get() {
+            val context = appContext ?: return BubbleCapability.None
+            return when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> BubbleCapability.Bubble
+                OverlayPermission.canDrawOverlays(context) -> BubbleCapability.Overlay
+                else -> BubbleCapability.Notification
+            }
+        }
+
+    override val capabilityReason: String
+        get() = when (capability) {
+            BubbleCapability.Bubble -> "Bubbles API (Android ${Build.VERSION.SDK_INT})"
+            BubbleCapability.Overlay -> "Overlay FAB (Android ${Build.VERSION.SDK_INT}, SYSTEM_ALERT_WINDOW granted)"
+            BubbleCapability.Notification -> "Notification only (Android ${Build.VERSION.SDK_INT})"
+            BubbleCapability.None -> "No context available"
+            else -> "Android ${Build.VERSION.SDK_INT}"
+        }
+
     private var notificationId = notificationBaseId
     private var currentTitle: String? = null
     private var currentMessage: String? = null
     private var currentActions: List<BubbleAction>? = null
+    private var overlayFab: OverlayFab? = null
 
     companion object {
         private var notificationBaseId = 9950
@@ -67,29 +94,28 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         onTap: BubbleTapAction,
         autoDismissMs: Long,
     ) {
-        val context = appContext ?: return
-        currentTitle = title
-        currentMessage = message
-        currentActions = actions
-        notificationId = notificationBaseId++
+        try {
+            val context = appContext ?: run {
+                Log.w(TAG, "No app context — cannot show bubble")
+                return
+            }
+            currentTitle = title
+            currentMessage = message
+            currentActions = actions
+            notificationId = notificationBaseId++
 
-        ensureChannel(context)
+            ensureChannel(context)
+            val resolvedStyle = if (style == BubbleStyle.Auto) resolveStyle(context) else style
 
-        val resolvedStyle = if (style == BubbleStyle.Auto) resolveStyle() else style
-
-        when (resolvedStyle) {
-            BubbleStyle.Floating -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    showBubbleNotification(context, title, message, actions, onTap)
-                } else {
-                    showStandardNotification(context, title, message, actions, onTap)
-                }
+            when (resolvedStyle) {
+                BubbleStyle.Floating -> showFloating(context, title, message, actions, onTap)
+                else -> showAsNotification(context, title, message, actions, onTap)
             }
 
-            else -> showStandardNotification(context, title, message, actions, onTap)
+            _state.value = BubbleState.Showing
+        } catch (e: Exception) {
+            Log.w(TAG, "Bubble show failed gracefully: ${e.message}")
         }
-
-        _state.value = BubbleState.Showing
     }
 
     override fun showScreen(
@@ -99,106 +125,194 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         icon: BubbleIcon?,
         style: BubbleStyle,
     ) {
-        val context = appContext ?: return
-        ensureChannel(context)
-
-        // Create deep link intent
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            notificationId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val notification = NotificationCompat.Builder(context, config.channelId)
-            .setContentTitle(title)
-            .setSmallIcon(android.R.drawable.ic_popup_sync)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
-
         try {
-            NotificationManagerCompat.from(context).notify(notificationId, notification)
-        } catch (e: SecurityException) { /* missing POST_NOTIFICATIONS permission */ }
+            val context = appContext ?: return
+            ensureChannel(context)
 
-        _state.value = BubbleState.Showing
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                notificationId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+
+            val notification = NotificationCompat.Builder(context, config.channelId)
+                .setContentTitle(title)
+                .setSmallIcon(android.R.drawable.ic_popup_sync)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build()
+
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+            _state.value = BubbleState.Showing
+        } catch (e: Exception) {
+            Log.w(TAG, "Bubble showScreen failed: ${e.message}")
+        }
     }
 
     override fun showPersistent(title: String, message: String, actions: List<BubbleAction>, style: BubbleStyle) {
-        val context = appContext ?: return
-        ensureChannel(context)
-
-        val builder = NotificationCompat.Builder(context, config.channelId)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setSmallIcon(android.R.drawable.ic_popup_sync)
-            .setOngoing(true)
-            .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-
-        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        actions.forEachIndexed { index, action ->
-            val actionIntent = Intent("com.mobilebytelabs.kmptoolkit.bubble.ACTION_${action.id}")
-            val actionPending = PendingIntent.getBroadcast(context, index + 100, actionIntent, flags)
-            builder.addAction(NotificationCompat.Action.Builder(0, action.label, actionPending).build())
-        }
-
         try {
-            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
-        } catch (e: SecurityException) { /* missing permission */ }
+            val context = appContext ?: return
+            ensureChannel(context)
 
-        _state.value = BubbleState.Showing
+            val builder = NotificationCompat.Builder(context, config.channelId)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setSmallIcon(android.R.drawable.ic_popup_sync)
+                .setOngoing(true)
+                .setSilent(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            actions.forEachIndexed { index, action ->
+                val actionIntent = Intent("com.mobilebytelabs.kmptoolkit.bubble.ACTION_${action.id}")
+                val actionPending = PendingIntent.getBroadcast(context, index + 100, actionIntent, flags)
+                builder.addAction(NotificationCompat.Action.Builder(0, action.label, actionPending).build())
+            }
+
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+            _state.value = BubbleState.Showing
+        } catch (e: Exception) {
+            Log.w(TAG, "Bubble showPersistent failed: ${e.message}")
+        }
     }
 
     override fun update(title: String?, message: String?, actions: List<BubbleAction>?) {
-        title?.let { currentTitle = it }
-        message?.let { currentMessage = it }
-        actions?.let { currentActions = it }
+        try {
+            title?.let { currentTitle = it }
+            message?.let { currentMessage = it }
+            actions?.let { currentActions = it }
 
-        if (_state.value is BubbleState.Showing) {
-            val context = appContext ?: return
-            val builder = NotificationCompat.Builder(context, config.channelId)
-                .setContentTitle(currentTitle)
-                .setContentText(currentMessage)
-                .setSmallIcon(android.R.drawable.ic_popup_sync)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-
-            try {
+            if (_state.value is BubbleState.Showing) {
+                val context = appContext ?: return
+                val builder = NotificationCompat.Builder(context, config.channelId)
+                    .setContentTitle(currentTitle)
+                    .setContentText(currentMessage)
+                    .setSmallIcon(android.R.drawable.ic_popup_sync)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
                 NotificationManagerCompat.from(context).notify(notificationId, builder.build())
-            } catch (e: SecurityException) { /* missing permission */ }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Bubble update failed: ${e.message}")
         }
     }
 
     override fun dismiss() {
-        val context = appContext ?: return
-        NotificationManagerCompat.from(context).cancel(notificationId)
+        try {
+            val context = appContext ?: return
+            NotificationManagerCompat.from(context).cancel(notificationId)
+            overlayFab?.dismiss()
+            overlayFab = null
+        } catch (e: Exception) {
+            Log.w(TAG, "Bubble dismiss failed: ${e.message}")
+        }
         _state.value = BubbleState.Dismissed(byUser = false)
     }
 
-    private fun resolveStyle(): BubbleStyle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        BubbleStyle.Floating
-    } else {
-        BubbleStyle.Notification
+    // ── Strategy Router ─────────────────────────────────────────
+
+    private fun resolveStyle(context: Context): BubbleStyle = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> BubbleStyle.Floating
+        OverlayPermission.canDrawOverlays(context) -> BubbleStyle.Floating
+        else -> BubbleStyle.Notification
     }
 
-    private fun showBubbleNotification(
+    private fun showFloating(
         context: Context,
         title: String,
         message: String,
         actions: List<BubbleAction>,
         onTap: BubbleTapAction,
     ) {
-        // On API 30+, create a bubble-style notification
-        // Full BubbleMetadata + ShortcutInfo will be added when BubbleActivity is ready
-        // For now, use a high-priority notification that looks similar
-        showStandardNotification(context, title, message, actions, onTap)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // ── Real Bubbles API (API 30+) ──────────────────────
+            Log.i(TAG, "Using Bubbles API (API ${Build.VERSION.SDK_INT})")
+            showAsBubbleApi(context, title, message, actions, onTap)
+        } else if (OverlayPermission.canDrawOverlays(context)) {
+            // ── Overlay FAB (API <30) ───────────────────────────
+            Log.i(TAG, "Using overlay FAB (API ${Build.VERSION.SDK_INT})")
+            showAsOverlayFab(context, title, onTap)
+            // Also show notification for actions
+            showAsNotification(context, title, message, actions, onTap)
+        } else {
+            // ── Notification fallback ───────────────────────────
+            Log.i(TAG, "Floating not supported on API ${Build.VERSION.SDK_INT}, using notification")
+            showAsNotification(context, title, message, actions, onTap)
+        }
     }
 
-    private fun showStandardNotification(
+    private fun showAsBubbleApi(
+        context: Context,
+        title: String,
+        message: String,
+        actions: List<BubbleAction>,
+        onTap: BubbleTapAction,
+    ) {
+        // Create shortcut (required for Bubbles)
+        val shortcutId = BubbleShortcut.getOrCreateShortcut(context, title)
+
+        // Build bubble metadata
+        val actionsStr = actions.joinToString(",") { it.label }
+        val bubbleMetadata = BubbleMetadataBuilder.build(
+            context = context,
+            title = title,
+            message = message,
+            actions = actionsStr,
+        )
+
+        // Build notification with bubble
+        val builder = NotificationCompat.Builder(context, config.channelId)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(android.R.drawable.ic_popup_sync)
+            .setShortcutId(shortcutId)
+            .setBubbleMetadata(bubbleMetadata)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+
+        if (config.vibrate) builder.setVibrate(longArrayOf(0, 250))
+        if (!config.sound) builder.setSilent(true)
+
+        // Tap action on notification (not bubble)
+        applyTapAction(context, builder, onTap)
+
+        // Action buttons
+        applyActionButtons(context, builder, actions)
+
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+    }
+
+    private fun showAsOverlayFab(context: Context, title: String, onTap: BubbleTapAction) {
+        overlayFab?.dismiss()
+        overlayFab = OverlayFab(context).apply {
+            this.onTap = {
+                when (onTap) {
+                    is BubbleTapAction.DeepLink -> {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(onTap.uri)).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                    }
+
+                    is BubbleTapAction.Callback -> onTap.onTap()
+
+                    is BubbleTapAction.Dismiss -> dismiss()
+
+                    else -> {}
+                }
+            }
+            show(title)
+        }
+    }
+
+    private fun showAsNotification(
         context: Context,
         title: String,
         message: String,
@@ -215,7 +329,15 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         if (config.vibrate) builder.setVibrate(longArrayOf(0, 250))
         if (!config.sound) builder.setSilent(true)
 
-        // Tap action
+        applyTapAction(context, builder, onTap)
+        applyActionButtons(context, builder, actions)
+
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────
+
+    private fun applyTapAction(context: Context, builder: NotificationCompat.Builder, onTap: BubbleTapAction) {
         when (onTap) {
             is BubbleTapAction.DeepLink -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(onTap.uri)).apply {
@@ -230,20 +352,17 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
                 builder.setContentIntent(pending)
             }
 
-            else -> { /* No content intent */ }
+            else -> {}
         }
+    }
 
-        // Action buttons
+    private fun applyActionButtons(context: Context, builder: NotificationCompat.Builder, actions: List<BubbleAction>) {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         actions.forEachIndexed { index, action ->
             val actionIntent = Intent("com.mobilebytelabs.kmptoolkit.bubble.ACTION_${action.id}")
             val actionPending = PendingIntent.getBroadcast(context, index + 100, actionIntent, flags)
             builder.addAction(NotificationCompat.Action.Builder(0, action.label, actionPending).build())
         }
-
-        try {
-            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
-        } catch (e: SecurityException) { /* missing POST_NOTIFICATIONS permission */ }
     }
 
     private fun ensureChannel(context: Context) {
