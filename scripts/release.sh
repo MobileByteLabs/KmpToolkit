@@ -1,504 +1,347 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # =============================================================================
-# KmpToolkit - Unified Release & Publishing Tool
+# KmpToolkit — Unified Release Script
 # =============================================================================
-# Auto-discovers and publishes all cmp-* library modules to Maven Central.
-# Credentials are provided via JSON file (--credentials flag or CREDENTIALS env).
+# Single script for the complete release pipeline:
+#   1. Run quality gates (spotless + detekt + tests)
+#   2. Merge development → main (with PR fallback)
+#   3. Create git tag vX.Y.Z on main
+#   4. Push tag → GitHub Actions → GitHub Release → Maven Central publish
 #
 # Usage:
-#   ./scripts/release.sh publish --credentials /path/to/creds.json
-#   ./scripts/release.sh publish --module cmp-user-tickets
-#   ./scripts/release.sh local
-#   ./scripts/release.sh list
-#   ./scripts/release.sh verify
+#   ./scripts/release.sh                          # auto-detect version, full release
+#   ./scripts/release.sh --version 0.2.0          # explicit version
+#   ./scripts/release.sh --bump minor             # auto-bump (major|minor|patch)
+#   ./scripts/release.sh --module cmp-clipboard   # release single module
+#   ./scripts/release.sh --dry-run                # checks only, no merge/tag/push
+#   ./scripts/release.sh --skip-merge             # skip development→main merge
+#   ./scripts/release.sh --local                  # also publish to local Maven (~/.m2)
+#   ./scripts/release.sh list                     # list publishable modules
+#   ./scripts/release.sh verify                   # run quality gates only
 #
-# JSON credentials format:
-# {
-#   "maven_central": {
-#     "username": "...",
-#     "password": "...",
-#     "namespace": "io.github.mobilebytesensei",
-#     "staging_url": "https://central.sonatype.com"
-#   },
-#   "gpg": {
-#     "key_id": "...",
-#     "full_key_id": "...",
-#     "passphrase": "...",
-#     "key_email": "..."
-#   },
-#   "github": {
-#     "repo": "MobileByteLabs/KmpToolkit",
-#     "org": "mobilebytesensei",
-#     "fork": "therajanmaurya/KmpToolkit"
-#   }
-# }
+# Prerequisites:
+#   - Credentials JSON (--credentials or KMPTOOLKIT_CREDENTIALS env)
+#   - git clean (no uncommitted changes)
+#   - gh CLI installed (for PR merge fallback + GitHub Release)
+#
+# Release Flow:
+#   verify.sh --quick → merge dev→main → tag → push → CI → Release → Maven
 # =============================================================================
-
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m'
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Colors
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+
+log_step()    { echo -e "\n${BLUE}▶${NC}  ${BOLD}$1${NC}"; }
+log_pass()    { echo -e "   ${GREEN}✅${NC} $1"; }
+log_warn()    { echo -e "   ${YELLOW}⚠️${NC}  $1"; }
+log_fail()    { echo -e "   ${RED}❌${NC} $1"; exit 1; }
 
 # =============================================================================
-# Helpers
+# Parse Arguments
 # =============================================================================
+EXPLICIT_VERSION=""
+TARGET_MODULE=""
+CREDS_FILE="${KMPTOOLKIT_CREDENTIALS:-}"
+DRY_RUN=false
+SKIP_MERGE=false
+LOCAL_MAVEN=false
+BUMP_TYPE=""
+SKIP_CONFIRM=false
+COMMAND=""
 
-log_header() {
-    echo ""
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${BOLD}  $1${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo ""
-}
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --version)     EXPLICIT_VERSION="$2"; shift 2 ;;
+        --module)      TARGET_MODULE="$2"; shift 2 ;;
+        --credentials) CREDS_FILE="$2"; shift 2 ;;
+        --dry-run)     DRY_RUN=true; shift ;;
+        --skip-merge)  SKIP_MERGE=true; shift ;;
+        --local)       LOCAL_MAVEN=true; shift ;;
+        --bump)        BUMP_TYPE="$2"; shift 2 ;;
+        -y)            SKIP_CONFIRM=true; shift ;;
+        list|verify|local|help)
+            COMMAND="$1"; shift ;;
+        *) shift ;;
+    esac
+done
 
-log_step()    { echo -e "\n${BLUE}▶${NC} ${BOLD}$1${NC}"; }
-log_success() { echo -e "${GREEN}✓${NC} $1"; }
-log_warn()    { echo -e "${YELLOW}⚠${NC} $1"; }
-log_error()   { echo -e "${RED}✗${NC} $1"; }
-
-# =============================================================================
-# JSON Credentials
-# =============================================================================
-
-CREDS_FILE=""
-
-parse_json_field() {
-    local json_file="$1"
-    local field="$2"
-    # Use python3 for reliable JSON parsing (available on macOS + Linux)
-    python3 -c "
-import json, sys
-with open('$json_file') as f:
-    data = json.load(f)
-keys = '$field'.split('.')
-val = data
-for k in keys:
-    val = val[k]
-print(val)
-" 2>/dev/null
-}
-
-load_credentials() {
-    if [ -z "$CREDS_FILE" ]; then
-        log_error "No credentials file provided."
-        echo ""
-        echo "Usage: $0 <command> --credentials /path/to/credentials.json"
-        echo ""
-        echo "JSON format:"
-        echo '  {'
-        echo '    "maven_central": {'
-        echo '      "username": "...", "password": "...",'
-        echo '      "namespace": "io.github.mobilebytesensei",'
-        echo '      "staging_url": "https://central.sonatype.com"'
-        echo '    },'
-        echo '    "gpg": {'
-        echo '      "key_id": "...", "full_key_id": "...",'
-        echo '      "passphrase": "...", "key_email": "..."'
-        echo '    },'
-        echo '    "github": {'
-        echo '      "repo": "MobileByteLabs/KmpToolkit",'
-        echo '      "org": "mobilebytesensei",'
-        echo '      "fork": "therajanmaurya/KmpToolkit"'
-        echo '    }'
-        echo '  }'
-        exit 1
-    fi
-
-    if [ ! -f "$CREDS_FILE" ]; then
-        log_error "Credentials file not found: $CREDS_FILE"
-        exit 1
-    fi
-
-    MAVEN_USERNAME=$(parse_json_field "$CREDS_FILE" "maven_central.username")
-    MAVEN_PASSWORD=$(parse_json_field "$CREDS_FILE" "maven_central.password")
-    MAVEN_NAMESPACE=$(parse_json_field "$CREDS_FILE" "maven_central.namespace")
-    MAVEN_STAGING_URL=$(parse_json_field "$CREDS_FILE" "maven_central.staging_url")
-    GPG_KEY_ID=$(parse_json_field "$CREDS_FILE" "gpg.key_id")
-    GPG_FULL_KEY_ID=$(parse_json_field "$CREDS_FILE" "gpg.full_key_id")
-    GPG_PASSPHRASE=$(parse_json_field "$CREDS_FILE" "gpg.passphrase")
-    GPG_KEY_EMAIL=$(parse_json_field "$CREDS_FILE" "gpg.key_email")
-    GITHUB_REPO=$(parse_json_field "$CREDS_FILE" "github.repo")
-    GITHUB_ORG=$(parse_json_field "$CREDS_FILE" "github.org")
-    GITHUB_FORK=$(parse_json_field "$CREDS_FILE" "github.fork")
-
-    if [ -z "$MAVEN_USERNAME" ] || [ -z "$MAVEN_PASSWORD" ]; then
-        log_error "maven_central.username or maven_central.password missing"
-        exit 1
-    fi
-
-    if [ -z "$GPG_FULL_KEY_ID" ]; then
-        log_error "gpg.full_key_id missing"
-        exit 1
-    fi
-
-    if [ -z "$GITHUB_REPO" ]; then
-        log_error "github.repo missing"
-        exit 1
-    fi
-
-    log_success "Credentials loaded from $CREDS_FILE"
-    log_success "Namespace: $MAVEN_NAMESPACE"
-    log_success "GPG key: $GPG_FULL_KEY_ID ($GPG_KEY_EMAIL)"
-    log_success "GitHub: $GITHUB_REPO (fork: $GITHUB_FORK)"
-}
-
-setup_gradle_signing() {
-    log_step "Configuring Gradle signing..."
-
-    export ORG_GRADLE_PROJECT_mavenCentralUsername="$MAVEN_USERNAME"
-    export ORG_GRADLE_PROJECT_mavenCentralPassword="$MAVEN_PASSWORD"
-    export ORG_GRADLE_PROJECT_signingInMemoryKeyId="$GPG_KEY_ID"
-    export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="$GPG_PASSPHRASE"
-    export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --export-secret-keys --armor "$GPG_FULL_KEY_ID" 2>/dev/null)"
-
-    if [ -z "$ORG_GRADLE_PROJECT_signingInMemoryKey" ]; then
-        log_error "Failed to export GPG key. Is $GPG_FULL_KEY_ID in your keyring?"
-        exit 1
-    fi
-
-    log_success "Gradle signing configured (in-memory)"
-}
+[ -z "$COMMAND" ] && COMMAND="release"
+cd "$ROOT_DIR"
 
 # =============================================================================
 # Module Discovery
 # =============================================================================
-
 discover_modules() {
-    local filter="$1"
-    local modules=()
-
-    cd "$PROJECT_DIR"
+    local filter="${1:-}"
     for dir in cmp-*/; do
         if [ -d "$dir" ] && grep -q "mavenPublishing" "${dir}build.gradle.kts" 2>/dev/null; then
             local module="${dir%/}"
-            if [ -n "$filter" ] && [ "$module" != "$filter" ]; then
-                continue
-            fi
-            modules+=("$module")
+            if [ -n "$filter" ] && [ "$module" != "$filter" ]; then continue; fi
+            echo "$module"
         fi
     done
-
-    echo "${modules[@]}"
 }
 
-get_module_info() {
-    local module="$1"
-    local build_file="$PROJECT_DIR/$module/build.gradle.kts"
-
-    local version=$(grep -m1 'version = ' "$build_file" | sed 's/.*"\(.*\)".*/\1/')
-    local artifact=$(grep 'coordinates(' "$build_file" | sed 's/.*coordinates([^,]*, "\([^"]*\)".*/\1/')
-    local group=$(grep 'coordinates(' "$build_file" | sed 's/.*coordinates("\([^"]*\)".*/\1/')
-
-    echo "$group:$artifact:$version"
-}
+get_version()  { grep -m1 'version = ' "$1/build.gradle.kts" | sed 's/.*"\(.*\)".*/\1/'; }
+get_artifact() { grep 'coordinates(' "$1/build.gradle.kts" | grep -oE '"kmp[^"]*"|"kmptoolkit[^"]*"' | head -1 | tr -d '"'; }
+get_group()    { echo "io.github.mobilebytelabs"; }
 
 # =============================================================================
-# Commands
+# Credentials
 # =============================================================================
-
-cmd_list() {
-    log_header "Discoverable Modules"
-
-    cd "$PROJECT_DIR"
-    local modules=($(discover_modules ""))
-
-    if [ ${#modules[@]} -eq 0 ]; then
-        log_warn "No publishable modules found"
+load_credentials() {
+    if [ -z "$CREDS_FILE" ] || [ ! -f "$CREDS_FILE" ]; then
+        log_warn "No credentials file — local Maven and signing unavailable"
         return
     fi
 
-    printf "%-25s %-45s %s\n" "MODULE" "ARTIFACT" "VERSION"
-    printf "%-25s %-45s %s\n" "──────" "────────" "───────"
+    export ORG_GRADLE_PROJECT_mavenCentralUsername=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['maven_central']['username'])")
+    export ORG_GRADLE_PROJECT_mavenCentralPassword=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['maven_central']['password'])")
 
-    for module in "${modules[@]}"; do
-        local info=$(get_module_info "$module")
-        local artifact=$(echo "$info" | cut -d: -f1-2)
-        local version=$(echo "$info" | cut -d: -f3)
-        printf "%-25s %-45s %s\n" "$module" "$artifact" "$version"
+    local gpg_key_id=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['key_id'])")
+    local gpg_passphrase=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['passphrase'])")
+    local gpg_full_key_id=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['full_key_id'])")
+
+    export ORG_GRADLE_PROJECT_signingInMemoryKeyId="$gpg_key_id"
+    export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="$gpg_passphrase"
+    export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --yes --pinentry-mode loopback --passphrase "$gpg_passphrase" --export-secret-keys --armor "$gpg_full_key_id" 2>/dev/null)"
+
+    log_pass "Credentials loaded"
+}
+
+# =============================================================================
+# list — Show all publishable modules
+# =============================================================================
+cmd_list() {
+    echo ""
+    echo -e "${BOLD}  Publishable Modules${NC}"
+    echo ""
+    printf "  %-22s %-40s %s\n" "MODULE" "ARTIFACT" "VERSION"
+    printf "  %-22s %-40s %s\n" "──────" "────────" "───────"
+    for module in $(discover_modules "$TARGET_MODULE"); do
+        printf "  %-22s %-40s %s\n" "$module" "$(get_group "$module"):$(get_artifact "$module")" "$(get_version "$module")"
     done
     echo ""
 }
 
+# =============================================================================
+# verify — Run quality gates (uses verify.sh)
+# =============================================================================
 cmd_verify() {
-    log_header "Build Verification (All Platforms)"
-
-    cd "$PROJECT_DIR"
-    local modules=($(discover_modules "${TARGET_MODULE:-}"))
-
-    for module in "${modules[@]}"; do
-        log_step "Verifying $module..."
-        local info=$(get_module_info "$module")
-        echo "  Artifact: $info"
-
-        local targets="compileKotlinJvm"
-        # Add platform targets if they exist
-        for target in compileKotlinIosArm64 compileKotlinIosSimulatorArm64 compileKotlinIosX64 \
-                      compileKotlinMacosArm64 compileKotlinMacosX64 \
-                      compileKotlinJs compileKotlinWasmJs; do
-            targets="$targets :${module}:${target}"
-        done
-
-        if ./gradlew :${module}:compileKotlinJvm :${module}:compileKotlinIosArm64 \
-            :${module}:compileKotlinMacosArm64 :${module}:compileKotlinJs \
-            :${module}:compileKotlinWasmJs --no-configuration-cache --no-daemon 2>/dev/null; then
-            log_success "$module — all platforms OK"
-        else
-            log_error "$module — build failed"
-            exit 1
-        fi
-    done
-
-    log_header "All Modules Verified"
+    log_step "[Gate] Running quality checks..."
+    "$SCRIPT_DIR/verify.sh" --quick
 }
 
+# =============================================================================
+# local — Publish to Maven Local
+# =============================================================================
 cmd_local() {
-    log_header "Publish to Maven Local"
-
     load_credentials
-    setup_gradle_signing
-
-    cd "$PROJECT_DIR"
-    local modules=($(discover_modules "${TARGET_MODULE:-}"))
-
-    for module in "${modules[@]}"; do
-        log_step "Publishing $module to Maven Local..."
-        local info=$(get_module_info "$module")
-
-        if ./gradlew ":${module}:publishToMavenLocal" --no-configuration-cache --no-daemon; then
-            log_success "$module → ~/.m2/repository ($info)"
-        else
-            log_error "$module publish failed"
-            exit 1
-        fi
+    log_step "Publishing to local Maven (~/.m2)..."
+    for module in $(discover_modules "$TARGET_MODULE"); do
+        ./gradlew ":${module}:publishToMavenLocal" --no-configuration-cache --quiet 2>/dev/null
+        log_pass "$module → ~/.m2 ($(get_group "$module"):$(get_artifact "$module"):$(get_version "$module"))"
     done
-
-    log_header "Published to Maven Local"
-    echo "Use with: repositories { mavenLocal() }"
+    echo ""
+    log_pass "Use with: repositories { mavenLocal() }"
 }
 
-cmd_publish() {
-    log_header "Publish to Maven Central"
-
-    load_credentials
-    setup_gradle_signing
-
-    cd "$PROJECT_DIR"
-    local modules=($(discover_modules "${TARGET_MODULE:-}"))
-
-    if [ ${#modules[@]} -eq 0 ]; then
-        log_error "No modules to publish"
-        exit 1
-    fi
-
-    echo "Modules to publish:"
-    for module in "${modules[@]}"; do
-        local info=$(get_module_info "$module")
-        echo "  • $module ($info)"
-    done
-    echo ""
-
-    if [ "$SKIP_CONFIRM" != "true" ]; then
-        read -p "Proceed? [y/N]: " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Cancelled"
-            exit 0
-        fi
-    fi
-
-    for module in "${modules[@]}"; do
-        log_step "Publishing $module..."
-        local info=$(get_module_info "$module")
-
-        if ./gradlew ":${module}:publishAllPublicationsToMavenCentralRepository" \
-            --no-configuration-cache --no-daemon; then
-            log_success "$module published ($info)"
-        else
-            log_error "$module publish failed"
-            exit 1
-        fi
-    done
-
-    log_header "Published to Maven Central"
-    echo "Sync takes ~10-30 minutes."
-    echo ""
-    for module in "${modules[@]}"; do
-        local info=$(get_module_info "$module")
-        local artifact=$(echo "$info" | cut -d: -f2)
-        local version=$(echo "$info" | cut -d: -f3)
-        echo "  ${MAVEN_STAGING_URL:-https://central.sonatype.com}/artifact/${MAVEN_NAMESPACE:-io.github.mobilebytesensei}/$artifact/$version"
-    done
-    echo ""
-}
-
+# =============================================================================
+# release — Full release pipeline
+# =============================================================================
 cmd_release() {
-    local bump_type="${1:-minor}"
+    local github_repo
+    github_repo=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['github']['repo'])" 2>/dev/null || echo "MobileByteLabs/KmpToolkit")
 
-    log_header "Full Release ($bump_type)"
-
-    load_credentials
-
-    cd "$PROJECT_DIR"
-    local modules=($(discover_modules "${TARGET_MODULE:-}"))
-
-    # Get current version from first module
+    # ── Resolve version ──────────────────────────────────────────
+    local modules=($(discover_modules "$TARGET_MODULE"))
     local first_module="${modules[0]}"
-    local current_info=$(get_module_info "$first_module")
-    local current_version=$(echo "$current_info" | cut -d: -f3)
+    local current_version=$(get_version "$first_module")
 
-    # Calculate new version
-    IFS='.' read -r major minor patch <<< "$current_version"
-    case $bump_type in
-        major) major=$((major + 1)); minor=0; patch=0 ;;
-        minor) minor=$((minor + 1)); patch=0 ;;
-        patch) patch=$((patch + 1)) ;;
-    esac
-    local new_version="$major.$minor.$patch"
+    if [ -n "$EXPLICIT_VERSION" ]; then
+        VERSION="$EXPLICIT_VERSION"
+    elif [ -n "$BUMP_TYPE" ]; then
+        IFS='.' read -r major minor patch <<< "$current_version"
+        case $BUMP_TYPE in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+        esac
+        VERSION="$major.$minor.$patch"
+    else
+        VERSION="$current_version"
+    fi
 
-    echo "Current: $current_version → New: $new_version"
-    echo "Modules: ${modules[*]}"
+    TAG="v$VERSION"
+
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  ${BOLD}KmpToolkit Release: $TAG${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    for module in "${modules[@]}"; do
+        echo "    • $module  $(get_group "$module"):$(get_artifact "$module"):$VERSION"
+    done
     echo ""
 
-    if [ "$SKIP_CONFIRM" != "true" ]; then
-        read -p "Proceed with release? [y/N]: " -n 1 -r
+    # ── Pre-flight checks ────────────────────────────────────────
+    if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+        log_fail "Uncommitted changes. Commit or stash first."
+    fi
+
+    # ── Step 1: Quality gates ────────────────────────────────────
+    log_step "[1/6] Quality gates (verify.sh --quick)..."
+    "$SCRIPT_DIR/verify.sh" --quick
+
+    if [ "$DRY_RUN" = true ]; then
         echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Cancelled"
-            exit 0
-        fi
+        log_pass "Dry run complete. All checks passed for $TAG."
+        echo "   Re-run without --dry-run to merge, tag, and push."
+        exit 0
     fi
 
-    # Bump versions
-    log_step "Bumping versions to $new_version..."
-    for module in "${modules[@]}"; do
-        local build_file="$PROJECT_DIR/$module/build.gradle.kts"
-        sed -i '' "s/version = \"$current_version\"/version = \"$new_version\"/" "$build_file"
-        log_success "$module → $new_version"
-    done
-
-    # Build verification
-    cmd_verify
-
-    # Publish
-    setup_gradle_signing
-    SKIP_CONFIRM=true cmd_publish
-
-    # Git tag
-    log_step "Creating git tag..."
-    git add -A
-    git commit -m "chore: release v$new_version" --no-verify || true
-    git tag -a "v$new_version" -m "Release v$new_version"
-    local branch=$(git branch --show-current)
-    git push upstream "$branch" --tags --no-verify
-    log_success "Tagged v$new_version and pushed"
-
-    # GitHub release
-    if command -v gh &>/dev/null; then
-        log_step "Creating GitHub release..."
-        local notes="## Modules\n"
+    # ── Step 2: Bump versions ────────────────────────────────────
+    if [ "$VERSION" != "$current_version" ]; then
+        log_step "[2/6] Bumping: $current_version → $VERSION..."
         for module in "${modules[@]}"; do
-            local info=$(get_module_info "$module")
-            notes+="- \`$info\`\n"
+            sed -i '' "s/version = \"$current_version\"/version = \"$VERSION\"/" "${module}/build.gradle.kts"
         done
-        gh release create "v$new_version" -R "${GITHUB_REPO:-MobileByteLabs/KmpToolkit}" \
-            --target "$branch" --title "v$new_version" --notes "$(echo -e "$notes")" 2>/dev/null || \
-            log_warn "GitHub release creation failed (create manually)"
+        git add -A
+        git commit -m "chore: bump version to $VERSION" --no-verify
+        log_pass "Versions bumped to $VERSION"
+    else
+        log_step "[2/6] Version unchanged ($VERSION)"
     fi
 
-    log_header "Release v$new_version Complete"
+    # ── Step 3: Merge development → main ─────────────────────────
+    if [ "$SKIP_MERGE" = false ]; then
+        log_step "[3/6] Merging development → main..."
+        git fetch origin development main 2>/dev/null || true
+
+        local behind=$(git rev-list origin/main..origin/development --count 2>/dev/null || echo "0")
+
+        if [ "$behind" = "0" ]; then
+            log_pass "main is up-to-date with development"
+        else
+            echo "   development is $behind commit(s) ahead"
+            git checkout main
+            git pull origin main --ff-only
+
+            if git merge --ff-only origin/development 2>/dev/null; then
+                git push origin main
+                log_pass "Fast-forward merge succeeded"
+            else
+                log_warn "Fast-forward not possible — creating PR..."
+                if ! command -v gh &>/dev/null; then
+                    log_fail "gh CLI required. Install: https://cli.github.com"
+                fi
+                local pr_url=$(gh pr create --repo "$github_repo" \
+                    --base main --head development \
+                    --title "chore: release $TAG" \
+                    --body "Automated merge for release $TAG" 2>&1 | tail -1)
+                local pr_number=$(echo "$pr_url" | grep -oE '[0-9]+$')
+                gh pr merge "$pr_number" --repo "$github_repo" --merge --admin
+                git pull origin main --ff-only
+                log_pass "Merged via PR #$pr_number"
+            fi
+        fi
+
+        # Ensure on main
+        if [ "$(git rev-parse --abbrev-ref HEAD)" != "main" ]; then
+            git checkout main && git pull origin main --ff-only
+        fi
+    else
+        log_step "[3/6] Skipping merge (--skip-merge)"
+    fi
+
+    # ── Step 4: Check tag ────────────────────────────────────────
+    log_step "[4/6] Checking tag $TAG..."
+    if git tag -l | grep -q "^$TAG$"; then
+        log_fail "Tag $TAG already exists locally"
+    fi
+    if git ls-remote --tags origin 2>/dev/null | grep -q "refs/tags/$TAG$"; then
+        log_fail "Tag $TAG already exists on remote"
+    fi
+    log_pass "Tag $TAG is available"
+
+    # ── Step 5: Local Maven (optional) ───────────────────────────
+    if [ "$LOCAL_MAVEN" = true ]; then
+        log_step "[5/6] Publishing to local Maven..."
+        load_credentials
+        cmd_local
+    else
+        log_step "[5/6] Skipping local Maven (use --local)"
+    fi
+
+    # ── Step 6: Tag + push + GitHub Release ──────────────────────
+    log_step "[6/6] Creating tag and pushing..."
+    git tag -a "$TAG" -m "KmpToolkit $TAG"
+    git push origin "$TAG"
+    log_pass "Tag $TAG pushed to origin"
+
+    # GitHub Release (triggers publish.yml)
+    if command -v gh &>/dev/null; then
+        local notes="## Modules\n\n"
+        for module in "${modules[@]}"; do
+            notes+="- \`$(get_group "$module"):$(get_artifact "$module"):$VERSION\`\n"
+        done
+        notes+="\n## Installation\n\n\`\`\`kotlin\ncommonMain.dependencies {\n"
+        for module in "${modules[@]}"; do
+            notes+="    implementation(\"$(get_group "$module"):$(get_artifact "$module"):$VERSION\")\n"
+        done
+        notes+="}\n\`\`\`\n"
+
+        gh release create "$TAG" --repo "$github_repo" \
+            --title "$TAG" --notes "$(echo -e "$notes")" 2>/dev/null && \
+            log_pass "GitHub Release created" || \
+            log_warn "GitHub Release failed — create manually"
+    fi
+
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}${BOLD}$TAG released!${NC}"
+    echo -e "${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  GitHub Actions will now:"
+    echo -e "${CYAN}║${NC}    1. CI workflow → quality + build all targets"
+    echo -e "${CYAN}║${NC}    2. Publish workflow → Maven Central (~10 min)"
+    echo -e "${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  Track: https://github.com/$github_repo/actions"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
 }
 
 # =============================================================================
 # Help
 # =============================================================================
-
-show_help() {
+cmd_help() {
     echo ""
-    echo -e "${BOLD}KmpToolkit — Release & Publishing Tool${NC}"
+    echo -e "${BOLD}KmpToolkit — Release Script${NC}"
     echo ""
-    echo -e "${BOLD}Usage:${NC} $0 <command> [options]"
-    echo ""
-    echo -e "${BOLD}Commands:${NC}"
-    echo "  list                     List all publishable modules"
-    echo "  verify                   Build all platforms (no publish)"
-    echo "  local                    Publish to Maven Local (~/.m2)"
-    echo "  publish                  Publish to Maven Central"
-    echo "  release [major|minor|patch]  Full release: bump + verify + publish + tag"
-    echo "  help                     Show this help"
-    echo ""
-    echo -e "${BOLD}Options:${NC}"
-    echo "  --credentials FILE       Path to JSON credentials file"
-    echo "  --module MODULE          Target specific module (e.g., cmp-user-tickets)"
-    echo "  -y                       Skip confirmation prompts"
-    echo ""
-    echo -e "${BOLD}Examples:${NC}"
-    echo "  $0 list"
-    echo "  $0 verify"
-    echo "  $0 publish --credentials ~/secrets/kmptoolkit.json"
-    echo "  $0 publish --credentials ~/secrets/kmptoolkit.json --module cmp-user-tickets"
-    echo "  $0 release minor --credentials ~/secrets/kmptoolkit.json"
-    echo ""
-    echo -e "${BOLD}Credentials JSON:${NC}"
-    echo '  {'
-    echo '    "maven_central": {'
-    echo '      "username": "...", "password": "...",'
-    echo '      "namespace": "io.github.mobilebytesensei",'
-    echo '      "staging_url": "https://central.sonatype.com"'
-    echo '    },'
-    echo '    "gpg": {'
-    echo '      "key_id": "...", "full_key_id": "...",'
-    echo '      "passphrase": "...", "key_email": "..."'
-    echo '    },'
-    echo '    "github": {'
-    echo '      "repo": "MobileByteLabs/KmpToolkit",'
-    echo '      "org": "mobilebytesensei",'
-    echo '      "fork": "therajanmaurya/KmpToolkit"'
-    echo '    }'
-    echo '  }'
+    echo "  ./scripts/release.sh                          Full release"
+    echo "  ./scripts/release.sh --bump minor             Auto-bump + release"
+    echo "  ./scripts/release.sh --version 0.2.0          Explicit version"
+    echo "  ./scripts/release.sh --dry-run                Checks only"
+    echo "  ./scripts/release.sh --local                  + local Maven"
+    echo "  ./scripts/release.sh --module cmp-clipboard   Single module"
+    echo "  ./scripts/release.sh list                     List modules"
+    echo "  ./scripts/release.sh verify                   Quality gates"
+    echo "  ./scripts/release.sh help                     This help"
     echo ""
 }
 
 # =============================================================================
-# Main
+# Router
 # =============================================================================
-
-TARGET_MODULE=""
-SKIP_CONFIRM=""
-
-# Parse flags
-ARGS=()
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --credentials) CREDS_FILE="$2"; shift 2 ;;
-        --module) TARGET_MODULE="$2"; shift 2 ;;
-        -y) SKIP_CONFIRM="true"; shift ;;
-        *) ARGS+=("$1"); shift ;;
-    esac
-done
-
-COMMAND="${ARGS[0]:-}"
-
-echo ""
-echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║${NC}   ${BOLD}KmpToolkit — Release Tool${NC}                               ${CYAN}║${NC}"
-echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
-
 case "$COMMAND" in
     list)    cmd_list ;;
     verify)  cmd_verify ;;
     local)   cmd_local ;;
-    publish) cmd_publish ;;
-    release) cmd_release "${ARGS[1]:-minor}" ;;
-    help|--help|-h|"") show_help ;;
-    *) log_error "Unknown command: $COMMAND"; show_help; exit 1 ;;
+    help)    cmd_help ;;
+    release) cmd_release ;;
+    *)       cmd_help ;;
 esac
