@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,10 +23,11 @@ fun App() {
             color = MaterialTheme.colorScheme.background,
         ) {
             var selectedTab by remember { mutableStateOf(0) }
-            val tabs = listOf("Manual", "Observer")
+            val tabs = listOf("Clipboard", "Observer", "Monitor", "Async", "Bubble")
 
             Column(modifier = Modifier.fillMaxSize()) {
-                TabRow(
+                @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+                PrimaryScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -42,6 +43,9 @@ fun App() {
                 when (selectedTab) {
                     0 -> ClipboardScreen()
                     1 -> ClipboardObserverScreen()
+                    2 -> ClipboardMonitorScreen()
+                    3 -> ClipboardAsyncScreen()
+                    4 -> BubbleScreen()
                 }
             }
         }
