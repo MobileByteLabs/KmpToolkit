@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <provider
+            android:name="com.mobilebytelabs.kmptoolkit.bubble.BubbleInitProvider"
+            android:authorities="${applicationId}.kmptoolkit.bubble.init"
+            android:exported="false"
+            android:initOrder="99" />
+    </application>
+
+</manifest>
