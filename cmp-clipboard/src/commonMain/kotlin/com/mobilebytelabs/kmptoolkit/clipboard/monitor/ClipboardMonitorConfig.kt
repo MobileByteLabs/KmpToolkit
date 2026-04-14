@@ -41,7 +41,7 @@ data class ClipboardMonitorConfig(
     val showOverlay: Boolean = false,
     val triggerWorkerOnUrl: Boolean = false,
     val notificationTitle: String = "Clipboard Monitor Service",
-    val notificationText: String = "Monitoring clipboard changes"
+    val notificationText: String = "Monitoring clipboard changes",
 ) {
     companion object {
         /** Default configuration — basic monitoring with notification. */
@@ -53,7 +53,7 @@ data class ClipboardMonitorConfig(
             detectUrls = true,
             showNotification = true,
             showOverlay = true,
-            triggerWorkerOnUrl = true
+            triggerWorkerOnUrl = true,
         )
     }
 }

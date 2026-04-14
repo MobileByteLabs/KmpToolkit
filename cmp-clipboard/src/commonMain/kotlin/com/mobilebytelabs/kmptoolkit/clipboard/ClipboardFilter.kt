@@ -61,8 +61,7 @@ interface ClipboardFilter {
         /** Exclude content matching any of the given patterns. */
         fun exclude(vararg patterns: Regex): ClipboardFilter = object : ClipboardFilter {
             override val name = "Exclude(${patterns.size} patterns)"
-            override fun shouldProcess(content: String) =
-                patterns.none { it.containsMatchIn(content) }
+            override fun shouldProcess(content: String) = patterns.none { it.containsMatchIn(content) }
         }
     }
 }

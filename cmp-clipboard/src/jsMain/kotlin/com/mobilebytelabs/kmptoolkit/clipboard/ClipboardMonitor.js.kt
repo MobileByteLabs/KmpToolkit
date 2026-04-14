@@ -86,8 +86,12 @@ internal class JsClipboardMonitor : ClipboardMonitor {
         if (_state.value is ClipboardMonitorState.Paused) _state.value = ClipboardMonitorState.Monitoring
     }
 
-    override fun addUrlMatcher(matcher: ClipboardUrlMatcher) { urlMatchers.add(matcher) }
-    override fun addFilter(filter: ClipboardFilter) { filters.add(filter) }
+    override fun addUrlMatcher(matcher: ClipboardUrlMatcher) {
+        urlMatchers.add(matcher)
+    }
+    override fun addFilter(filter: ClipboardFilter) {
+        filters.add(filter)
+    }
 
     private fun tryReadClipboard() {
         // Attempt async read via navigator.clipboard
@@ -117,7 +121,7 @@ internal class JsClipboardMonitor : ClipboardMonitor {
             contentType = contentType,
             timestamp = js("Date.now()") as Long,
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         if (filters.any { !it.shouldProcess(content) }) return

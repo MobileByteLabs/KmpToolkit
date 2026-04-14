@@ -20,13 +20,27 @@ internal class WasmJsBubble(private val config: BubbleConfig) : Bubble {
     override val state: StateFlow<BubbleState> = _state.asStateFlow()
     override val isShowing: Boolean get() = _state.value is BubbleState.Showing
 
-    override fun show(title: String, message: String, icon: BubbleIcon?, actions: List<BubbleAction>, style: BubbleStyle, onTap: BubbleTapAction, autoDismissMs: Long) {
+    override fun show(
+        title: String,
+        message: String,
+        icon: BubbleIcon?,
+        actions: List<BubbleAction>,
+        style: BubbleStyle,
+        onTap: BubbleTapAction,
+        autoDismissMs: Long,
+    ) {
         if (jsShowNotification(title, message)) {
             _state.value = BubbleState.Showing
         }
     }
 
-    override fun showScreen(title: String, route: String, screenConfig: BubbleScreenConfig, icon: BubbleIcon?, style: BubbleStyle) {
+    override fun showScreen(
+        title: String,
+        route: String,
+        screenConfig: BubbleScreenConfig,
+        icon: BubbleIcon?,
+        style: BubbleStyle,
+    ) {
         show(title = title, message = "Open: $route", style = style)
     }
 

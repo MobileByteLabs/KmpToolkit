@@ -51,7 +51,7 @@ internal class IosClipboardMonitor : ClipboardMonitor {
                 if (_state.value is ClipboardMonitorState.Monitoring) {
                     checkClipboard()
                 }
-            }
+            },
         )
 
         // Start polling timer for continuous monitoring
@@ -63,7 +63,7 @@ internal class IosClipboardMonitor : ClipboardMonitor {
                 if (_state.value is ClipboardMonitorState.Monitoring) {
                     checkClipboard()
                 }
-            }
+            },
         )
 
         _state.value = ClipboardMonitorState.Monitoring
@@ -125,7 +125,7 @@ internal class IosClipboardMonitor : ClipboardMonitor {
             contentType = contentType,
             timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         // Apply filters

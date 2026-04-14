@@ -260,10 +260,7 @@ fun ClipboardObserverScreen() {
 }
 
 @Composable
-private fun CopyableTextItem(
-    text: String,
-    onCopy: () -> Unit,
-) {
+private fun CopyableTextItem(text: String, onCopy: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -298,12 +295,7 @@ private fun CopyableTextItem(
 }
 
 @Composable
-private fun HistoryEntryItem(
-    index: Int,
-    entry: ClipboardHistoryEntry,
-    onCopy: () -> Unit,
-    onRemove: () -> Unit,
-) {
+private fun HistoryEntryItem(index: Int, entry: ClipboardHistoryEntry, onCopy: () -> Unit, onRemove: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(

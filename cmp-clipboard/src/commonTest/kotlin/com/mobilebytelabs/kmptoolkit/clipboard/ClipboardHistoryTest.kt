@@ -84,7 +84,7 @@ class ClipboardHistoryTest {
         val entry = ClipboardHistoryEntry(
             content = "Hello",
             timestamp = 1000L,
-            contentType = ClipboardContentType.Text
+            contentType = ClipboardContentType.Text,
         )
         assertEquals("Hello", entry.content)
         assertEquals(1000L, entry.timestamp)
@@ -96,7 +96,7 @@ class ClipboardHistoryTest {
         val entry = ClipboardHistoryEntry(
             content = "https://example.com",
             timestamp = 2000L,
-            contentType = ClipboardContentType.Uri
+            contentType = ClipboardContentType.Uri,
         )
         assertEquals(ClipboardContentType.Uri, entry.contentType)
     }
@@ -105,7 +105,7 @@ class ClipboardHistoryTest {
     fun historyEntry_defaultContentType() {
         val entry = ClipboardHistoryEntry(
             content = "text",
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         assertEquals(ClipboardContentType.Text, entry.contentType)
     }
@@ -115,7 +115,7 @@ class ClipboardHistoryTest {
         val history = createClipboardHistory()
         val entry = ClipboardHistoryEntry(
             content = "Test copy",
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         // Should not throw on any platform
         history.copyToClipboard(entry)
@@ -126,7 +126,7 @@ class ClipboardHistoryTest {
         val history = createClipboardHistory()
         val entry = ClipboardHistoryEntry(
             content = "Test remove",
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         // Remove from empty history — should not throw
         history.remove(entry)

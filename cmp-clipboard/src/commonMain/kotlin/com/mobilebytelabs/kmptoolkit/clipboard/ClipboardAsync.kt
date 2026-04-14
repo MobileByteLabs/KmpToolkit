@@ -1,35 +1,14 @@
 package com.mobilebytelabs.kmptoolkit.clipboard
 
-/**
- * Asynchronous clipboard operations.
- *
- * Provides suspend function variants of the basic clipboard operations.
- * Essential for platforms where clipboard access is inherently async
- * (JS/Wasm Clipboard API), and useful everywhere for non-blocking I/O.
- *
- * ## Usage
- *
- * ```kotlin
- * // In a coroutine
- * val text = getFromClipboardAsync()
- * text?.let { println("Clipboard: $it") }
- *
- * val success = copyToClipboardAsync("Hello!")
- * ```
- *
- * ## Platform Behavior
- *
- * | Platform | Behavior |
- * |----------|----------|
- * | Android  | Dispatches to Main thread |
- * | iOS/macOS| Dispatches to Main thread |
- * | JVM      | Dispatches to IO thread |
- * | JS/Wasm  | Uses navigator.clipboard async API |
- * | Linux    | Dispatches xclip to IO thread |
- * | Windows  | Dispatches to IO thread |
- *
- * @since 0.2.0
- */
+// Asynchronous clipboard operations.
+// Provides suspend function variants of the basic clipboard operations.
+// Essential for platforms where clipboard access is inherently async
+// (JS/Wasm Clipboard API), and useful everywhere for non-blocking I/O.
+//
+// Platform Behavior:
+// Android/iOS/macOS: Dispatches to Main thread
+// JVM/Linux/Windows: Dispatches to IO thread
+// JS/Wasm: Uses navigator.clipboard async API
 
 /**
  * Reads text from the clipboard asynchronously.

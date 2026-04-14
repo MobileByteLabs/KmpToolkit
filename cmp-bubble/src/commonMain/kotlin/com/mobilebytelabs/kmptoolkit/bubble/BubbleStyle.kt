@@ -29,5 +29,5 @@ enum class BubbleStyle {
     Service,
 
     /** Auto — platform picks the best available style. */
-    Auto
+    Auto,
 }

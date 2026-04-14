@@ -11,11 +11,7 @@ package com.mobilebytelabs.kmptoolkit.bubble
  * @property autoExpand Whether to auto-expand the bubble when shown.
  * @since 0.1.0
  */
-data class BubbleScreenConfig(
-    val height: Int = 400,
-    val width: Int = MATCH_PARENT,
-    val autoExpand: Boolean = true
-) {
+data class BubbleScreenConfig(val height: Int = 400, val width: Int = MATCH_PARENT, val autoExpand: Boolean = true) {
     companion object {
         const val MATCH_PARENT = -1
         val Default = BubbleScreenConfig()

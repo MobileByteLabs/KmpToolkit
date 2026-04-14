@@ -51,7 +51,7 @@ internal class MacosClipboardMonitor : ClipboardMonitor {
                 if (_state.value is ClipboardMonitorState.Monitoring) {
                     checkClipboard()
                 }
-            }
+            },
         )
 
         // Start polling timer
@@ -63,7 +63,7 @@ internal class MacosClipboardMonitor : ClipboardMonitor {
                 if (_state.value is ClipboardMonitorState.Monitoring) {
                     checkClipboard()
                 }
-            }
+            },
         )
 
         _state.value = ClipboardMonitorState.Monitoring
@@ -124,7 +124,7 @@ internal class MacosClipboardMonitor : ClipboardMonitor {
             contentType = contentType,
             timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         if (filters.any { !it.shouldProcess(content) }) return

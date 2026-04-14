@@ -30,7 +30,7 @@ data class ClipboardOverlayConfig(
     val draggable: Boolean = true,
     val autoDismissMs: Long = 0L,
     val showOnUrlOnly: Boolean = true,
-    val vibrate: Boolean = true
+    val vibrate: Boolean = true,
 ) {
     companion object {
         val Default = ClipboardOverlayConfig()
@@ -47,5 +47,5 @@ enum class OverlayPosition {
     TopEnd,
     BottomStart,
     BottomEnd,
-    CenterEnd
+    CenterEnd,
 }

@@ -37,7 +37,7 @@ internal class ClipboardMonitorService : Service() {
     companion object {
         /** Shared state accessible by AndroidClipboardMonitor */
         internal val serviceState = MutableStateFlow<ClipboardMonitorServiceState>(
-            ClipboardMonitorServiceState.Stopped
+            ClipboardMonitorServiceState.Stopped,
         )
         internal val clipboardChanges = MutableSharedFlow<ClipboardChange>(extraBufferCapacity = 64)
         internal val detectedUrls = MutableSharedFlow<UrlDetection>(extraBufferCapacity = 64)
@@ -90,7 +90,7 @@ internal class ClipboardMonitorService : Service() {
             context = this,
             title = notificationTitle,
             text = notificationText,
-            isPaused = false
+            isPaused = false,
         )
         startForeground(ClipboardNotification.NOTIFICATION_ID, notification)
 
@@ -113,7 +113,7 @@ internal class ClipboardMonitorService : Service() {
             context = this,
             title = notificationTitle,
             text = notificationText,
-            isPaused = true
+            isPaused = true,
         )
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         manager.notify(ClipboardNotification.NOTIFICATION_ID, notification)
@@ -127,7 +127,7 @@ internal class ClipboardMonitorService : Service() {
             context = this,
             title = notificationTitle,
             text = notificationText,
-            isPaused = false
+            isPaused = false,
         )
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         manager.notify(ClipboardNotification.NOTIFICATION_ID, notification)
@@ -150,7 +150,7 @@ internal class ClipboardMonitorService : Service() {
             contentType = contentType,
             timestamp = System.currentTimeMillis(),
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         // Apply filters
@@ -166,7 +166,7 @@ internal class ClipboardMonitorService : Service() {
                 val detection = UrlDetection(
                     url = url,
                     matcher = matcher,
-                    change = change
+                    change = change,
                 )
                 detectedUrls.tryEmit(detection)
                 break // First match wins
@@ -174,12 +174,14 @@ internal class ClipboardMonitorService : Service() {
         }
     }
 
-    private fun detectContentType(content: String): ClipboardContentType {
-        return when {
-            content.startsWith("http://") || content.startsWith("https://") -> ClipboardContentType.Uri
-            content.startsWith("<html") || content.startsWith("<HTML") || content.contains("</") -> ClipboardContentType.Html
-            else -> ClipboardContentType.Text
-        }
+    private fun detectContentType(content: String): ClipboardContentType = when {
+        content.startsWith("http://") || content.startsWith("https://") -> ClipboardContentType.Uri
+
+        content.startsWith(
+            "<html",
+        ) || content.startsWith("<HTML") || content.contains("</") -> ClipboardContentType.Html
+
+        else -> ClipboardContentType.Text
     }
 }
 

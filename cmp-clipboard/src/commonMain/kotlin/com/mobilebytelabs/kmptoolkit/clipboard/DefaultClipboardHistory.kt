@@ -15,9 +15,7 @@ import kotlinx.coroutines.launch
  * Uses [ClipboardObserver] to detect clipboard changes and maintains
  * an in-memory history list capped at [maxSize].
  */
-internal class DefaultClipboardHistory(
-    override val maxSize: Int
-) : ClipboardHistory {
+internal class DefaultClipboardHistory(override val maxSize: Int) : ClipboardHistory {
 
     private val _entries = MutableStateFlow<List<ClipboardHistoryEntry>>(emptyList())
     override val entries: StateFlow<List<ClipboardHistoryEntry>> = _entries.asStateFlow()
@@ -53,9 +51,7 @@ internal class DefaultClipboardHistory(
         observer.stopObserving()
     }
 
-    override fun copyToClipboard(entry: ClipboardHistoryEntry): Boolean {
-        return copyToClipboard(entry.content)
-    }
+    override fun copyToClipboard(entry: ClipboardHistoryEntry): Boolean = copyToClipboard(entry.content)
 
     override fun remove(entry: ClipboardHistoryEntry) {
         _entries.value = _entries.value.filter { it !== entry && it.timestamp != entry.timestamp }
@@ -80,7 +76,7 @@ internal class DefaultClipboardHistory(
         val entry = ClipboardHistoryEntry(
             content = content,
             timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
-            contentType = contentType
+            contentType = contentType,
         )
 
         // Prepend new entry, cap at maxSize

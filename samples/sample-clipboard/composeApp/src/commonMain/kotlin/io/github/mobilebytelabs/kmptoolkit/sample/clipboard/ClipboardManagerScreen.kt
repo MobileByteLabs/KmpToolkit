@@ -43,9 +43,7 @@ import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorState
  * - All state managed in ViewModel, survives config changes
  */
 @Composable
-fun ClipboardManagerScreen(
-    viewModel: ClipboardViewModel = viewModel { ClipboardViewModel() },
-) {
+fun ClipboardManagerScreen(viewModel: ClipboardViewModel = viewModel { ClipboardViewModel() }) {
     val state by viewModel.uiState.collectAsState()
     var inputText by remember { mutableStateOf("") }
 
@@ -98,8 +96,10 @@ fun ClipboardManagerScreen(
                     Text(if (text.startsWith("http")) "\uD83D\uDD17" else "\uD83D\uDCDD")
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text, style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        text,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
                     Text("TAP", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
@@ -142,7 +142,11 @@ fun ClipboardManagerScreen(
         // ── Status ──────────────────────────────────────────────
         if (state.statusMessage.isNotEmpty()) {
             Spacer(modifier = Modifier.height(4.dp))
-            Text(state.statusMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            Text(
+                state.statusMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -265,18 +269,31 @@ fun ClipboardManagerScreen(
                         Text("#${index + 1}", style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(entry.content, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(entry.contentType.name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                entry.content,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                entry.contentType.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                         Text(
-                            "COPY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary,
+                            "COPY",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .clickable { viewModel.onAction(ClipboardAction.CopyFromHistory(entry)) }
                                 .padding(4.dp),
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "\u2715", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error,
+                            "\u2715",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
                             modifier = Modifier
                                 .clickable { viewModel.onAction(ClipboardAction.RemoveFromHistory(entry)) }
                                 .padding(4.dp),

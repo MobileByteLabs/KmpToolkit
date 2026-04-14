@@ -31,7 +31,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
         actions: List<BubbleAction>,
         style: BubbleStyle,
         onTap: BubbleTapAction,
-        autoDismissMs: Long
+        autoDismissMs: Long,
     ) {
         val notificationId = NSUUID().UUIDString
         currentNotificationId = notificationId
@@ -56,6 +56,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
                 is BubbleTapAction.DeepLink -> {
                     setUserInfo(mapOf("route" to onTap.uri))
                 }
+
                 else -> {}
             }
         }
@@ -64,7 +65,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
         val request = UNNotificationRequest.requestWithIdentifier(
             identifier = notificationId,
             content = content,
-            trigger = null
+            trigger = null,
         )
 
         // Post notification
@@ -80,7 +81,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
         route: String,
         screenConfig: BubbleScreenConfig,
         icon: BubbleIcon?,
-        style: BubbleStyle
+        style: BubbleStyle,
     ) {
         // On iOS, showing a "screen" means posting a notification
         // that deep-links to the route when tapped
@@ -89,16 +90,11 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
             message = route,
             icon = icon,
             style = style,
-            onTap = BubbleTapAction.DeepLink(route)
+            onTap = BubbleTapAction.DeepLink(route),
         )
     }
 
-    override fun showPersistent(
-        title: String,
-        message: String,
-        actions: List<BubbleAction>,
-        style: BubbleStyle
-    ) {
+    override fun showPersistent(title: String, message: String, actions: List<BubbleAction>, style: BubbleStyle) {
         // iOS doesn't have persistent notifications in the same way as Android
         // Show a standard notification that stays in notification center
         show(title = title, message = message, actions = actions, style = style)
@@ -114,7 +110,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
         val request = UNNotificationRequest.requestWithIdentifier(
             identifier = id,
             content = content,
-            trigger = null
+            trigger = null,
         )
         UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request, null)
     }
@@ -133,7 +129,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
             UNNotificationAction.actionWithIdentifier(
                 identifier = action.id,
                 title = action.label,
-                options = UNNotificationActionOptionNone
+                options = UNNotificationActionOptionNone,
             )
         }
 
@@ -141,7 +137,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
             identifier = CATEGORY_ID,
             actions = notificationActions,
             intentIdentifiers = emptyList<String>(),
-            options = UNNotificationCategoryOptionNone
+            options = UNNotificationCategoryOptionNone,
         )
 
         UNUserNotificationCenter.currentNotificationCenter()

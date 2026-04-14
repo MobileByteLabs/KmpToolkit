@@ -109,7 +109,7 @@ class ClipboardFilterTest {
         val filter = ClipboardFilter.exclude(
             Regex("password", RegexOption.IGNORE_CASE),
             Regex("secret", RegexOption.IGNORE_CASE),
-            Regex("token", RegexOption.IGNORE_CASE)
+            Regex("token", RegexOption.IGNORE_CASE),
         )
         assertFalse(filter.shouldProcess("my secret key"))
         assertFalse(filter.shouldProcess("bearer token abc"))
@@ -145,7 +145,7 @@ class ClipboardFilterTest {
         val filters = listOf(
             ClipboardFilter.urlOnly(),
             ClipboardFilter.minLength(20),
-            ClipboardFilter.maxLength(500)
+            ClipboardFilter.maxLength(500),
         )
 
         val url = "https://www.instagram.com/reel/ABC123/"

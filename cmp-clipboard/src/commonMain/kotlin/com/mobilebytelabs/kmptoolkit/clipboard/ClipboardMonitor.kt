@@ -112,11 +112,7 @@ interface ClipboardMonitor {
  * @property matcher The matcher that detected the URL.
  * @property change The full clipboard change event.
  */
-data class UrlDetection(
-    val url: String,
-    val matcher: ClipboardUrlMatcher,
-    val change: ClipboardChange
-)
+data class UrlDetection(val url: String, val matcher: ClipboardUrlMatcher, val change: ClipboardChange)
 
 /**
  * Creates a platform-specific [ClipboardMonitor] instance.

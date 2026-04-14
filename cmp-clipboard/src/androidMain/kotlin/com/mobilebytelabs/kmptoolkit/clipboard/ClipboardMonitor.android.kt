@@ -39,7 +39,9 @@ import kotlinx.coroutines.launch
  * The in-process mode works identically to ClipboardObserver but adds URL matching,
  * filtering, and change metadata. It works even if the service fails to start.
  */
-internal class AndroidClipboardMonitor : ClipboardMonitor, DefaultLifecycleObserver {
+internal class AndroidClipboardMonitor :
+    ClipboardMonitor,
+    DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var overlay: ClipboardOverlay? = null
@@ -215,7 +217,7 @@ internal class AndroidClipboardMonitor : ClipboardMonitor, DefaultLifecycleObser
             contentType = contentType,
             timestamp = System.currentTimeMillis(),
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         // Apply filters

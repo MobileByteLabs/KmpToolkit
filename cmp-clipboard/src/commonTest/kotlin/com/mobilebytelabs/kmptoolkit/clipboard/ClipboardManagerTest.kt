@@ -32,14 +32,16 @@ class ClipboardManagerTest {
 
     @Test
     fun create_withCustomConfig() {
-        val manager = ClipboardManager(ClipboardManagerConfig(
-            observe = true,
-            historySize = 50,
-            detectUrls = true,
-            urlMatchers = SocialMediaUrlMatchers.all(),
-            filters = listOf(ClipboardFilter.urlOnly()),
-            async = true,
-        ))
+        val manager = ClipboardManager(
+            ClipboardManagerConfig(
+                observe = true,
+                historySize = 50,
+                detectUrls = true,
+                urlMatchers = SocialMediaUrlMatchers.all(),
+                filters = listOf(ClipboardFilter.urlOnly()),
+                async = true,
+            ),
+        )
         assertEquals(50, manager.historyMaxSize)
     }
 

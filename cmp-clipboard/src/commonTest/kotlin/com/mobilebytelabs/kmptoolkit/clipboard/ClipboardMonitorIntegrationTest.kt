@@ -100,7 +100,7 @@ class ClipboardMonitorIntegrationTest {
     fun customMatcher_worksWithMonitor() {
         val customMatcher = RegexUrlMatcher(
             name = "MyService",
-            patterns = listOf(Regex("https?://myservice\\.com/video/\\d+"))
+            patterns = listOf(Regex("https?://myservice\\.com/video/\\d+")),
         )
 
         assertTrue(customMatcher.matches("https://myservice.com/video/12345"))
@@ -153,7 +153,7 @@ class ClipboardMonitorIntegrationTest {
     fun filterPipeline_excludeSensitiveContent() {
         val filter = ClipboardFilter.exclude(
             Regex("password", RegexOption.IGNORE_CASE),
-            Regex("secret", RegexOption.IGNORE_CASE)
+            Regex("secret", RegexOption.IGNORE_CASE),
         )
 
         assertTrue(filter.shouldProcess("https://instagram.com/reel/123"))
@@ -172,7 +172,7 @@ class ClipboardMonitorIntegrationTest {
             contentType = ClipboardContentType.Uri,
             timestamp = 1000L,
             source = ClipboardSource.External,
-            previousContent = "old text"
+            previousContent = "old text",
         )
 
         // Verify change properties
@@ -194,7 +194,7 @@ class ClipboardMonitorIntegrationTest {
         val detection = UrlDetection(
             url = extractedUrl,
             matcher = matchedMatcher,
-            change = change
+            change = change,
         )
         assertEquals("Instagram", detection.matcher.name)
         assertTrue(detection.url.contains("instagram.com"))
@@ -217,13 +217,13 @@ class ClipboardMonitorIntegrationTest {
             content = "https://www.instagram.com/reel/ABC123/",
             contentType = ClipboardContentType.Uri,
             timestamp = 1000L,
-            source = ClipboardSource.External
+            source = ClipboardSource.External,
         )
         // Should not throw on any platform
         trigger.onUrlDetected(
             url = "https://www.instagram.com/reel/ABC123/",
             matcher = matcher,
-            change = change
+            change = change,
         )
     }
 
@@ -275,7 +275,7 @@ class ClipboardMonitorIntegrationTest {
             draggable = false,
             autoDismissMs = 5000L,
             showOnUrlOnly = false,
-            vibrate = false
+            vibrate = false,
         )
         assertEquals(OverlayPosition.TopEnd, config.position)
         assertFalse(config.draggable)

@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-
 internal class MingwClipboardMonitor : ClipboardMonitor {
     private val _state = MutableStateFlow<ClipboardMonitorState>(ClipboardMonitorState.Idle)
     override val state: StateFlow<ClipboardMonitorState> = _state.asStateFlow()
@@ -70,8 +69,12 @@ internal class MingwClipboardMonitor : ClipboardMonitor {
         if (_state.value is ClipboardMonitorState.Paused) _state.value = ClipboardMonitorState.Monitoring
     }
 
-    override fun addUrlMatcher(matcher: ClipboardUrlMatcher) { urlMatchers.add(matcher) }
-    override fun addFilter(filter: ClipboardFilter) { filters.add(filter) }
+    override fun addUrlMatcher(matcher: ClipboardUrlMatcher) {
+        urlMatchers.add(matcher)
+    }
+    override fun addFilter(filter: ClipboardFilter) {
+        filters.add(filter)
+    }
 
     private fun checkClipboard() {
         val content = getFromClipboard() ?: return
@@ -89,7 +92,7 @@ internal class MingwClipboardMonitor : ClipboardMonitor {
             contentType = contentType,
             timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         if (filters.any { !it.shouldProcess(content) }) return

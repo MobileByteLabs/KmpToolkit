@@ -9,8 +9,23 @@ internal class WasmWasiBubble(private val config: BubbleConfig) : Bubble {
     override val state: StateFlow<BubbleState> = _state.asStateFlow()
     override val isShowing: Boolean get() = false
 
-    override fun show(title: String, message: String, icon: BubbleIcon?, actions: List<BubbleAction>, style: BubbleStyle, onTap: BubbleTapAction, autoDismissMs: Long) {}
-    override fun showScreen(title: String, route: String, screenConfig: BubbleScreenConfig, icon: BubbleIcon?, style: BubbleStyle) {}
+    override fun show(
+        title: String,
+        message: String,
+        icon: BubbleIcon?,
+        actions: List<BubbleAction>,
+        style: BubbleStyle,
+        onTap: BubbleTapAction,
+        autoDismissMs: Long,
+    ) {
+    }
+    override fun showScreen(
+        title: String,
+        route: String,
+        screenConfig: BubbleScreenConfig,
+        icon: BubbleIcon?,
+        style: BubbleStyle,
+    ) {}
     override fun showPersistent(title: String, message: String, actions: List<BubbleAction>, style: BubbleStyle) {}
     override fun update(title: String?, message: String?, actions: List<BubbleAction>?) {}
     override fun dismiss() {}

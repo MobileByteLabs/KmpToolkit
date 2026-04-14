@@ -16,8 +16,5 @@ sealed class ClipboardMonitorState {
     data object Paused : ClipboardMonitorState()
 
     /** Monitor encountered an error. */
-    data class Error(
-        val message: String,
-        val cause: Throwable? = null
-    ) : ClipboardMonitorState()
+    data class Error(val message: String, val cause: Throwable? = null) : ClipboardMonitorState()
 }

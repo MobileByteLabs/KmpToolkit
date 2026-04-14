@@ -14,7 +14,9 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.FlavorEvent
 import java.awt.datatransfer.FlavorListener
 
-internal class JvmClipboardMonitor : ClipboardMonitor, FlavorListener {
+internal class JvmClipboardMonitor :
+    ClipboardMonitor,
+    FlavorListener {
     private val _state = MutableStateFlow<ClipboardMonitorState>(ClipboardMonitorState.Idle)
     override val state: StateFlow<ClipboardMonitorState> = _state.asStateFlow()
 
@@ -32,10 +34,15 @@ internal class JvmClipboardMonitor : ClipboardMonitor, FlavorListener {
 
     private var lastContent: String? = null
     private var pollingThread: Thread? = null
+
     @Volatile private var polling = false
 
     private val clipboard by lazy {
-        try { Toolkit.getDefaultToolkit().systemClipboard } catch (e: Exception) { null }
+        try {
+            Toolkit.getDefaultToolkit().systemClipboard
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override fun start(config: ClipboardMonitorConfig) {
@@ -44,7 +51,9 @@ internal class JvmClipboardMonitor : ClipboardMonitor, FlavorListener {
         lastContent = readClipboardText()
 
         // Register FlavorListener for native change events
-        try { clipboard?.addFlavorListener(this) } catch (e: Exception) { /* headless */ }
+        try {
+            clipboard?.addFlavorListener(this)
+        } catch (e: Exception) { /* headless */ }
 
         // Start polling thread as backup (FlavorListener can be unreliable)
         polling = true
@@ -72,7 +81,9 @@ internal class JvmClipboardMonitor : ClipboardMonitor, FlavorListener {
         pollingThread?.interrupt()
         pollingThread = null
 
-        try { clipboard?.removeFlavorListener(this) } catch (e: Exception) { }
+        try {
+            clipboard?.removeFlavorListener(this)
+        } catch (e: Exception) { }
 
         lastContent = null
         _state.value = ClipboardMonitorState.Idle
@@ -90,8 +101,12 @@ internal class JvmClipboardMonitor : ClipboardMonitor, FlavorListener {
         }
     }
 
-    override fun addUrlMatcher(matcher: ClipboardUrlMatcher) { urlMatchers.add(matcher) }
-    override fun addFilter(filter: ClipboardFilter) { filters.add(filter) }
+    override fun addUrlMatcher(matcher: ClipboardUrlMatcher) {
+        urlMatchers.add(matcher)
+    }
+    override fun addFilter(filter: ClipboardFilter) {
+        filters.add(filter)
+    }
 
     override fun flavorsChanged(e: FlavorEvent?) {
         if (_state.value is ClipboardMonitorState.Monitoring) {
@@ -116,7 +131,7 @@ internal class JvmClipboardMonitor : ClipboardMonitor, FlavorListener {
             contentType = contentType,
             timestamp = System.currentTimeMillis(),
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         if (filters.any { !it.shouldProcess(content) }) return
@@ -137,8 +152,12 @@ internal class JvmClipboardMonitor : ClipboardMonitor, FlavorListener {
         val cb = clipboard ?: return null
         if (cb.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
             cb.getData(DataFlavor.stringFlavor) as? String
-        } else null
-    } catch (e: Exception) { null }
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        null
+    }
 }
 
 actual fun createClipboardMonitor(): ClipboardMonitor = JvmClipboardMonitor()

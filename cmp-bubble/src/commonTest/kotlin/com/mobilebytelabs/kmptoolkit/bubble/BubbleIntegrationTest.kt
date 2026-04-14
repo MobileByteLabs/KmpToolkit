@@ -18,10 +18,12 @@ class BubbleIntegrationTest {
 
     @Test
     fun createBubble_withConfig() {
-        val bubble = createBubble(BubbleConfig(
-            defaultStyle = BubbleStyle.Notification,
-            vibrate = true
-        ))
+        val bubble = createBubble(
+            BubbleConfig(
+                defaultStyle = BubbleStyle.Notification,
+                vibrate = true,
+            ),
+        )
         assertNotNull(bubble)
     }
 
@@ -57,9 +59,9 @@ class BubbleIntegrationTest {
             actions = listOf(
                 BubbleAction("Download"),
                 BubbleAction("Open"),
-                BubbleAction("Dismiss")
+                BubbleAction("Dismiss"),
             ),
-            style = BubbleStyle.Notification
+            style = BubbleStyle.Notification,
         )
     }
 
@@ -69,7 +71,7 @@ class BubbleIntegrationTest {
         bubble.show(
             title = "New Message",
             message = "Hey!",
-            onTap = BubbleTapAction.DeepLink("myapp://chat/123")
+            onTap = BubbleTapAction.DeepLink("myapp://chat/123"),
         )
     }
 
@@ -79,7 +81,7 @@ class BubbleIntegrationTest {
         val bubble = createBubble()
         bubble.show(
             title = "Tap me",
-            onTap = BubbleTapAction.Callback { tapped = true }
+            onTap = BubbleTapAction.Callback { tapped = true },
         )
     }
 
@@ -88,7 +90,7 @@ class BubbleIntegrationTest {
         val bubble = createBubble()
         bubble.show(
             title = "Download Complete",
-            icon = BubbleIcon.System("download")
+            icon = BubbleIcon.System("download"),
         )
     }
 
@@ -97,7 +99,7 @@ class BubbleIntegrationTest {
         val bubble = createBubble()
         bubble.show(
             title = "Quick Note",
-            autoDismissMs = 3000L
+            autoDismissMs = 3000L,
         )
     }
 
@@ -121,7 +123,7 @@ class BubbleIntegrationTest {
         val bubble = createBubble()
         bubble.showScreen(
             title = "Quick Reply",
-            route = "chat/reply/123"
+            route = "chat/reply/123",
         )
     }
 
@@ -132,7 +134,7 @@ class BubbleIntegrationTest {
             title = "Settings",
             route = "settings/notifications",
             screenConfig = BubbleScreenConfig(height = 600, width = 400),
-            icon = BubbleIcon.System("settings")
+            icon = BubbleIcon.System("settings"),
         )
     }
 
@@ -146,8 +148,8 @@ class BubbleIntegrationTest {
             message = "Watching clipboard",
             actions = listOf(
                 BubbleAction("Pause"),
-                BubbleAction("Stop")
-            )
+                BubbleAction("Stop"),
+            ),
         )
     }
 
@@ -156,7 +158,7 @@ class BubbleIntegrationTest {
         val bubble = createBubble()
         bubble.showPersistent(
             title = "Service Running",
-            style = BubbleStyle.Service
+            style = BubbleStyle.Service,
         )
     }
 
@@ -220,7 +222,7 @@ class BubbleIntegrationTest {
             title = "Test",
             message = "Full lifecycle",
             actions = listOf(BubbleAction("OK")),
-            style = BubbleStyle.Auto
+            style = BubbleStyle.Auto,
         )
 
         // Update

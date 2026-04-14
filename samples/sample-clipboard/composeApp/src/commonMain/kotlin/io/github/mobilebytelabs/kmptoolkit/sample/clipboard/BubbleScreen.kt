@@ -296,7 +296,7 @@ fun BubbleScreen() {
                 onClick = {
                     bubble.update(
                         title = "Updated!",
-                        message = "Content changed at runtime"
+                        message = "Content changed at runtime",
                     )
                     lastAction = "update()"
                 },

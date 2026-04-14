@@ -78,7 +78,7 @@ internal class ClipboardOverlay {
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
+            PixelFormat.TRANSLUCENT,
         ).apply {
             this.gravity = gravity
             x = 0
@@ -161,6 +161,7 @@ internal class ClipboardOverlay {
                     isDragging = false
                     true
                 }
+
                 MotionEvent.ACTION_MOVE -> {
                     val dx = event.rawX - initialTouchX
                     val dy = event.rawY - initialTouchY
@@ -178,12 +179,14 @@ internal class ClipboardOverlay {
                     }
                     true
                 }
+
                 MotionEvent.ACTION_UP -> {
                     if (!isDragging) {
                         view.performClick()
                     }
                     true
                 }
+
                 else -> false
             }
         }

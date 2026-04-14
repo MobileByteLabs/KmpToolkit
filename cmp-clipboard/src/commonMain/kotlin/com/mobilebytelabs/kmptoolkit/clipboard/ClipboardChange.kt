@@ -34,15 +34,14 @@ data class ClipboardChange(
     val contentType: ClipboardContentType = ClipboardContentType.Text,
     val timestamp: Long,
     val source: ClipboardSource = ClipboardSource.Unknown,
-    val previousContent: String? = null
+    val previousContent: String? = null,
 ) {
     /**
      * Whether the content looks like a URL.
      */
-    fun isUrl(): Boolean =
-        contentType == ClipboardContentType.Uri ||
-            content.startsWith("http://") ||
-            content.startsWith("https://")
+    fun isUrl(): Boolean = contentType == ClipboardContentType.Uri ||
+        content.startsWith("http://") ||
+        content.startsWith("https://")
 
     /**
      * Whether the content changed from the previous value.

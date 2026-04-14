@@ -30,11 +30,18 @@ class BubbleInitProvider : ContentProvider() {
         context?.let { setApplicationContext(it) }
         return true
     }
-    override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor? = null
+    override fun query(
+        uri: Uri,
+        projection: Array<out String>?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+        sortOrder: String?,
+    ): Cursor? = null
     override fun getType(uri: Uri): String? = null
     override fun insert(uri: Uri, values: ContentValues?): Uri? = null
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = 0
-    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = 0
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int =
+        0
 }
 
 internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
@@ -42,13 +49,13 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
     override val state: StateFlow<BubbleState> = _state.asStateFlow()
     override val isShowing: Boolean get() = _state.value is BubbleState.Showing
 
-    private var notificationId = NOTIFICATION_BASE_ID
+    private var notificationId = notificationBaseId
     private var currentTitle: String? = null
     private var currentMessage: String? = null
     private var currentActions: List<BubbleAction>? = null
 
     companion object {
-        private var NOTIFICATION_BASE_ID = 9950
+        private var notificationBaseId = 9950
     }
 
     override fun show(
@@ -58,13 +65,13 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         actions: List<BubbleAction>,
         style: BubbleStyle,
         onTap: BubbleTapAction,
-        autoDismissMs: Long
+        autoDismissMs: Long,
     ) {
         val context = appContext ?: return
         currentTitle = title
         currentMessage = message
         currentActions = actions
-        notificationId = NOTIFICATION_BASE_ID++
+        notificationId = notificationBaseId++
 
         ensureChannel(context)
 
@@ -78,6 +85,7 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
                     showStandardNotification(context, title, message, actions, onTap)
                 }
             }
+
             else -> showStandardNotification(context, title, message, actions, onTap)
         }
 
@@ -89,7 +97,7 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         route: String,
         screenConfig: BubbleScreenConfig,
         icon: BubbleIcon?,
-        style: BubbleStyle
+        style: BubbleStyle,
     ) {
         val context = appContext ?: return
         ensureChannel(context)
@@ -99,8 +107,10 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         val pendingIntent = PendingIntent.getActivity(
-            context, notificationId, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            context,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
         val notification = NotificationCompat.Builder(context, config.channelId)
@@ -118,12 +128,7 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         _state.value = BubbleState.Showing
     }
 
-    override fun showPersistent(
-        title: String,
-        message: String,
-        actions: List<BubbleAction>,
-        style: BubbleStyle
-    ) {
+    override fun showPersistent(title: String, message: String, actions: List<BubbleAction>, style: BubbleStyle) {
         val context = appContext ?: return
         ensureChannel(context)
 
@@ -174,12 +179,10 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         _state.value = BubbleState.Dismissed(byUser = false)
     }
 
-    private fun resolveStyle(): BubbleStyle {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            BubbleStyle.Floating
-        } else {
-            BubbleStyle.Notification
-        }
+    private fun resolveStyle(): BubbleStyle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        BubbleStyle.Floating
+    } else {
+        BubbleStyle.Notification
     }
 
     private fun showBubbleNotification(
@@ -187,7 +190,7 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         title: String,
         message: String,
         actions: List<BubbleAction>,
-        onTap: BubbleTapAction
+        onTap: BubbleTapAction,
     ) {
         // On API 30+, create a bubble-style notification
         // Full BubbleMetadata + ShortcutInfo will be added when BubbleActivity is ready
@@ -200,7 +203,7 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         title: String,
         message: String,
         actions: List<BubbleAction>,
-        onTap: BubbleTapAction
+        onTap: BubbleTapAction,
     ) {
         val builder = NotificationCompat.Builder(context, config.channelId)
             .setContentTitle(title)
@@ -219,11 +222,14 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 val pending = PendingIntent.getActivity(
-                    context, notificationId, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    context,
+                    notificationId,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
                 builder.setContentIntent(pending)
             }
+
             else -> { /* No content intent */ }
         }
 

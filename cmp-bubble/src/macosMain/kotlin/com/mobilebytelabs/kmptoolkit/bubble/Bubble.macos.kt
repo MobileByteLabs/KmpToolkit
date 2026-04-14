@@ -23,7 +23,7 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
         actions: List<BubbleAction>,
         style: BubbleStyle,
         onTap: BubbleTapAction,
-        autoDismissMs: Long
+        autoDismissMs: Long,
     ) {
         val notificationId = NSUUID().UUIDString
         currentNotificationId = notificationId
@@ -39,7 +39,7 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
         val request = UNNotificationRequest.requestWithIdentifier(
             identifier = notificationId,
             content = content,
-            trigger = null
+            trigger = null,
         )
 
         UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { error ->
@@ -49,7 +49,13 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
         }
     }
 
-    override fun showScreen(title: String, route: String, screenConfig: BubbleScreenConfig, icon: BubbleIcon?, style: BubbleStyle) {
+    override fun showScreen(
+        title: String,
+        route: String,
+        screenConfig: BubbleScreenConfig,
+        icon: BubbleIcon?,
+        style: BubbleStyle,
+    ) {
         show(title = title, message = route, icon = icon, style = style, onTap = BubbleTapAction.DeepLink(route))
     }
 

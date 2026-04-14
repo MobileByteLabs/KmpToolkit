@@ -15,7 +15,7 @@ data class BubbleConfig(
     val channelId: String = "kmptoolkit_bubble",
     val channelName: String = "Bubbles",
     val vibrate: Boolean = false,
-    val sound: Boolean = false
+    val sound: Boolean = false,
 ) {
     companion object {
         val Default = BubbleConfig()

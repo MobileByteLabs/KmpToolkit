@@ -128,7 +128,7 @@ class ClipboardMonitorTest {
         val config = ClipboardMonitorConfig(
             pollingIntervalMs = 500L,
             detectUrls = true,
-            showNotification = false
+            showNotification = false,
         )
         monitor.start(config)
         assertIs<ClipboardMonitorState.Monitoring>(monitor.state.value)

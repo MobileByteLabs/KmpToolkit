@@ -28,7 +28,10 @@ internal class IosBubblePermission : BubblePermission {
 
     override suspend fun requestNotificationPermission(): Boolean = suspendCoroutine { continuation ->
         val options = UNAuthorizationOptionAlert or UNAuthorizationOptionSound or UNAuthorizationOptionBadge
-        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(options) { granted, error ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(options) {
+                granted,
+                error,
+            ->
             continuation.resume(granted)
         }
     }

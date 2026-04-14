@@ -66,9 +66,7 @@ import kotlinx.coroutines.launch
  *
  * @since 0.2.0
  */
-class ClipboardManager(
-    private val config: ClipboardManagerConfig = ClipboardManagerConfig.Default
-) {
+class ClipboardManager(private val config: ClipboardManagerConfig = ClipboardManagerConfig.Default) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // Underlying implementations (lazy — created only when needed)
@@ -193,14 +191,12 @@ class ClipboardManager(
     /**
      * Copy a history entry back to the system clipboard.
      */
-    fun copyFromHistory(entry: ClipboardHistoryEntry): Boolean =
-        historyManager.copyToClipboard(entry)
+    fun copyFromHistory(entry: ClipboardHistoryEntry): Boolean = historyManager.copyToClipboard(entry)
 
     /**
      * Remove a specific entry from history.
      */
-    fun removeFromHistory(entry: ClipboardHistoryEntry) =
-        historyManager.remove(entry)
+    fun removeFromHistory(entry: ClipboardHistoryEntry) = historyManager.remove(entry)
 
     /**
      * Clear all clipboard history.
@@ -250,8 +246,7 @@ class ClipboardManager(
     /**
      * Request notification permission.
      */
-    suspend fun requestNotificationPermission(): Boolean =
-        permission.requestNotificationPermission()
+    suspend fun requestNotificationPermission(): Boolean = permission.requestNotificationPermission()
 
     // ── Lifecycle ───────────────────────────────────────────────
 
@@ -272,13 +267,15 @@ class ClipboardManager(
 
         // Start monitor if URL detection is enabled
         if (config.detectUrls) {
-            monitor.start(ClipboardMonitorConfig(
-                pollingIntervalMs = config.pollingIntervalMs,
-                detectUrls = true,
-                showNotification = config.showNotification,
-                showOverlay = config.showOverlay,
-                triggerWorkerOnUrl = config.triggerWorkerOnUrl,
-            ))
+            monitor.start(
+                ClipboardMonitorConfig(
+                    pollingIntervalMs = config.pollingIntervalMs,
+                    detectUrls = true,
+                    showNotification = config.showNotification,
+                    showOverlay = config.showOverlay,
+                    triggerWorkerOnUrl = config.triggerWorkerOnUrl,
+                ),
+            )
         }
 
         // Start history if enabled

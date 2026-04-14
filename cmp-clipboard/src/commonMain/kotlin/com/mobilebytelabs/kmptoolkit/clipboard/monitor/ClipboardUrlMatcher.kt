@@ -55,8 +55,8 @@ object SocialMediaUrlMatchers {
         patterns = listOf(
             Regex("https?://(?:www\\.)?instagram\\.com/(?:p|reel|reels|stories|tv)/[\\w.-]+/?[^\\s]*"),
             Regex("https?://(?:www\\.)?instagram\\.com/[\\w.-]+/?(?:\\?[^\\s]*)?"),
-            Regex("https?://(?:www\\.)?instagr\\.am/[\\w.-]+/?[^\\s]*")
-        )
+            Regex("https?://(?:www\\.)?instagr\\.am/[\\w.-]+/?[^\\s]*"),
+        ),
     )
 
     /** Matches TikTok video and profile URLs. */
@@ -65,8 +65,8 @@ object SocialMediaUrlMatchers {
         patterns = listOf(
             Regex("https?://(?:www\\.)?tiktok\\.com/@[\\w.-]+/video/\\d+[^\\s]*"),
             Regex("https?://(?:vm|vt)\\.tiktok\\.com/[\\w]+/?[^\\s]*"),
-            Regex("https?://(?:www\\.)?tiktok\\.com/t/[\\w]+/?[^\\s]*")
-        )
+            Regex("https?://(?:www\\.)?tiktok\\.com/t/[\\w]+/?[^\\s]*"),
+        ),
     )
 
     /** Matches YouTube video, shorts, and playlist URLs. */
@@ -76,8 +76,8 @@ object SocialMediaUrlMatchers {
             Regex("https?://(?:www\\.)?youtube\\.com/watch\\?v=[\\w-]+[^\\s]*"),
             Regex("https?://(?:www\\.)?youtube\\.com/shorts/[\\w-]+[^\\s]*"),
             Regex("https?://youtu\\.be/[\\w-]+[^\\s]*"),
-            Regex("https?://(?:www\\.)?youtube\\.com/playlist\\?list=[\\w-]+[^\\s]*")
-        )
+            Regex("https?://(?:www\\.)?youtube\\.com/playlist\\?list=[\\w-]+[^\\s]*"),
+        ),
     )
 
     /** Matches Twitter/X post URLs. */
@@ -85,8 +85,8 @@ object SocialMediaUrlMatchers {
         name = "Twitter",
         patterns = listOf(
             Regex("https?://(?:www\\.)?(?:twitter|x)\\.com/[\\w]+/status/\\d+[^\\s]*"),
-            Regex("https?://t\\.co/[\\w]+[^\\s]*")
-        )
+            Regex("https?://t\\.co/[\\w]+[^\\s]*"),
+        ),
     )
 
     /** Matches Facebook video and post URLs. */
@@ -96,8 +96,8 @@ object SocialMediaUrlMatchers {
             Regex("https?://(?:www\\.)?facebook\\.com/.+/videos/\\d+[^\\s]*"),
             Regex("https?://(?:www\\.)?facebook\\.com/(?:watch|reel)/[^\\s]+"),
             Regex("https?://(?:www\\.)?facebook\\.com/[\\w.]+/posts/[^\\s]+"),
-            Regex("https?://fb\\.watch/[\\w]+[^\\s]*")
-        )
+            Regex("https?://fb\\.watch/[\\w]+[^\\s]*"),
+        ),
     )
 
     /** Matches Snapchat spotlight and story URLs. */
@@ -106,8 +106,8 @@ object SocialMediaUrlMatchers {
         patterns = listOf(
             Regex("https?://(?:www\\.)?snapchat\\.com/spotlight/[^\\s]+"),
             Regex("https?://(?:www\\.)?snapchat\\.com/add/[\\w.-]+[^\\s]*"),
-            Regex("https?://t\\.snapchat\\.com/[\\w]+[^\\s]*")
-        )
+            Regex("https?://t\\.snapchat\\.com/[\\w]+[^\\s]*"),
+        ),
     )
 
     /** Matches Pinterest pin URLs. */
@@ -115,8 +115,8 @@ object SocialMediaUrlMatchers {
         name = "Pinterest",
         patterns = listOf(
             Regex("https?://(?:www\\.)?pinterest\\.com/pin/[\\d]+[^\\s]*"),
-            Regex("https?://pin\\.it/[\\w]+[^\\s]*")
-        )
+            Regex("https?://pin\\.it/[\\w]+[^\\s]*"),
+        ),
     )
 
     /** Matches Reddit post URLs. */
@@ -124,8 +124,8 @@ object SocialMediaUrlMatchers {
         name = "Reddit",
         patterns = listOf(
             Regex("https?://(?:www\\.)?reddit\\.com/r/[\\w]+/comments/[\\w]+[^\\s]*"),
-            Regex("https?://redd\\.it/[\\w]+[^\\s]*")
-        )
+            Regex("https?://redd\\.it/[\\w]+[^\\s]*"),
+        ),
     )
 
     /** Matches LinkedIn post URLs. */
@@ -133,8 +133,8 @@ object SocialMediaUrlMatchers {
         name = "LinkedIn",
         patterns = listOf(
             Regex("https?://(?:www\\.)?linkedin\\.com/posts/[^\\s]+"),
-            Regex("https?://(?:www\\.)?linkedin\\.com/feed/update/[^\\s]+")
-        )
+            Regex("https?://(?:www\\.)?linkedin\\.com/feed/update/[^\\s]+"),
+        ),
     )
 
     /** Matches Threads post URLs. */
@@ -142,8 +142,8 @@ object SocialMediaUrlMatchers {
         name = "Threads",
         patterns = listOf(
             Regex("https?://(?:www\\.)?threads\\.net/@[\\w.-]+/post/[\\w]+[^\\s]*"),
-            Regex("https?://(?:www\\.)?threads\\.net/t/[\\w]+[^\\s]*")
-        )
+            Regex("https?://(?:www\\.)?threads\\.net/t/[\\w]+[^\\s]*"),
+        ),
     )
 
     /** Returns all built-in social media URL matchers. */
@@ -157,23 +157,18 @@ object SocialMediaUrlMatchers {
         pinterest(),
         reddit(),
         linkedin(),
-        threads()
+        threads(),
     )
 }
 
 /**
  * Default [ClipboardUrlMatcher] implementation using regex patterns.
  */
-internal class RegexUrlMatcher(
-    override val name: String,
-    override val patterns: List<Regex>
-) : ClipboardUrlMatcher {
+internal class RegexUrlMatcher(override val name: String, override val patterns: List<Regex>) : ClipboardUrlMatcher {
 
-    override fun matches(content: String): Boolean =
-        patterns.any { it.containsMatchIn(content) }
+    override fun matches(content: String): Boolean = patterns.any { it.containsMatchIn(content) }
 
-    override fun extractUrl(content: String): String? =
-        patterns.firstNotNullOfOrNull { regex ->
-            regex.find(content)?.value
-        }
+    override fun extractUrl(content: String): String? = patterns.firstNotNullOfOrNull { regex ->
+        regex.find(content)?.value
+    }
 }

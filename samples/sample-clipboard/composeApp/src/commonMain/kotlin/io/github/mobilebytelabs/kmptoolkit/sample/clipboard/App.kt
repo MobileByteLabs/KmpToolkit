@@ -39,12 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-data class LibraryItem(
-    val title: String,
-    val subtitle: String,
-    val emoji: String,
-    val color: Color,
-)
+data class LibraryItem(val title: String, val subtitle: String, val emoji: String, val color: Color)
 
 enum class Screen {
     Home,
@@ -71,7 +66,7 @@ fun App() {
                                     Screen.Home -> "KMP Toolkit"
                                     Screen.Clipboard -> "Clipboard"
                                     Screen.Bubble -> "Bubble"
-                                }
+                                },
                             )
                         },
                         navigationIcon = {
@@ -186,10 +181,7 @@ private fun HomeGrid(onItemClick: (Screen) -> Unit) {
 }
 
 @Composable
-private fun LibraryCard(
-    item: LibraryItem,
-    onClick: () -> Unit,
-) {
+private fun LibraryCard(item: LibraryItem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

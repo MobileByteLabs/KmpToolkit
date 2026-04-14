@@ -1,7 +1,7 @@
 package com.mobilebytelabs.kmptoolkit.clipboard
 
-import kotlin.js.Promise
 import kotlinx.coroutines.await
+import kotlin.js.Promise
 
 /**
  * Wasm JS async clipboard operations using the browser Clipboard API.

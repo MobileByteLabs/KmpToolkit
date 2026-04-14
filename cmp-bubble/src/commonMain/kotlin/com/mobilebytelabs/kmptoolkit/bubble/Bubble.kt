@@ -67,7 +67,7 @@ interface Bubble {
         actions: List<BubbleAction> = emptyList(),
         style: BubbleStyle = BubbleStyle.Auto,
         onTap: BubbleTapAction = BubbleTapAction.None,
-        autoDismissMs: Long = 0L
+        autoDismissMs: Long = 0L,
     )
 
     /**
@@ -88,7 +88,7 @@ interface Bubble {
         route: String,
         screenConfig: BubbleScreenConfig = BubbleScreenConfig.Default,
         icon: BubbleIcon? = null,
-        style: BubbleStyle = BubbleStyle.Floating
+        style: BubbleStyle = BubbleStyle.Floating,
     )
 
     /**
@@ -106,7 +106,7 @@ interface Bubble {
         title: String,
         message: String = "",
         actions: List<BubbleAction> = emptyList(),
-        style: BubbleStyle = BubbleStyle.Persistent
+        style: BubbleStyle = BubbleStyle.Persistent,
     )
 
     /**
@@ -114,11 +114,7 @@ interface Bubble {
      *
      * Pass null for any parameter to keep the current value.
      */
-    fun update(
-        title: String? = null,
-        message: String? = null,
-        actions: List<BubbleAction>? = null
-    )
+    fun update(title: String? = null, message: String? = null, actions: List<BubbleAction>? = null)
 
     /** Dismiss the current bubble. */
     fun dismiss()

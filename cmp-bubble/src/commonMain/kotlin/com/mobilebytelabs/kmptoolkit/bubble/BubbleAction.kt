@@ -31,5 +31,5 @@ package com.mobilebytelabs.kmptoolkit.bubble
 data class BubbleAction(
     val label: String,
     val id: String = label.lowercase().replace(" ", "_"),
-    val onClick: (() -> Unit)? = null
+    val onClick: (() -> Unit)? = null,
 )

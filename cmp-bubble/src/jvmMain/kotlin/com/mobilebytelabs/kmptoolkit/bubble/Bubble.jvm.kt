@@ -14,9 +14,13 @@ internal class JvmBubble(private val config: BubbleConfig) : Bubble {
     private var trayIcon: TrayIcon? = null
 
     override fun show(
-        title: String, message: String, icon: BubbleIcon?,
-        actions: List<BubbleAction>, style: BubbleStyle,
-        onTap: BubbleTapAction, autoDismissMs: Long
+        title: String,
+        message: String,
+        icon: BubbleIcon?,
+        actions: List<BubbleAction>,
+        style: BubbleStyle,
+        onTap: BubbleTapAction,
+        autoDismissMs: Long,
     ) {
         try {
             if (!SystemTray.isSupported()) return
@@ -43,7 +47,13 @@ internal class JvmBubble(private val config: BubbleConfig) : Bubble {
         }
     }
 
-    override fun showScreen(title: String, route: String, screenConfig: BubbleScreenConfig, icon: BubbleIcon?, style: BubbleStyle) {
+    override fun showScreen(
+        title: String,
+        route: String,
+        screenConfig: BubbleScreenConfig,
+        icon: BubbleIcon?,
+        style: BubbleStyle,
+    ) {
         show(title = title, message = "Open: $route", style = style)
     }
 
@@ -59,7 +69,9 @@ internal class JvmBubble(private val config: BubbleConfig) : Bubble {
 
     override fun dismiss() {
         trayIcon?.let { icon ->
-            try { SystemTray.getSystemTray().remove(icon) } catch (e: Exception) {}
+            try {
+                SystemTray.getSystemTray().remove(icon)
+            } catch (e: Exception) {}
         }
         trayIcon = null
         _state.value = BubbleState.Dismissed(byUser = false)

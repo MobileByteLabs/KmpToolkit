@@ -32,7 +32,7 @@ internal object ClipboardNotification {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Clipboard Monitor",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_LOW,
             ).apply {
                 description = "Monitors clipboard for URLs and triggers background processing"
                 setShowBadge(false)
@@ -56,7 +56,7 @@ internal object ClipboardNotification {
         title: String = "Clipboard Monitor Service",
         text: String = "Monitoring clipboard changes",
         isPaused: Boolean = false,
-        launchIntent: PendingIntent? = null
+        launchIntent: PendingIntent? = null,
     ): Notification {
         createChannel(context)
 

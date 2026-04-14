@@ -90,7 +90,7 @@ interface ClipboardHistory {
 data class ClipboardHistoryEntry(
     val content: String,
     val timestamp: Long,
-    val contentType: ClipboardContentType = ClipboardContentType.Text
+    val contentType: ClipboardContentType = ClipboardContentType.Text,
 )
 
 /**
@@ -100,5 +100,4 @@ data class ClipboardHistoryEntry(
  * @return A new ClipboardHistory instance.
  * @since 0.2.0
  */
-fun createClipboardHistory(maxSize: Int = 20): ClipboardHistory =
-    DefaultClipboardHistory(maxSize)
+fun createClipboardHistory(maxSize: Int = 20): ClipboardHistory = DefaultClipboardHistory(maxSize)

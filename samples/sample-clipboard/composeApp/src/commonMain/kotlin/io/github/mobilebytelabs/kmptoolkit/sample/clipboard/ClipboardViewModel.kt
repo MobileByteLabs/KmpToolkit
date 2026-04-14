@@ -57,14 +57,16 @@ class ClipboardViewModel : ViewModel() {
             detectUrls = true,
             urlMatchers = SocialMediaUrlMatchers.all(),
             async = true,
-        )
+        ),
     )
 
-    private val _uiState = MutableStateFlow(ClipboardUiState(
-        historyMaxSize = clipboard.historyMaxSize,
-        hasClipboardAccess = clipboard.hasClipboardAccess(),
-        hasNotificationPermission = clipboard.hasNotificationPermission(),
-    ))
+    private val _uiState = MutableStateFlow(
+        ClipboardUiState(
+            historyMaxSize = clipboard.historyMaxSize,
+            hasClipboardAccess = clipboard.hasClipboardAccess(),
+            hasNotificationPermission = clipboard.hasNotificationPermission(),
+        ),
+    )
     val uiState: StateFlow<ClipboardUiState> = _uiState.asStateFlow()
 
     init {
@@ -114,23 +116,29 @@ class ClipboardViewModel : ViewModel() {
         when (action) {
             is ClipboardAction.Copy -> {
                 val success = clipboard.copy(action.text)
-                _uiState.update { it.copy(
-                    statusMessage = if (success) "Copied: ${action.text.take(30)}" else "Copy failed"
-                )}
+                _uiState.update {
+                    it.copy(
+                        statusMessage = if (success) "Copied: ${action.text.take(30)}" else "Copy failed",
+                    )
+                }
             }
 
             is ClipboardAction.CopyAsync -> viewModelScope.launch {
                 val success = clipboard.copyAsync(action.text)
-                _uiState.update { it.copy(
-                    statusMessage = if (success) "Async copied: ${action.text.take(30)}" else "Failed"
-                )}
+                _uiState.update {
+                    it.copy(
+                        statusMessage = if (success) "Async copied: ${action.text.take(30)}" else "Failed",
+                    )
+                }
             }
 
             is ClipboardAction.PasteAsync -> viewModelScope.launch {
                 val text = clipboard.pasteAsync()
-                _uiState.update { it.copy(
-                    statusMessage = "Read: ${text?.take(40) ?: "(empty)"}"
-                )}
+                _uiState.update {
+                    it.copy(
+                        statusMessage = "Read: ${text?.take(40) ?: "(empty)"}",
+                    )
+                }
             }
 
             is ClipboardAction.CopyFromHistory -> {
@@ -159,10 +167,12 @@ class ClipboardViewModel : ViewModel() {
 
             is ClipboardAction.RequestNotificationPermission -> viewModelScope.launch {
                 val granted = clipboard.requestNotificationPermission()
-                _uiState.update { it.copy(
-                    hasNotificationPermission = granted,
-                    statusMessage = if (granted) "Permission granted" else "Permission denied"
-                )}
+                _uiState.update {
+                    it.copy(
+                        hasNotificationPermission = granted,
+                        statusMessage = if (granted) "Permission granted" else "Permission denied",
+                    )
+                }
             }
         }
     }

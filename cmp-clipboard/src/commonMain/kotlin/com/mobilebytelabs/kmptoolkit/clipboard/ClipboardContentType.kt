@@ -21,7 +21,7 @@ enum class ClipboardContentType {
     Image,
 
     /** Content type could not be determined. */
-    Unknown
+    Unknown,
 }
 
 /**
@@ -37,5 +37,5 @@ enum class ClipboardSource {
     External,
 
     /** Source could not be determined. */
-    Unknown
+    Unknown,
 }

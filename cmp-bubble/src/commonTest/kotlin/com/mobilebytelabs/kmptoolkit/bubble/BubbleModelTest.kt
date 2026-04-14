@@ -166,7 +166,7 @@ class BubbleModelTest {
             channelId = "my_channel",
             channelName = "My Bubbles",
             vibrate = true,
-            sound = true
+            sound = true,
         )
         assertEquals(BubbleStyle.Floating, config.defaultStyle)
         assertEquals("my_channel", config.channelId)

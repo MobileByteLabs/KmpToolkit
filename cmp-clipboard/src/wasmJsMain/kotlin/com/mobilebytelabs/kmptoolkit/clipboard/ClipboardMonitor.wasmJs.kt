@@ -126,7 +126,7 @@ internal class WasmJsClipboardMonitor : ClipboardMonitor {
             contentType = contentType,
             timestamp = jsDateNow().toLong(),
             source = ClipboardSource.External,
-            previousContent = previousContent
+            previousContent = previousContent,
         )
 
         if (filters.any { !it.shouldProcess(content) }) return

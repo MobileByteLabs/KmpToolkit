@@ -52,7 +52,7 @@ class ClipboardMonitorConfigTest {
             showOverlay = true,
             triggerWorkerOnUrl = true,
             notificationTitle = "Custom Title",
-            notificationText = "Custom Text"
+            notificationText = "Custom Text",
         )
         assertEquals(2000L, config.pollingIntervalMs)
         assertFalse(config.detectUrls)

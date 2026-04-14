@@ -25,7 +25,8 @@ internal class AndroidBubblePermission : BubblePermission {
         val context = appContext ?: return false
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
-                context, Manifest.permission.POST_NOTIFICATIONS
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
             ) == PackageManager.PERMISSION_GRANTED
         } else {
             true
@@ -38,16 +39,16 @@ internal class AndroidBubblePermission : BubblePermission {
         try {
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:${context.packageName}")
+                Uri.parse("package:${context.packageName}"),
             ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
             context.startActivity(intent)
-        } catch (e: Exception) { return false }
+        } catch (e: Exception) {
+            return false
+        }
         return false // User must grant in settings
     }
 
-    override suspend fun requestNotificationPermission(): Boolean {
-        return canShowNotification()
-    }
+    override suspend fun requestNotificationPermission(): Boolean = canShowNotification()
 }
 
 actual fun createBubblePermission(): BubblePermission = AndroidBubblePermission()

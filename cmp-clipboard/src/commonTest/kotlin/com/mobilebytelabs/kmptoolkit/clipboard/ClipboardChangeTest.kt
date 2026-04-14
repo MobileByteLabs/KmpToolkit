@@ -12,7 +12,7 @@ class ClipboardChangeTest {
     fun create_withDefaults() {
         val change = ClipboardChange(
             content = "Hello",
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         assertEquals("Hello", change.content)
         assertEquals(ClipboardContentType.Text, change.contentType)
@@ -28,7 +28,7 @@ class ClipboardChangeTest {
             contentType = ClipboardContentType.Uri,
             timestamp = 2000L,
             source = ClipboardSource.External,
-            previousContent = "old text"
+            previousContent = "old text",
         )
         assertEquals(ClipboardContentType.Uri, change.contentType)
         assertEquals(ClipboardSource.External, change.source)
@@ -39,7 +39,7 @@ class ClipboardChangeTest {
     fun isUrl_withHttps() {
         val change = ClipboardChange(
             content = "https://example.com",
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         assertTrue(change.isUrl())
     }
@@ -48,7 +48,7 @@ class ClipboardChangeTest {
     fun isUrl_withHttp() {
         val change = ClipboardChange(
             content = "http://example.com",
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         assertTrue(change.isUrl())
     }
@@ -58,7 +58,7 @@ class ClipboardChangeTest {
         val change = ClipboardChange(
             content = "content://media/photo",
             contentType = ClipboardContentType.Uri,
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         assertTrue(change.isUrl())
     }
@@ -67,7 +67,7 @@ class ClipboardChangeTest {
     fun isUrl_plainText_returnsFalse() {
         val change = ClipboardChange(
             content = "just some text",
-            timestamp = 1000L
+            timestamp = 1000L,
         )
         assertFalse(change.isUrl())
     }
@@ -77,7 +77,7 @@ class ClipboardChangeTest {
         val change = ClipboardChange(
             content = "new text",
             timestamp = 1000L,
-            previousContent = null
+            previousContent = null,
         )
         assertTrue(change.hasChanged())
     }
@@ -87,7 +87,7 @@ class ClipboardChangeTest {
         val change = ClipboardChange(
             content = "new text",
             timestamp = 1000L,
-            previousContent = "old text"
+            previousContent = "old text",
         )
         assertTrue(change.hasChanged())
     }
@@ -97,7 +97,7 @@ class ClipboardChangeTest {
         val change = ClipboardChange(
             content = "same text",
             timestamp = 1000L,
-            previousContent = "same text"
+            previousContent = "same text",
         )
         assertFalse(change.hasChanged())
     }

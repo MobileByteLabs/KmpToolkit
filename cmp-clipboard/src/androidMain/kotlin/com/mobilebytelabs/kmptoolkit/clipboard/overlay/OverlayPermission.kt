@@ -17,12 +17,10 @@ internal object OverlayPermission {
      * @param context Application context.
      * @return true if overlay drawing is permitted, false otherwise.
      */
-    fun canDrawOverlays(context: Context): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(context)
-        } else {
-            true // Pre-M doesn't need this permission
-        }
+    fun canDrawOverlays(context: Context): Boolean = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        Settings.canDrawOverlays(context)
+    } else {
+        true // Pre-M doesn't need this permission
     }
 
     /**
@@ -31,12 +29,10 @@ internal object OverlayPermission {
      * @param context Application context.
      * @return Intent that opens the overlay settings screen.
      */
-    fun createPermissionIntent(context: Context): Intent {
-        return Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:${context.packageName}")
-        ).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+    fun createPermissionIntent(context: Context): Intent = Intent(
+        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+        Uri.parse("package:${context.packageName}"),
+    ).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 }
