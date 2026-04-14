@@ -285,6 +285,18 @@ class ClipboardManager(
         if (config.historySize > 0) {
             historyManager.startCapturing()
         }
+
+        // Auto-clear clipboard after read (for secure clipboard)
+        if (config.autoClearAfterReadMs > 0) {
+            scope.launch {
+                observer.clipboardContent.collect { content ->
+                    if (content != null && content.isNotEmpty()) {
+                        kotlinx.coroutines.delay(config.autoClearAfterReadMs)
+                        clear()
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -348,31 +360,158 @@ data class ClipboardManagerConfig(
     val pollingIntervalMs: Long = 1000L,
     val showNotification: Boolean = false,
     val showOverlay: Boolean = false,
-    val triggerWorkerOnUrl: Boolean = false
+    val triggerWorkerOnUrl: Boolean = false,
+    val autoClearAfterReadMs: Long = 0L,
 ) {
     companion object {
-        /** Minimal config — observe + history, no URL detection. */
-        val Default = ClipboardManagerConfig()
 
-        /** Full featured — observe + history + all social media URL detection. */
-        val Full = ClipboardManagerConfig(
-            observe = true,
-            historySize = 30,
-            detectUrls = true,
-            urlMatchers = SocialMediaUrlMatchers.all(),
-            async = true
+        // ── Basic Presets ───────────────────────────────────────
+
+        /**
+         * Minimal — just sync copy/paste, no observation, no history.
+         *
+         * Use for: one-time paste operations, simple utilities.
+         * ```kotlin
+         * val clipboard = ClipboardManager(ClipboardManagerConfig.Minimal)
+         * clipboard.copy("text")
+         * val text = clipboard.paste()
+         * ```
+         */
+        val Minimal = ClipboardManagerConfig(
+            observe = false,
+            historySize = 0,
         )
 
-        /** Social media downloader — URL detection + notification + worker trigger. */
+        /**
+         * Default — observe clipboard changes + keep 20 entries history.
+         *
+         * Use for: any app with paste feature, clipboard managers.
+         * ```kotlin
+         * val clipboard = ClipboardManager() // uses Default
+         * clipboard.start()
+         * clipboard.content.collect { ... }   // auto-updates
+         * clipboard.history.collect { ... }   // keeps last 20
+         * ```
+         */
+        val Default = ClipboardManagerConfig()
+
+        // ── Feature Presets ─────────────────────────────────────
+
+        /**
+         * Chat monitor — observe + large history, no URL detection.
+         *
+         * Use for: messaging apps, note-taking, text processing.
+         * ```kotlin
+         * val clipboard = ClipboardManager(ClipboardManagerConfig.ChatMonitor)
+         * clipboard.start()
+         * clipboard.content.collect { text -> showPasteButton(text) }
+         * clipboard.history.collect { entries -> showPasteOptions(entries) }
+         * ```
+         */
+        val ChatMonitor = ClipboardManagerConfig(
+            observe = true,
+            historySize = 50,
+            async = true,
+        )
+
+        /**
+         * Link collector — URL detection + history, no notification/overlay.
+         *
+         * Use for: bookmark managers, link aggregators, research tools.
+         * Silently collects URLs in the background without user-facing notifications.
+         * ```kotlin
+         * val clipboard = ClipboardManager(ClipboardManagerConfig.LinkCollector)
+         * clipboard.start()
+         * clipboard.urlDetections.collect { det -> saveBookmark(det.url) }
+         * clipboard.history.collect { entries -> showSavedLinks(entries) }
+         * ```
+         */
+        val LinkCollector = ClipboardManagerConfig(
+            observe = true,
+            historySize = 100,
+            detectUrls = true,
+            urlMatchers = SocialMediaUrlMatchers.all(),
+            async = true,
+        )
+
+        /**
+         * Secure clipboard — observe + auto-clear after 30 seconds, no history.
+         *
+         * Use for: password managers, banking apps, sensitive data handling.
+         * Reads clipboard, uses it, then clears it automatically.
+         * ```kotlin
+         * val clipboard = ClipboardManager(ClipboardManagerConfig.SecureClipboard)
+         * clipboard.start()
+         * clipboard.content.collect { text ->
+         *     text?.let { processSecureData(it) }
+         *     // clipboard auto-clears after 30s
+         * }
+         * ```
+         */
+        val SecureClipboard = ClipboardManagerConfig(
+            observe = true,
+            historySize = 0,
+            autoClearAfterReadMs = 30_000L,
+        )
+
+        /**
+         * Social media downloader — URL detection + notification + FAB + worker.
+         *
+         * Use for: InSaver-style apps, video downloaders, content savers.
+         * Runs as a foreground service, shows floating FAB on URL detection.
+         * ```kotlin
+         * val clipboard = ClipboardManager(ClipboardManagerConfig.SocialMediaDownloader)
+         * clipboard.start()
+         * clipboard.urlDetections.collect { det ->
+         *     bubble.show(title = det.matcher.name, message = det.url)
+         *     startDownload(det.url)
+         * }
+         * ```
+         */
         val SocialMediaDownloader = ClipboardManagerConfig(
             observe = true,
             historySize = 20,
             detectUrls = true,
             urlMatchers = SocialMediaUrlMatchers.all(),
             filters = listOf(ClipboardFilter.urlOnly()),
+            pollingIntervalMs = 500L,
             showNotification = true,
             showOverlay = true,
-            triggerWorkerOnUrl = true
+            triggerWorkerOnUrl = true,
+        )
+
+        /**
+         * Developer/debug — everything enabled, large history, verbose.
+         *
+         * Use for: debugging clipboard behavior, clipboard inspector tools.
+         * ```kotlin
+         * val clipboard = ClipboardManager(ClipboardManagerConfig.Developer)
+         * clipboard.start()
+         * clipboard.changes.collect { change ->
+         *     log("${change.contentType} from ${change.source}: ${change.content}")
+         * }
+         * ```
+         */
+        val Developer = ClipboardManagerConfig(
+            observe = true,
+            historySize = 100,
+            detectUrls = true,
+            urlMatchers = SocialMediaUrlMatchers.all(),
+            async = true,
+            pollingIntervalMs = 500L,
+        )
+
+        /**
+         * Full featured — everything except notification/overlay.
+         *
+         * Use for: apps that want full clipboard intelligence without system UI.
+         */
+        val Full = ClipboardManagerConfig(
+            observe = true,
+            historySize = 30,
+            detectUrls = true,
+            urlMatchers = SocialMediaUrlMatchers.all(),
+            async = true,
         )
     }
 }

@@ -54,7 +54,18 @@ ClipboardManagerConfig      — Config: .Default, .Full, .SocialMediaDownloader
 ├── filters: List           — ClipboardFilter.urlOnly(), .minLength(), etc.
 ├── showNotification: Bool  — Android ForegroundService notification
 ├── showOverlay: Boolean    — Android floating FAB overlay
-└── triggerWorkerOnUrl: Bool — auto background worker on URL match
+├── triggerWorkerOnUrl: Bool — auto background worker on URL match
+└── autoClearAfterReadMs: Long — auto-clear clipboard (0 = disabled, 30000 = 30s)
+
+Config Presets (pick one, or customize):
+├── .Minimal               — sync copy/paste only, no observe, no history
+├── .Default               — observe + history(20)
+├── .ChatMonitor           — observe + history(50), for messaging apps
+├── .LinkCollector         — URL detect + history(100), silent (no notification)
+├── .SecureClipboard       — observe + auto-clear 30s, no history (password managers)
+├── .SocialMediaDownloader — URL detect + notification + FAB + worker (InSaver-style)
+├── .Developer             — everything + history(100) + fast polling (debug tools)
+└── .Full                  — everything except notification/overlay
 
 ClipboardManager methods:
 ├── .copy(text): Boolean              — sync copy

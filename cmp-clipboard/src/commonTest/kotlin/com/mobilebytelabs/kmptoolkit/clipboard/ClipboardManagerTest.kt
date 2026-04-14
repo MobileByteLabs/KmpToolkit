@@ -72,6 +72,74 @@ class ClipboardManagerTest {
         assertTrue(config.showOverlay)
         assertTrue(config.triggerWorkerOnUrl)
         assertTrue(config.filters.isNotEmpty())
+        assertEquals(500L, config.pollingIntervalMs)
+    }
+
+    @Test
+    fun minimalConfig_values() {
+        val config = ClipboardManagerConfig.Minimal
+        assertFalse(config.observe)
+        assertEquals(0, config.historySize)
+        assertFalse(config.detectUrls)
+    }
+
+    @Test
+    fun chatMonitorConfig_values() {
+        val config = ClipboardManagerConfig.ChatMonitor
+        assertTrue(config.observe)
+        assertEquals(50, config.historySize)
+        assertTrue(config.async)
+        assertFalse(config.detectUrls)
+    }
+
+    @Test
+    fun linkCollectorConfig_values() {
+        val config = ClipboardManagerConfig.LinkCollector
+        assertTrue(config.observe)
+        assertEquals(100, config.historySize)
+        assertTrue(config.detectUrls)
+        assertTrue(config.async)
+        assertEquals(10, config.urlMatchers.size)
+        assertFalse(config.showNotification)
+        assertFalse(config.showOverlay)
+    }
+
+    @Test
+    fun secureClipboardConfig_values() {
+        val config = ClipboardManagerConfig.SecureClipboard
+        assertTrue(config.observe)
+        assertEquals(0, config.historySize)
+        assertEquals(30_000L, config.autoClearAfterReadMs)
+        assertFalse(config.detectUrls)
+    }
+
+    @Test
+    fun developerConfig_values() {
+        val config = ClipboardManagerConfig.Developer
+        assertTrue(config.observe)
+        assertEquals(100, config.historySize)
+        assertTrue(config.detectUrls)
+        assertTrue(config.async)
+        assertEquals(500L, config.pollingIntervalMs)
+        assertFalse(config.showNotification)
+    }
+
+    @Test
+    fun allPresets_canCreateManager() {
+        val presets = listOf(
+            ClipboardManagerConfig.Minimal,
+            ClipboardManagerConfig.Default,
+            ClipboardManagerConfig.ChatMonitor,
+            ClipboardManagerConfig.LinkCollector,
+            ClipboardManagerConfig.SecureClipboard,
+            ClipboardManagerConfig.SocialMediaDownloader,
+            ClipboardManagerConfig.Developer,
+            ClipboardManagerConfig.Full,
+        )
+        presets.forEach { config ->
+            val manager = ClipboardManager(config)
+            assertNotNull(manager)
+        }
     }
 
     // ── Sync Operations ─────────────────────────────────────────
