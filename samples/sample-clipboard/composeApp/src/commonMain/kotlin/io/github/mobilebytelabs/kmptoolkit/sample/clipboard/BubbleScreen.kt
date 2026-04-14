@@ -105,6 +105,30 @@ fun BubbleScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Capability Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+            ),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Platform Capability", style = MaterialTheme.typography.labelMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Floating: ${bubble.capability.name}",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = bubble.capabilityReason,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Permission Card
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -331,7 +355,7 @@ fun BubbleScreen() {
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
-                    text = "Bubble support: ${if (permission.canShowBubble()) "Floating" else "Notification"}",
+                    text = "Capability: ${bubble.capability.name} — ${bubble.capabilityReason}",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

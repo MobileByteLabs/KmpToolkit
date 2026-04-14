@@ -33,6 +33,7 @@ Cross-platform floating UI, bubbles, and notifications for Kotlin Multiplatform.
 | **See all use cases** | Use case → style → example table | [Use Cases](#use-cases) |
 | **See all API types** | Type reference tables | [API Reference](#api-reference) |
 | **Platform support** | Per-platform capability table | [Platform Support](#platform-support) |
+| **Check platform capability** | `bubble.capability` → what floating UI is available | [Capability](#bubble-capability) |
 | **Platform limitations** | Why X doesn't work | [Platform Limitations](#platform-limitations) |
 | **Use with clipboard** | Wire `urlDetections` → `bubble.show()` | [Integration](#integration-with-cmp-clipboard) |
 
@@ -48,6 +49,7 @@ BubbleState                 — Hidden, Showing, Dismissed(byUser), ActionTaken(
 BubbleIcon                  — System(name), Url(url), Resource(name)
 BubbleTapAction             — None, Dismiss, DeepLink(uri), Callback(onTap)
 BubbleScreenConfig          — height, width, autoExpand (for showScreen)
+BubbleCapability            — Bubble, Overlay, FloatingWindow, Notification, BrowserNotification, None
 BubblePermission            — canShowBubble(), canShowNotification(), request*()
 createBubblePermission()    — Factory function
 
@@ -58,7 +60,9 @@ Bubble methods:
 ├── .update(title?, message?, actions?)
 ├── .dismiss()
 ├── .state: StateFlow<BubbleState>
-└── .isShowing: Boolean
+├── .isShowing: Boolean
+├── .capability: BubbleCapability  — what this platform supports
+└── .capabilityReason: String      — human-readable explanation
 ```
 
 ---
@@ -191,6 +195,51 @@ if (!permission.canShowNotification()) {
 }
 ```
 
+### Bubble Capability
+
+Check what floating UI the current platform supports before showing:
+
+```kotlin
+val bubble = createBubble()
+
+when (bubble.capability) {
+    BubbleCapability.Bubble -> println("Android 30+ Bubbles API (floating chat-head)")
+    BubbleCapability.Overlay -> println("Android <30 floating FAB overlay")
+    BubbleCapability.FloatingWindow -> println("Desktop floating window (macOS/JVM)")
+    BubbleCapability.Notification -> println("Notification only (iOS, fallback)")
+    BubbleCapability.BrowserNotification -> println("Browser Notification API")
+    BubbleCapability.None -> println("No capability: ${bubble.capabilityReason}")
+}
+
+// Show is ALWAYS safe — gracefully degrades on every platform
+bubble.show(title = "Test", style = BubbleStyle.Floating)
+// Android 30+: real floating bubble
+// Android <30: overlay FAB (if permission) or notification
+// macOS: NSPanel floating window
+// JVM: JWindow always-on-top
+// iOS: notification banner
+// Others: best available or silent no-op
+```
+
+### Graceful Degradation
+
+The library **NEVER crashes** on any API level or platform. Every `show()` call:
+1. Checks platform capability at runtime
+2. Falls through to the best available option
+3. Wraps everything in try-catch
+4. Logs the reason if floating isn't available
+
+| API Level | Floating Available? | Fallback |
+|:---------:|:-------------------:|:---------|
+| Android 30+ | Bubbles API | Notification if user disabled |
+| Android 26-29 | Overlay FAB | Notification if no permission |
+| Android <26 | No | Notification only |
+| iOS | No | Notification banner |
+| macOS | NSPanel | UNUserNotification |
+| JVM | JWindow | SystemTray |
+| JS/Wasm | No | Notification API |
+| Headless/test | No | Silent no-op |
+
 ## Use Cases
 
 | Use Case | Style | Example |
@@ -233,20 +282,21 @@ if (!permission.canShowNotification()) {
 
 ## Platform Support
 
-| Platform | Mechanism | Permission | Actions | Deep Link |
-|:---------|:----------|:-----------|:-------:|:---------:|
-| Android 30+ | Bubbles API / Notification | POST_NOTIFICATIONS (API 33+) | Yes | Yes |
-| Android <30 | Notification | None | Yes | Yes |
-| iOS | UNUserNotificationCenter | Authorization required | Yes (3 max) | Yes |
-| macOS | UNUserNotificationCenter | None | Limited | Yes |
-| JVM | SystemTray + TrayIcon | None (if tray supported) | No | Callback |
-| JS | Browser Notification API | Notification.permission | No | Callback |
-| Wasm JS | Browser Notification API | Notification.permission | No | Callback |
-| Linux | No-op | — | — | — |
-| Windows | No-op | — | — | — |
-| tvOS | No-op | — | — | — |
-| watchOS | No-op | — | — | — |
-| Wasm WASI | No-op | — | — | — |
+| Platform | BubbleStyle.Floating | BubbleStyle.Notification | Capability | Permission |
+|:---------|:--------------------|:------------------------|:-----------|:-----------|
+| Android 30+ | **Bubbles API** (chat-head + BubbleActivity) | Standard notification | `Bubble` | POST_NOTIFICATIONS (33+) |
+| Android 26-29 | **Overlay FAB** (TYPE_APPLICATION_OVERLAY) | Standard notification | `Overlay` | SYSTEM_ALERT_WINDOW |
+| Android <26 | Notification (fallback) | Standard notification | `Notification` | None |
+| iOS | Notification (no floating on iOS) | Local notification banner | `Notification` | UNAuth |
+| macOS | **NSPanel** (borderless, floating, draggable) | UNUserNotification | `FloatingWindow` | None |
+| JVM | **JWindow** (dark, always-on-top, draggable) | SystemTray popup | `FloatingWindow` | None |
+| JS | Notification API | Browser Notification API | `BrowserNotification` | Notification.permission |
+| Wasm JS | Notification API | Browser Notification API | `BrowserNotification` | Notification.permission |
+| Linux | No-op | No-op | `None` | — |
+| Windows | No-op | No-op | `None` | — |
+| tvOS | No-op | No-op | `None` | — |
+| watchOS | No-op | No-op | `None` | — |
+| Wasm WASI | No-op | No-op | `None` | — |
 
 ### Platform Limitations
 
