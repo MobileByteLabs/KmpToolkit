@@ -29,7 +29,9 @@ Cross-platform floating UI, bubbles, and notifications for Kotlin Multiplatform.
 | **Persistent service** | `bubble.showPersistent(title, actions, style=Service)` | [Persistent Service](#persistent-service-notification) |
 | **Update live content** | `bubble.update(title, message)` | [Update Live Content](#update-live-content) |
 | **Observe bubble state** | `bubble.state.collect { }` | [Observe State](#observe-state) |
-| **Check permissions** | `createBubblePermission().canShowNotification()` | [Check Permissions](#check-permissions) |
+| **Check permissions** | `permission.canShowNotification()` / `canShowBubble()` | [Permissions](#check--manage-permissions) |
+| **Open permission settings** | `permission.requestNotificationPermission()` — always opens settings | [Permissions](#check--manage-permissions) |
+| **Enable/disable overlay** | `permission.requestBubblePermission()` — opens overlay settings | [Permissions](#check--manage-permissions) |
 | **See all use cases** | Use case → style → example table | [Use Cases](#use-cases) |
 | **See all API types** | Type reference tables | [API Reference](#api-reference) |
 | **Platform support** | Per-platform capability table | [Platform Support](#platform-support) |
@@ -52,6 +54,12 @@ BubbleScreenConfig          — height, width, autoExpand (for showScreen)
 BubbleCapability            — Bubble, Overlay, FloatingWindow, Notification, BrowserNotification, None
 BubblePermission            — canShowBubble(), canShowNotification(), request*()
 createBubblePermission()    — Factory function
+
+BubblePermission methods:
+├── .canShowBubble(): Boolean                — overlay/floating available?
+├── .canShowNotification(): Boolean          — notification permission granted?
+├── .requestBubblePermission(): Boolean      — ALWAYS opens settings (enable/disable)
+└── .requestNotificationPermission(): Boolean — ALWAYS opens settings (enable/disable)
 
 Bubble methods:
 ├── .show(title, message?, icon?, actions?, style?, onTap?, autoDismissMs?)
@@ -184,16 +192,41 @@ bubble.state.collect { state ->
 }
 ```
 
-### Check Permissions
+### Check & Manage Permissions
 
 ```kotlin
 val permission = createBubblePermission()
 
-if (!permission.canShowNotification()) {
-    val granted = permission.requestNotificationPermission()
-    if (!granted) println("Notification permission denied")
-}
+// Check current state
+val hasNotification = permission.canShowNotification()  // Android 13+: POST_NOTIFICATIONS
+val hasOverlay = permission.canShowBubble()              // Android: SYSTEM_ALERT_WINDOW
+
+// Request opens the platform settings page — user can enable OR disable
+// Always navigates to settings regardless of current state
+permission.requestNotificationPermission()  // → Android notification settings
+permission.requestBubblePermission()        // → Android "Display over other apps"
 ```
+
+**Platform behavior of `requestNotificationPermission()`:**
+
+| Platform | What happens |
+|:---------|:------------|
+| Android 8+ | Opens `ACTION_APP_NOTIFICATION_SETTINGS` for this app |
+| Android <8 | Opens `ACTION_APPLICATION_DETAILS_SETTINGS` |
+| iOS | Calls `UNUserNotificationCenter.requestAuthorization()` (system dialog) |
+| macOS | Returns true (no permission needed) |
+| JS/Wasm | Calls `Notification.requestPermission()` (browser dialog) |
+| Others | Returns false (no capability) |
+
+**Platform behavior of `requestBubblePermission()`:**
+
+| Platform | What happens |
+|:---------|:------------|
+| Android | Opens `ACTION_MANAGE_OVERLAY_PERMISSION` for this app |
+| iOS | Returns false (no floating UI on iOS) |
+| Others | Returns false |
+
+**Key**: Both methods always open settings — they never skip even if permission is already granted. This lets the user **enable or disable** at any time.
 
 ### Bubble Capability
 
@@ -284,7 +317,8 @@ The library **NEVER crashes** on any API level or platform. Every `show()` call:
 
 | Platform | BubbleStyle.Floating | BubbleStyle.Notification | Capability | Permission |
 |:---------|:--------------------|:------------------------|:-----------|:-----------|
-| Android 30+ | **Bubbles API** (chat-head + BubbleActivity) | Standard notification | `Bubble` | POST_NOTIFICATIONS (33+) |
+| Android 30+ (overlay granted) | **Overlay FAB** + Bubbles API notification | Standard notification | `Overlay` | SYSTEM_ALERT_WINDOW + POST_NOTIFICATIONS |
+| Android 30+ (no overlay) | **Bubbles API** (system-managed) | Standard notification | `Bubble` | POST_NOTIFICATIONS (33+) |
 | Android 26-29 | **Overlay FAB** (TYPE_APPLICATION_OVERLAY) | Standard notification | `Overlay` | SYSTEM_ALERT_WINDOW |
 | Android <26 | Notification (fallback) | Standard notification | `Notification` | None |
 | iOS | Notification (no floating on iOS) | Local notification banner | `Notification` | UNAuth |

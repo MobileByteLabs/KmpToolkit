@@ -60,16 +60,16 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         get() {
             val context = appContext ?: return BubbleCapability.None
             return when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> BubbleCapability.Bubble
                 OverlayPermission.canDrawOverlays(context) -> BubbleCapability.Overlay
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> BubbleCapability.Bubble
                 else -> BubbleCapability.Notification
             }
         }
 
     override val capabilityReason: String
         get() = when (capability) {
-            BubbleCapability.Bubble -> "Bubbles API (Android ${Build.VERSION.SDK_INT})"
-            BubbleCapability.Overlay -> "Overlay FAB (Android ${Build.VERSION.SDK_INT}, SYSTEM_ALERT_WINDOW granted)"
+            BubbleCapability.Overlay -> "Floating FAB (Android ${Build.VERSION.SDK_INT}, overlay permission granted)"
+            BubbleCapability.Bubble -> "Bubbles API (Android ${Build.VERSION.SDK_INT}, grant overlay for floating FAB)"
             BubbleCapability.Notification -> "Notification only (Android ${Build.VERSION.SDK_INT})"
             BubbleCapability.None -> "No context available"
             else -> "Android ${Build.VERSION.SDK_INT}"
@@ -103,6 +103,22 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
             currentMessage = message
             currentActions = actions
             notificationId = notificationBaseId++
+
+            // Check notification permission
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS,
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (!hasPermission) {
+                    Log.w(
+                        TAG,
+                        "POST_NOTIFICATIONS not granted — bubble won't show. Call requestNotificationPermission() first.",
+                    )
+                    _state.value = BubbleState.Dismissed(byUser = false)
+                    return
+                }
+            }
 
             ensureChannel(context)
             val resolvedStyle = if (style == BubbleStyle.Auto) resolveStyle(context) else style
@@ -228,19 +244,24 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
         actions: List<BubbleAction>,
         onTap: BubbleTapAction,
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // ── Real Bubbles API (API 30+) ──────────────────────
-            Log.i(TAG, "Using Bubbles API (API ${Build.VERSION.SDK_INT})")
-            showAsBubbleApi(context, title, message, actions, onTap)
-        } else if (OverlayPermission.canDrawOverlays(context)) {
-            // ── Overlay FAB (API <30) ───────────────────────────
+        // Priority: Overlay FAB (actual floating button) > Bubbles API > Notification
+        if (OverlayPermission.canDrawOverlays(context)) {
+            // ── Overlay FAB — the actual floating button on screen ──
             Log.i(TAG, "Using overlay FAB (API ${Build.VERSION.SDK_INT})")
             showAsOverlayFab(context, title, onTap)
-            // Also show notification for actions
-            showAsNotification(context, title, message, actions, onTap)
+            // Also show notification with actions + bubble metadata
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                showAsBubbleApi(context, title, message, actions, onTap)
+            } else {
+                showAsNotification(context, title, message, actions, onTap)
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // ── Bubbles API — system-managed floating (no overlay permission needed) ──
+            Log.i(TAG, "Using Bubbles API (API ${Build.VERSION.SDK_INT}), no overlay permission")
+            showAsBubbleApi(context, title, message, actions, onTap)
         } else {
             // ── Notification fallback ───────────────────────────
-            Log.i(TAG, "Floating not supported on API ${Build.VERSION.SDK_INT}, using notification")
+            Log.i(TAG, "Floating not available on API ${Build.VERSION.SDK_INT}, using notification")
             showAsNotification(context, title, message, actions, onTap)
         }
     }

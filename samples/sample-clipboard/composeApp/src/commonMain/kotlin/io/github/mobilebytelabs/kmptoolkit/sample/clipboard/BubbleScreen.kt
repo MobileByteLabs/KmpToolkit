@@ -130,6 +130,8 @@ fun BubbleScreen() {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Permission Card
+        val hasNotif = permission.canShowNotification()
+        val hasBubble = permission.canShowBubble()
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -138,25 +140,60 @@ fun BubbleScreen() {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Permissions", style = MaterialTheme.typography.labelMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Bubble: ${if (permission.canShowBubble()) "Granted" else "Not available"}",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                Text(
-                    text = "Notification: ${if (permission.canShowNotification()) "Granted" else "Not granted"}",
-                    style = MaterialTheme.typography.bodySmall,
-                )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            val granted = permission.requestNotificationPermission()
-                            lastAction = "Notification permission: $granted"
-                        }
-                    },
+
+                // Notification toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Request Notification Permission")
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Notifications", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = if (hasNotif) "Granted" else "Required for bubbles",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                permission.requestNotificationPermission()
+                                lastAction = "Opened notification settings"
+                            }
+                        },
+                    ) {
+                        Text(if (hasNotif) "Manage" else "Enable")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Overlay toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Floating FAB (Overlay)", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = if (hasBubble) "Granted" else "Required for floating button",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                permission.requestBubblePermission()
+                                lastAction = "Opened overlay settings"
+                            }
+                        },
+                    ) {
+                        Text(if (hasBubble) "Manage" else "Enable")
+                    }
                 }
             }
         }
