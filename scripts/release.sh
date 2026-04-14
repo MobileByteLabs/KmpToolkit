@@ -205,12 +205,20 @@ cmd_release() {
         exit 0
     fi
 
-    # ── Step 2: Bump versions ────────────────────────────────────
-    if [ "$VERSION" != "$current_version" ]; then
-        log_step "[2/6] Bumping: $current_version → $VERSION..."
-        for module in "${modules[@]}"; do
-            sed -i '' "s/version = \"$current_version\"/version = \"$VERSION\"/" "${module}/build.gradle.kts"
-        done
+    # ── Step 2: Unify ALL module versions ──────────────────────────
+    log_step "[2/6] Setting ALL modules to $VERSION..."
+    local any_changed=false
+    for module in "${modules[@]}"; do
+        local mod_version=$(get_version "$module")
+        if [ "$mod_version" != "$VERSION" ]; then
+            sed -i '' "s/version = \"$mod_version\"/version = \"$VERSION\"/" "${module}/build.gradle.kts"
+            log_pass "$module: $mod_version → $VERSION"
+            any_changed=true
+        else
+            log_pass "$module: already $VERSION"
+        fi
+    done
+    if [ "$any_changed" = true ]; then
         git add -A
         git commit -m "chore: bump version to $VERSION" --no-verify
         log_pass "Versions bumped to $VERSION"
