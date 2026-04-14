@@ -3,6 +3,7 @@ package com.mobilebytelabs.kmptoolkit.bubble
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import platform.Foundation.NSBundle
 import platform.Foundation.NSUUID
 import platform.UserNotifications.UNMutableNotificationContent
 import platform.UserNotifications.UNNotificationAction
@@ -12,6 +13,9 @@ import platform.UserNotifications.UNNotificationCategoryOptionNone
 import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNNotificationSound
 import platform.UserNotifications.UNUserNotificationCenter
+
+/** Check if notification APIs are available (requires app bundle — absent in test runners). */
+private fun isNotificationAvailable(): Boolean = NSBundle.mainBundle.bundleIdentifier != null
 
 internal class IosBubble(private val config: BubbleConfig) : Bubble {
     private val _state = MutableStateFlow<BubbleState>(BubbleState.Hidden)
@@ -33,15 +37,16 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
         onTap: BubbleTapAction,
         autoDismissMs: Long,
     ) {
+        // Guard: UNUserNotificationCenter crashes without app bundle (e.g., in unit tests)
+        if (!isNotificationAvailable()) return
+
         val notificationId = NSUUID().UUIDString
         currentNotificationId = notificationId
 
-        // Register category with actions
         if (actions.isNotEmpty()) {
             registerCategory(actions)
         }
 
-        // Build notification content
         val content = UNMutableNotificationContent().apply {
             setTitle(title)
             setBody(message)
@@ -51,7 +56,6 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
             if (config.sound) {
                 setSound(UNNotificationSound.defaultSound)
             }
-            // Store tap action in userInfo
             when (onTap) {
                 is BubbleTapAction.DeepLink -> {
                     setUserInfo(mapOf("route" to onTap.uri))
@@ -61,14 +65,12 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
             }
         }
 
-        // Create request (immediate trigger = nil)
         val request = UNNotificationRequest.requestWithIdentifier(
             identifier = notificationId,
             content = content,
             trigger = null,
         )
 
-        // Post notification
         UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { error ->
             if (error == null) {
                 _state.value = BubbleState.Showing
@@ -101,6 +103,7 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
     }
 
     override fun update(title: String?, message: String?, actions: List<BubbleAction>?) {
+        if (!isNotificationAvailable()) return
         val id = currentNotificationId ?: return
         // Re-post notification with same ID to update
         val content = UNMutableNotificationContent().apply {
@@ -116,9 +119,11 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
     }
 
     override fun dismiss() {
-        currentNotificationId?.let { id ->
-            UNUserNotificationCenter.currentNotificationCenter()
-                .removeDeliveredNotificationsWithIdentifiers(listOf(id))
+        if (isNotificationAvailable()) {
+            currentNotificationId?.let { id ->
+                UNUserNotificationCenter.currentNotificationCenter()
+                    .removeDeliveredNotificationsWithIdentifiers(listOf(id))
+            }
         }
         currentNotificationId = null
         _state.value = BubbleState.Dismissed(byUser = false)

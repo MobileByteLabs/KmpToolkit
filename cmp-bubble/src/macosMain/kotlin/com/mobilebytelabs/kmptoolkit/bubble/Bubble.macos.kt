@@ -3,11 +3,14 @@ package com.mobilebytelabs.kmptoolkit.bubble
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import platform.Foundation.NSBundle
 import platform.Foundation.NSUUID
 import platform.UserNotifications.UNMutableNotificationContent
 import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNNotificationSound
 import platform.UserNotifications.UNUserNotificationCenter
+
+private fun isNotificationAvailable(): Boolean = NSBundle.mainBundle.bundleIdentifier != null
 
 internal class MacosBubble(private val config: BubbleConfig) : Bubble {
     private val _state = MutableStateFlow<BubbleState>(BubbleState.Hidden)
@@ -25,6 +28,7 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
         onTap: BubbleTapAction,
         autoDismissMs: Long,
     ) {
+        if (!isNotificationAvailable()) return
         val notificationId = NSUUID().UUIDString
         currentNotificationId = notificationId
 
@@ -64,6 +68,7 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
     }
 
     override fun update(title: String?, message: String?, actions: List<BubbleAction>?) {
+        if (!isNotificationAvailable()) return
         val id = currentNotificationId ?: return
         val content = UNMutableNotificationContent().apply {
             title?.let { setTitle(it) }
@@ -74,8 +79,12 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
     }
 
     override fun dismiss() {
-        currentNotificationId?.let { id ->
-            UNUserNotificationCenter.currentNotificationCenter().removeDeliveredNotificationsWithIdentifiers(listOf(id))
+        if (isNotificationAvailable()) {
+            currentNotificationId?.let { id ->
+                UNUserNotificationCenter.currentNotificationCenter().removeDeliveredNotificationsWithIdentifiers(
+                    listOf(id),
+                )
+            }
         }
         currentNotificationId = null
         _state.value = BubbleState.Dismissed(byUser = false)
