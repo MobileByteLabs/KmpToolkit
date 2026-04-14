@@ -25,17 +25,13 @@ KMP Toolkit is available as modular libraries. Import only what you need:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            // Clipboard utilities + monitoring
-            implementation("io.github.mobilebytelabs:kmp-clipboard:0.2.0")
+            // All modules share the same version
+            val kmptoolkit = "2.1.0"
 
-            // Toast/Snackbar for Compose Multiplatform
-            implementation("io.github.mobilebytelabs:kmp-toast:0.1.0")
-
-            // Bubbles, floating UI, notifications
-            implementation("io.github.mobilebytelabs:kmp-bubble:0.1.0")
-
-            // In-App Update checking
-            implementation("io.github.mobilebytelabs:kmp-in-app-update:0.5.0")
+            implementation("io.github.mobilebytelabs:kmp-clipboard:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:kmp-bubble:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:kmp-toast:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:kmp-in-app-update:$kmptoolkit")
         }
     }
 }
@@ -47,10 +43,10 @@ kotlin {
 
 | Module | Artifact | Description | Version |
 |--------|----------|-------------|:-------:|
-| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/observe/monitor/URL detect | `0.2.0` |
-| **kmp-bubble** | `io.github.mobilebytelabs:kmp-bubble` | Bubbles, floating UI, notifications | `0.1.0` |
-| **kmp-toast** | `io.github.mobilebytelabs:kmp-toast` | Toast/Snackbar for Compose Multiplatform | `0.1.0` |
-| **kmp-in-app-update** | `io.github.mobilebytelabs:kmp-in-app-update` | In-app update checking | `0.5.0` |
+| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/observe/monitor/URL detect | `2.1.0` |
+| **kmp-bubble** | `io.github.mobilebytelabs:kmp-bubble` | Bubbles, floating UI, notifications | `2.1.0` |
+| **kmp-toast** | `io.github.mobilebytelabs:kmp-toast` | Toast/Snackbar for Compose Multiplatform | `2.1.0` |
+| **kmp-in-app-update** | `io.github.mobilebytelabs:kmp-in-app-update` | In-app update checking | `2.1.0` |
 
 Each module is independently publishable and can be used standalone.
 

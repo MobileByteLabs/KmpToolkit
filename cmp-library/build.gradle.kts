@@ -14,7 +14,7 @@ plugins {
 // Copy this module structure when adding new library modules.
 // ============================================================================
 group = "io.github.mobilebytelabs"
-version = "1.0.0-template"
+version = "2.1.0"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {

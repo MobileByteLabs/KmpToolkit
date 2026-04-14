@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "io.github.mobilebytelabs"
-version = "2.0.5"
+version = "2.1.0"
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
