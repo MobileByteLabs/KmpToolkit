@@ -1,6 +1,23 @@
-# Remote Config Module
+<!--
+⚠️ REDIRECT NOTICE — This file is kept for backwards compatibility.
+Current docs have moved to docs/remote-config/
+  → README:  docs/remote-config/README.md
+  → Setup:   docs/remote-config/SETUP.md
+  → AI sync: docs/remote-config/CLAUDE_AI_SETUP.md
 
-> `com.mobilebytesensei:kmptoolkit-remote-config:1.0.0`
+Current artifact: io.github.mobilebytelabs:kmptoolkit-remote-config:2.1.0
+Current package:  com.mobilebytelabs.remoteconfig
+Current table:    product_remote_config (not remote_config)
+-->
+
+> **Docs moved** → [`docs/remote-config/README.md`](remote-config/README.md) | [`SETUP.md`](remote-config/SETUP.md)
+> Current version: **2.1.0** — artifact and table name changed, use new docs.
+
+---
+
+# Remote Config Module (Legacy — see docs/remote-config/)
+
+> `com.mobilebytesensei:kmptoolkit-remote-config:1.0.0` ← stale, current is `io.github.mobilebytelabs:kmptoolkit-remote-config:2.1.0`
 
 A Firebase Remote Config-like messaging system powered by Supabase. Remotely push dialogs, banners, full-screen overlays, and bottom sheets to users with frequency control, scheduling, targeting, and action buttons.
 

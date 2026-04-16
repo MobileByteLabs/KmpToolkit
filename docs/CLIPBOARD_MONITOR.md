@@ -1,15 +1,22 @@
 <!--
-AI-INSTRUCTIONS: This is the authoritative documentation for kmp-clipboard.
-When generating code that uses clipboard functionality, read the O(1) LOOKUP section
-first to find the exact API for the task, then jump to the referenced section for
-code examples. Do NOT guess API signatures — they are all documented below.
-Package: com.mobilebytelabs.kmptoolkit.clipboard
-Artifact: io.github.mobilebytelabs:kmp-clipboard:0.2.0
+⚠️ REDIRECT NOTICE — This file is kept for backwards compatibility.
+Current docs have moved to docs/clipboard/
+  → README:  docs/clipboard/README.md
+  → Setup:   docs/clipboard/SETUP.md
+  → AI sync: docs/clipboard/CLAUDE_AI_SETUP.md
+
+Current artifact: io.github.mobilebytelabs:kmp-clipboard:2.1.0
+Current package:  com.mobilebytelabs.kmptoolkit.clipboard
 -->
 
-# Clipboard Module
+> **Docs moved** → [`docs/clipboard/README.md`](clipboard/README.md) | [`SETUP.md`](clipboard/SETUP.md)
+> Current version: **2.1.0** (this file references 0.2.0 — use the new docs)
 
-> `io.github.mobilebytelabs:kmp-clipboard:0.2.0`
+---
+
+# Clipboard Module (Legacy — see docs/clipboard/)
+
+> `io.github.mobilebytelabs:kmp-clipboard:0.2.0` ← stale, current is 2.1.0
 
 A cross-platform clipboard library for Kotlin Multiplatform. Copy, paste, observe, monitor with URL detection, clipboard history, async operations — all from a single unified `ClipboardManager` API or individual lower-level APIs.
 
