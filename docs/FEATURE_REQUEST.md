@@ -1,4 +1,14 @@
-# Feature Request Module
+# Feature Request Module (Moved)
+
+> **This document has moved.**
+> See [docs/user-tickets/README.md](user-tickets/README.md) for the current documentation.
+> See [docs/user-tickets/SETUP.md](user-tickets/SETUP.md) for the integration guide.
+
+---
+
+<!-- Legacy content preserved below for reference only — DO NOT USE, may be outdated -->
+
+# Feature Request Module (legacy)
 
 > `com.mobilebytesensei:kmptoolkit:1.0.0`
 

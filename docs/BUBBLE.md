@@ -1,16 +1,22 @@
 <!--
-AI-INSTRUCTIONS: This is the authoritative documentation for kmp-bubble.
-When generating code that uses bubble/notification functionality, read the O(1) LOOKUP
-section first to find the exact API for the task, then jump to the referenced section.
-Do NOT guess API signatures — they are all documented below.
-Package: com.mobilebytelabs.kmptoolkit.bubble
-Artifact: io.github.mobilebytelabs:kmp-bubble:0.1.0
-Dependencies: kotlinx-coroutines-core ONLY (zero other deps)
+⚠️ REDIRECT NOTICE — This file is kept for backwards compatibility.
+Current docs have moved to docs/bubble/
+  → README:  docs/bubble/README.md
+  → Setup:   docs/bubble/SETUP.md
+  → AI sync: docs/bubble/CLAUDE_AI_SETUP.md
+
+Current artifact: io.github.mobilebytelabs:kmp-bubble:2.1.0
+Current package:  com.mobilebytelabs.kmptoolkit.bubble
 -->
 
-# Bubble Module
+> **Docs moved** → [`docs/bubble/README.md`](bubble/README.md) | [`SETUP.md`](bubble/SETUP.md)
+> Current version: **2.1.0** (this file references 0.1.0 — use the new docs)
 
-> `io.github.mobilebytelabs:kmp-bubble:0.1.0`
+---
+
+# Bubble Module (Legacy — see docs/bubble/)
+
+> `io.github.mobilebytelabs:kmp-bubble:0.1.0` ← stale, current is 2.1.0
 
 Cross-platform floating UI, bubbles, and notifications for Kotlin Multiplatform. Show chat-head bubbles on Android, notification banners on iOS, system tray popups on desktop, and browser notifications on web — all from a single API.
 
