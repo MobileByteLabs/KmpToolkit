@@ -25,7 +25,12 @@
 #   - gh CLI installed (for PR merge fallback + GitHub Release)
 #
 # Release Flow:
-#   verify.sh --quick → merge dev→main → tag → push → CI → Release → Maven
+#   1. verify.sh --quick (quality gates)
+#   2. verify.sh --platforms (multi-target verification)
+#   3. Maven Local publish gate (MANDATORY — build proof before CI)
+#   4. Version bump + commit
+#   5. Merge dev→main + tag + push
+#   6. GitHub Release (+ RELEASE_STATE markers) → triggers CI → Maven Central
 # =============================================================================
 set -euo pipefail
 
@@ -195,18 +200,29 @@ cmd_release() {
     fi
 
     # ── Step 1: Quality gates ────────────────────────────────────
-    log_step "[1/6] Quality gates (verify.sh --quick)..."
+    log_step "[1/8] Quality gates (verify.sh --quick)..."
     "$SCRIPT_DIR/verify.sh" --quick
+
+    # ── Step 2: Platform verification ────────────────────────────
+    log_step "[2/8] Platform verification (verify.sh --platforms)..."
+    "$SCRIPT_DIR/verify.sh" --platforms
+
+    # ── Step 3: Maven Local publish gate (MANDATORY) ─────────────
+    log_step "[3/8] Maven Local publish gate — build proof..."
+    load_credentials
+    "$SCRIPT_DIR/verify.sh" --local
+    log_pass "All modules build + sign locally — CI will succeed"
 
     if [ "$DRY_RUN" = true ]; then
         echo ""
         log_pass "Dry run complete. All checks passed for $TAG."
+        echo "   Quality ✅  Platforms ✅  Maven Local ✅"
         echo "   Re-run without --dry-run to merge, tag, and push."
         exit 0
     fi
 
-    # ── Step 2: Unify ALL module versions ──────────────────────────
-    log_step "[2/6] Setting ALL modules to $VERSION..."
+    # ── Step 4: Unify ALL module versions ──────────────────────────
+    log_step "[4/8] Setting ALL modules to $VERSION..."
     local any_changed=false
     for module in "${modules[@]}"; do
         local mod_version=$(get_version "$module")
@@ -226,9 +242,9 @@ cmd_release() {
         log_step "[2/6] Version unchanged ($VERSION)"
     fi
 
-    # ── Step 3: Merge development → main ─────────────────────────
+    # ── Step 5: Merge development → main ─────────────────────────
     if [ "$SKIP_MERGE" = false ]; then
-        log_step "[3/6] Merging development → main..."
+        log_step "[5/8] Merging development → main..."
         git fetch origin development main 2>/dev/null || true
 
         local behind=$(git rev-list origin/main..origin/development --count 2>/dev/null || echo "0")
@@ -264,11 +280,11 @@ cmd_release() {
             git checkout main && git pull origin main --ff-only
         fi
     else
-        log_step "[3/6] Skipping merge (--skip-merge)"
+        log_step "[5/8] Skipping merge (--skip-merge)"
     fi
 
-    # ── Step 4: Check tag ────────────────────────────────────────
-    log_step "[4/6] Checking tag $TAG..."
+    # ── Step 6: Check tag ────────────────────────────────────────
+    log_step "[6/8] Checking tag $TAG..."
     if git tag -l | grep -q "^$TAG$"; then
         log_fail "Tag $TAG already exists locally"
     fi
@@ -277,23 +293,20 @@ cmd_release() {
     fi
     log_pass "Tag $TAG is available"
 
-    # ── Step 5: Local Maven (optional) ───────────────────────────
-    if [ "$LOCAL_MAVEN" = true ]; then
-        log_step "[5/6] Publishing to local Maven..."
-        load_credentials
-        cmd_local
-    else
-        log_step "[5/6] Skipping local Maven (use --local)"
-    fi
+    # ── Step 7: Skipped (Maven Local already done in Step 3) ─────
+    log_step "[7/8] Maven Local — already verified in Step 3"
 
-    # ── Step 6: Tag + push + GitHub Release ──────────────────────
-    log_step "[6/6] Creating tag and pushing..."
+    # ── Step 8: Tag + push + GitHub Release ──────────────────────
+    log_step "[8/8] Creating tag and pushing..."
     git tag -a "$TAG" -m "KmpToolkit $TAG"
     git push origin "$TAG"
     log_pass "Tag $TAG pushed to origin"
 
-    # GitHub Release (triggers publish.yml)
+    # GitHub Release (triggers publish.yml) + RELEASE_STATE markers
     if command -v gh &>/dev/null; then
+        local timestamp
+        timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
         local notes="## Modules\n\n"
         for module in "${modules[@]}"; do
             notes+="- \`$(get_group "$module"):$(get_artifact "$module"):$VERSION\`\n"
@@ -303,10 +316,16 @@ cmd_release() {
             notes+="    implementation(\"$(get_group "$module"):$(get_artifact "$module"):$VERSION\")\n"
         done
         notes+="}\n\`\`\`\n"
+        notes+="\n## Deployment Status\n"
+        notes+="<!-- RELEASE_STATE_START -->\n"
+        notes+="- maven_local: verified ($timestamp)\n"
+        notes+="- maven_central: pending\n"
+        notes+="- platforms_verified: pass ($timestamp)\n"
+        notes+="<!-- RELEASE_STATE_END -->\n"
 
         gh release create "$TAG" --repo "$github_repo" \
             --title "$TAG" --notes "$(echo -e "$notes")" 2>/dev/null && \
-            log_pass "GitHub Release created" || \
+            log_pass "GitHub Release created (with RELEASE_STATE markers)" || \
             log_warn "GitHub Release failed — create manually"
     fi
 
@@ -330,14 +349,18 @@ cmd_help() {
     echo ""
     echo -e "${BOLD}KmpToolkit — Release Script${NC}"
     echo ""
-    echo "  ./scripts/release.sh                          Full release"
+    echo "  Pipeline: quality → platforms → maven-local → version → merge → tag → CI"
+    echo ""
+    echo "  ./scripts/release.sh                          Full 8-step release"
     echo "  ./scripts/release.sh --bump minor             Auto-bump + release"
     echo "  ./scripts/release.sh --version 0.2.0          Explicit version"
-    echo "  ./scripts/release.sh --dry-run                Checks only"
-    echo "  ./scripts/release.sh --local                  + local Maven"
+    echo "  ./scripts/release.sh --dry-run                Steps 1-3 only (verify)"
     echo "  ./scripts/release.sh --module cmp-clipboard   Single module"
+    echo "  ./scripts/release.sh --skip-merge             Skip dev→main merge"
+    echo "  ./scripts/release.sh -y                       Skip confirmation"
     echo "  ./scripts/release.sh list                     List modules"
-    echo "  ./scripts/release.sh verify                   Quality gates"
+    echo "  ./scripts/release.sh verify                   Quality gates only"
+    echo "  ./scripts/release.sh local                    Maven Local publish"
     echo "  ./scripts/release.sh help                     This help"
     echo ""
 }

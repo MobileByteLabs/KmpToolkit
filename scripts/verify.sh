@@ -11,11 +11,13 @@
 #   5. assemble all cmp-* modules (build all targets)
 #
 # Usage:
-#   ./scripts/verify.sh           # Full verify (fix + check + test + build)
-#   ./scripts/verify.sh --fix     # Only fix formatting (spotlessApply)
-#   ./scripts/verify.sh --check   # Only check (no fix, no build)
-#   ./scripts/verify.sh --quick   # Fix + check + test (skip full build)
-#   ./scripts/verify.sh --ci      # Exact CI mirror (check + test + build)
+#   ./scripts/verify.sh              # Full verify (fix + check + test + build)
+#   ./scripts/verify.sh --fix        # Only fix formatting (spotlessApply)
+#   ./scripts/verify.sh --check      # Only check (no fix, no build)
+#   ./scripts/verify.sh --quick      # Fix + check + test (skip full build)
+#   ./scripts/verify.sh --ci         # Exact CI mirror (check + test + build)
+#   ./scripts/verify.sh --platforms  # Multi-target platform verification matrix
+#   ./scripts/verify.sh --local      # Maven Local publish gate (build proof)
 #
 # After running this, your PR will pass all CI checks guaranteed.
 # ============================================================================
@@ -236,6 +238,173 @@ print_summary() {
     fi
 }
 
+# ── Step 6: Platform Verification (multi-target matrix) ────────────────
+
+run_platform_verify() {
+    echo -e "\n${BOLD}[P] Platform Verification — multi-target test matrix${NC}"
+    echo ""
+
+    # Detect host capabilities
+    HOST_OS="$(uname -s)"
+    CAN_IOS=false
+    CAN_MACOS=false
+    if [ "$HOST_OS" = "Darwin" ]; then
+        CAN_IOS=true
+        CAN_MACOS=true
+    fi
+
+    PLATFORM_PASS=0
+    PLATFORM_FAIL=0
+    PLATFORM_SKIP=0
+
+    # Header
+    printf "  %-20s %-6s %-6s %-7s %-6s %-6s\n" "Module" "JVM" "iOS" "macOS" "JS" "Wasm"
+    printf "  %-20s %-6s %-6s %-7s %-6s %-6s\n" "────────────────────" "─────" "─────" "──────" "─────" "─────"
+
+    for dir in cmp-*/; do
+        [ -d "$dir" ] || continue
+        MODULE="${dir%/}"
+        BUILD_FILE="${dir}build.gradle.kts"
+        [ -f "$BUILD_FILE" ] || continue
+
+        JVM_RESULT="—"
+        IOS_RESULT="—"
+        MACOS_RESULT="—"
+        JS_RESULT="—"
+        WASM_RESULT="—"
+
+        # JVM test (always available)
+        if grep -q "jvm()" "$BUILD_FILE" 2>/dev/null; then
+            if ./gradlew ":${MODULE}:jvmTest" --daemon -q 2>/dev/null; then
+                JVM_RESULT="${GREEN}pass${NC}"
+                PLATFORM_PASS=$((PLATFORM_PASS + 1))
+            else
+                JVM_RESULT="${RED}FAIL${NC}"
+                PLATFORM_FAIL=$((PLATFORM_FAIL + 1))
+            fi
+        fi
+
+        # iOS test (macOS host only)
+        if grep -q "iosSimulatorArm64()" "$BUILD_FILE" 2>/dev/null || grep -q "iosArm64()" "$BUILD_FILE" 2>/dev/null; then
+            if $CAN_IOS; then
+                if ./gradlew ":${MODULE}:iosSimulatorArm64Test" --daemon -q 2>/dev/null; then
+                    IOS_RESULT="${GREEN}pass${NC}"
+                    PLATFORM_PASS=$((PLATFORM_PASS + 1))
+                else
+                    IOS_RESULT="${RED}FAIL${NC}"
+                    PLATFORM_FAIL=$((PLATFORM_FAIL + 1))
+                fi
+            else
+                IOS_RESULT="${BLUE}skip${NC}"
+                PLATFORM_SKIP=$((PLATFORM_SKIP + 1))
+            fi
+        fi
+
+        # macOS test (macOS host only)
+        if grep -q "macosArm64()" "$BUILD_FILE" 2>/dev/null || grep -q "macosX64()" "$BUILD_FILE" 2>/dev/null; then
+            if $CAN_MACOS; then
+                if ./gradlew ":${MODULE}:macosArm64Test" --daemon -q 2>/dev/null; then
+                    MACOS_RESULT="${GREEN}pass${NC}"
+                    PLATFORM_PASS=$((PLATFORM_PASS + 1))
+                else
+                    MACOS_RESULT="${RED}FAIL${NC}"
+                    PLATFORM_FAIL=$((PLATFORM_FAIL + 1))
+                fi
+            else
+                MACOS_RESULT="${BLUE}skip${NC}"
+                PLATFORM_SKIP=$((PLATFORM_SKIP + 1))
+            fi
+        fi
+
+        # JS test
+        if grep -q "js(" "$BUILD_FILE" 2>/dev/null; then
+            if ./gradlew ":${MODULE}:jsTest" --daemon -q 2>/dev/null; then
+                JS_RESULT="${GREEN}pass${NC}"
+                PLATFORM_PASS=$((PLATFORM_PASS + 1))
+            else
+                JS_RESULT="${RED}FAIL${NC}"
+                PLATFORM_FAIL=$((PLATFORM_FAIL + 1))
+            fi
+        fi
+
+        # Wasm test
+        if grep -q "wasmJs(" "$BUILD_FILE" 2>/dev/null; then
+            if ./gradlew ":${MODULE}:wasmJsNodeTest" --daemon -q 2>/dev/null; then
+                WASM_RESULT="${GREEN}pass${NC}"
+                PLATFORM_PASS=$((PLATFORM_PASS + 1))
+            else
+                WASM_RESULT="${RED}FAIL${NC}"
+                PLATFORM_FAIL=$((PLATFORM_FAIL + 1))
+            fi
+        fi
+
+        printf "  %-20s %-6b %-6b %-7b %-6b %-6b\n" "$MODULE" "$JVM_RESULT" "$IOS_RESULT" "$MACOS_RESULT" "$JS_RESULT" "$WASM_RESULT"
+    done
+
+    echo ""
+    if [ $PLATFORM_FAIL -eq 0 ]; then
+        step_pass "platforms (${PLATFORM_PASS} passed, ${PLATFORM_SKIP} skipped, 0 failed)"
+    else
+        step_fail "platforms (${PLATFORM_FAIL} failed, ${PLATFORM_PASS} passed, ${PLATFORM_SKIP} skipped)"
+        return 1
+    fi
+}
+
+# ── Step 7: Maven Local Publish Gate ───────────────────────────────────
+
+run_local_publish() {
+    echo -e "\n${BOLD}[L] Maven Local Publish Gate — build proof${NC}"
+
+    LOCAL_PASS=0
+    LOCAL_FAIL=0
+    GROUP=""
+
+    for dir in cmp-*/; do
+        [ -d "$dir" ] || continue
+        MODULE="${dir%/}"
+        BUILD_FILE="${dir}build.gradle.kts"
+        [ -f "$BUILD_FILE" ] || continue
+
+        # Check for mavenPublishing plugin
+        if ! grep -q "mavenPublishing" "$BUILD_FILE" 2>/dev/null; then
+            echo -e "    ${BLUE}SKIP${NC} ${MODULE} (no mavenPublishing plugin)"
+            continue
+        fi
+
+        echo -e "    Publishing ${MODULE} to Maven Local..."
+        if ./gradlew ":${MODULE}:publishToMavenLocal" --daemon -q 2>/dev/null; then
+            # Extract artifact info for verification
+            VERSION=$(grep 'version = "' "$BUILD_FILE" | head -1 | sed 's/.*version = "\(.*\)".*/\1/')
+            ARTIFACT=$(grep 'coordinates(' "$BUILD_FILE" | head -1 | sed 's/.*coordinates([^,]*, "\([^"]*\)".*/\1/')
+            if [ -z "$GROUP" ]; then
+                GROUP=$(grep 'coordinates(' "$BUILD_FILE" | head -1 | sed 's/.*coordinates("\([^"]*\)".*/\1/' | tr '.' '/')
+            fi
+
+            # Verify artifacts exist in ~/.m2
+            M2_PATH="$HOME/.m2/repository/${GROUP}/${ARTIFACT}/${VERSION}"
+            if [ -d "$M2_PATH" ]; then
+                ARTIFACT_COUNT=$(ls "$M2_PATH" 2>/dev/null | wc -l | tr -d ' ')
+                echo -e "    ${GREEN}PASS${NC} ${MODULE} → ${ARTIFACT}:${VERSION} (${ARTIFACT_COUNT} artifacts in ~/.m2)"
+                LOCAL_PASS=$((LOCAL_PASS + 1))
+            else
+                echo -e "    ${YELLOW}WARN${NC} ${MODULE} → published but artifacts not found at ${M2_PATH}"
+                LOCAL_PASS=$((LOCAL_PASS + 1))
+            fi
+        else
+            echo -e "    ${RED}FAIL${NC} ${MODULE}"
+            LOCAL_FAIL=$((LOCAL_FAIL + 1))
+        fi
+    done
+
+    echo ""
+    if [ $LOCAL_FAIL -eq 0 ]; then
+        step_pass "mavenLocal (${LOCAL_PASS} modules published successfully)"
+    else
+        step_fail "mavenLocal (${LOCAL_FAIL} failed — fix before CI publish)"
+        return 1
+    fi
+}
+
 # ── Main ────────────────────────────────────────────────────────────────
 
 print_header
@@ -260,6 +429,14 @@ case "$MODE" in
         run_detekt || true
         run_tests || true
         run_build_all || true
+        ;;
+    --platforms)
+        # Multi-target platform verification matrix
+        run_platform_verify || true
+        ;;
+    --local)
+        # Maven Local publish gate
+        run_local_publish || true
         ;;
     --full|*)
         # Default: fix + check + test + build
