@@ -88,7 +88,7 @@ kotlin {
         }
 
         androidMain.dependencies {
-            implementation("androidx.core:core-ktx:1.16.0")
+            implementation("androidx.core:core-ktx:1.18.0")
         }
     }
 }
