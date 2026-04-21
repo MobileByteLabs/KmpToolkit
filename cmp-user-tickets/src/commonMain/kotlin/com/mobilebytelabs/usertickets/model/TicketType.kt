@@ -4,6 +4,7 @@ enum class TicketType(val value: String, val label: String, val emoji: String, v
     FEATURE_REQUEST("feature_request", "Feature Request", "\uD83D\uDCA1", false),
     BUG_REPORT("bug_report", "Bug Report", "\uD83D\uDC1B", false),
     CONTACT_SUPPORT("contact_support", "Contact Support", "\uD83D\uDD12", true),
+    ROADMAP_ITEM("roadmap_item", "Roadmap", "\uD83D\uDDFA\uFE0F", false),
 }
 
 enum class TicketCategory(
@@ -32,4 +33,11 @@ enum class TicketStatus(val value: String, val label: String) {
     RESOLVED("resolved", "Resolved"),
     COMPLETED("completed", "Completed"),
     CLOSED("closed", "Closed"),
+}
+
+enum class TicketPriority(val value: String, val label: String, val emoji: String) {
+    LOW("low", "Low", "\uD83D\uDFE2"),
+    MEDIUM("medium", "Medium", "\uD83D\uDFE1"),
+    HIGH("high", "High", "\uD83D\uDD34"),
+    CRITICAL("critical", "Critical", "\uD83D\uDFE3"),
 }

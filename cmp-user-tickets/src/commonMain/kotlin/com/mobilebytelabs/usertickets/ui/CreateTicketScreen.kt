@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mobilebytelabs.usertickets.model.TicketCategory
+import com.mobilebytelabs.usertickets.model.TicketPriority
 import com.mobilebytelabs.usertickets.model.TicketType
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -61,6 +62,7 @@ internal fun CreateTicketScreen(
             TicketCategory.entries.first { it.applicableTo.contains(ticketType) },
         )
     }
+    var selectedPriority by remember { mutableStateOf(TicketPriority.MEDIUM) }
     var titleError by remember { mutableStateOf(false) }
     var descriptionError by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf(false) }
@@ -178,6 +180,28 @@ internal fun CreateTicketScreen(
                 Spacer(Modifier.height(8.dp))
             }
 
+            // Priority
+            Text(
+                UserTicketsStrings.CREATE_PRIORITY,
+                style = MaterialTheme.typography.labelLarge,
+            )
+            Spacer(Modifier.height(4.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TicketPriority.entries.forEach { priority ->
+                    FilterChip(
+                        selected = selectedPriority == priority,
+                        onClick = { selectedPriority = priority },
+                        label = {
+                            Text(
+                                "${priority.emoji} ${priority.label}",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+
             // Title
             OutlinedTextField(
                 value = title,
@@ -260,6 +284,7 @@ internal fun CreateTicketScreen(
                             title.trim(),
                             description.trim(),
                             selectedCategory.value,
+                            selectedPriority.value,
                             email.ifBlank { null },
                         )
                     }

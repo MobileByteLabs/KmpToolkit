@@ -15,6 +15,9 @@ data class UserTicketsState(
     val selectedTab: TicketsTab = TicketsTab.REQUESTED,
     val publicTickets: List<UserTicket> = emptyList(),
     val resolvedTickets: List<UserTicket> = emptyList(),
+    val roadmapTickets: List<UserTicket> = emptyList(),
+    val myTickets: List<UserTicket> = emptyList(),
+    val searchQuery: String = "",
     val isLoading: Boolean = true,
     val isSubmitting: Boolean = false,
     val error: String? = null,
@@ -23,7 +26,9 @@ data class UserTicketsState(
 
 enum class TicketsTab(val label: String) {
     REQUESTED(UserTicketsStrings.TAB_REQUESTED),
+    ROADMAP(UserTicketsStrings.TAB_ROADMAP),
     IMPLEMENTED(UserTicketsStrings.TAB_IMPLEMENTED),
+    MY_TICKETS(UserTicketsStrings.TAB_MY_TICKETS),
 }
 
 class UserTicketsViewModel(private val repository: UserTicketsRepository) : ViewModel() {
@@ -39,6 +44,20 @@ class UserTicketsViewModel(private val repository: UserTicketsRepository) : View
         _state.update { it.copy(selectedTab = tab) }
     }
 
+    fun updateSearch(query: String) {
+        _state.update { it.copy(searchQuery = query) }
+    }
+
+    fun getFilteredTickets(tickets: List<UserTicket>): List<UserTicket> {
+        val query = _state.value.searchQuery.trim().lowercase()
+        if (query.isEmpty()) return tickets
+        return tickets.filter {
+            it.title.lowercase().contains(query) ||
+                it.description.lowercase().contains(query) ||
+                it.category.lowercase().contains(query)
+        }
+    }
+
     fun dismissError() {
         _state.update { it.copy(error = null) }
     }
@@ -47,7 +66,14 @@ class UserTicketsViewModel(private val repository: UserTicketsRepository) : View
         _state.update { it.copy(successMessage = null) }
     }
 
-    fun submitTicket(type: TicketType, title: String, description: String, category: String, email: String?) {
+    fun submitTicket(
+        type: TicketType,
+        title: String,
+        description: String,
+        category: String,
+        priority: String,
+        email: String?,
+    ) {
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true) }
             val result = repository.submitTicket(
@@ -55,6 +81,7 @@ class UserTicketsViewModel(private val repository: UserTicketsRepository) : View
                 title = title,
                 description = description,
                 category = category,
+                priority = priority,
                 email = email,
             )
             if (result != null) {
@@ -81,6 +108,8 @@ class UserTicketsViewModel(private val repository: UserTicketsRepository) : View
     }
 
     fun upvoteTicket(ticketId: String) {
+        val voterId = com.mobilebytelabs.usertickets.config.FeatureRequestConfig.userId ?: "anon-${ticketId.take(8)}"
+        // Optimistic update
         _state.update { state ->
             state.copy(
                 publicTickets = state.publicTickets.map {
@@ -89,7 +118,19 @@ class UserTicketsViewModel(private val repository: UserTicketsRepository) : View
             )
         }
         viewModelScope.launch {
-            repository.upvoteTicket(ticketId)
+            val newCount = repository.toggleVote(ticketId, voterId)
+            if (newCount != null) {
+                _state.update { state ->
+                    state.copy(
+                        publicTickets = state.publicTickets.map {
+                            if (it.id == ticketId) it.copy(upvotes = newCount) else it
+                        },
+                        roadmapTickets = state.roadmapTickets.map {
+                            if (it.id == ticketId) it.copy(upvotes = newCount) else it
+                        },
+                    )
+                }
+            }
         }
     }
 
@@ -97,6 +138,14 @@ class UserTicketsViewModel(private val repository: UserTicketsRepository) : View
         val state = _state.value
         return state.publicTickets.find { it.id == ticketId }
             ?: state.resolvedTickets.find { it.id == ticketId }
+            ?: state.myTickets.find { it.id == ticketId }
+    }
+
+    fun fetchTicketById(ticketId: String, onResult: (UserTicket?) -> Unit) {
+        viewModelScope.launch {
+            val ticket = repository.getTicketById(ticketId)
+            onResult(ticket)
+        }
     }
 
     private fun loadAll() {
@@ -104,10 +153,14 @@ class UserTicketsViewModel(private val repository: UserTicketsRepository) : View
             _state.update { it.copy(isLoading = true) }
             val public = repository.getPublicTickets()
             val resolved = repository.getResolvedTickets()
+            val my = repository.getMyTickets()
+            val roadmap = public.filter { it.status == "planned" || it.status == "in_progress" }
             _state.update {
                 it.copy(
                     publicTickets = public,
                     resolvedTickets = resolved,
+                    roadmapTickets = roadmap,
+                    myTickets = my,
                     isLoading = false,
                 )
             }
@@ -119,12 +172,18 @@ internal object UserTicketsStrings {
     const val SCREEN_TITLE = "Tickets"
     const val TAB_REQUESTED = "Requested"
     const val TAB_IMPLEMENTED = "Implemented"
+    const val TAB_MY_TICKETS = "My Tickets"
+    const val TAB_ROADMAP = "Roadmap"
     const val EMPTY_REQUESTED = "No feature requests or bug reports yet.\nBe the first to submit one!"
     const val EMPTY_IMPLEMENTED = "No implemented features yet.\nStay tuned!"
+    const val EMPTY_MY_TICKETS = "No private tickets yet.\nSubmit a support request to see it here."
+    const val EMPTY_ROADMAP = "No planned or in-progress items yet.\nStay tuned for what's coming!"
+    const val SEARCH_PLACEHOLDER = "Search tickets..."
     const val CHIP_RESPONDED = "Responded"
     const val CREATE_TITLE = "Create Ticket"
     const val CREATE_TYPE = "Type"
     const val CREATE_CATEGORY = "Category"
+    const val CREATE_PRIORITY = "Priority"
     const val CREATE_FIELD_TITLE = "Title"
     const val CREATE_FIELD_DESCRIPTION = "Description"
     const val CREATE_FIELD_EMAIL_REQUIRED = "Email (required)"

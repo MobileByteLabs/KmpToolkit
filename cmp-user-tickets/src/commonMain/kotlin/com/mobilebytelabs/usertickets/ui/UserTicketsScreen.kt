@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,14 +28,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -48,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mobilebytelabs.usertickets.model.TicketPriority
 import com.mobilebytelabs.usertickets.model.TicketStatus
 import com.mobilebytelabs.usertickets.model.TicketType
 import com.mobilebytelabs.usertickets.model.UserTicket
@@ -108,8 +112,9 @@ fun UserTicketsScreen(
         modifier = modifier,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            TabRow(
+            ScrollableTabRow(
                 selectedTabIndex = state.selectedTab.ordinal,
+                edgePadding = 16.dp,
             ) {
                 TicketsTab.entries.forEach { tab ->
                     Tab(
@@ -120,6 +125,18 @@ fun UserTicketsScreen(
                 }
             }
 
+            // Search bar
+            OutlinedTextField(
+                value = state.searchQuery,
+                onValueChange = { viewModel.updateSearch(it) },
+                placeholder = { Text(UserTicketsStrings.SEARCH_PLACEHOLDER) },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp))
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).heightIn(max = 48.dp),
+            )
+
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -127,16 +144,32 @@ fun UserTicketsScreen(
             } else {
                 when (state.selectedTab) {
                     TicketsTab.REQUESTED -> TicketList(
-                        tickets = state.publicTickets,
+                        tickets = viewModel.getFilteredTickets(state.publicTickets),
                         emptyMessage = UserTicketsStrings.EMPTY_REQUESTED,
                         showUpvote = true,
                         onTicketClick = { ticket -> onNavigateToTicketDetail(ticket.id) },
                         onUpvote = viewModel::upvoteTicket,
                     )
 
+                    TicketsTab.ROADMAP -> TicketList(
+                        tickets = viewModel.getFilteredTickets(state.roadmapTickets),
+                        emptyMessage = UserTicketsStrings.EMPTY_ROADMAP,
+                        showUpvote = true,
+                        onTicketClick = { ticket -> onNavigateToTicketDetail(ticket.id) },
+                        onUpvote = viewModel::upvoteTicket,
+                    )
+
                     TicketsTab.IMPLEMENTED -> TicketList(
-                        tickets = state.resolvedTickets,
+                        tickets = viewModel.getFilteredTickets(state.resolvedTickets),
                         emptyMessage = UserTicketsStrings.EMPTY_IMPLEMENTED,
+                        showUpvote = false,
+                        onTicketClick = { ticket -> onNavigateToTicketDetail(ticket.id) },
+                        onUpvote = {},
+                    )
+
+                    TicketsTab.MY_TICKETS -> TicketList(
+                        tickets = viewModel.getFilteredTickets(state.myTickets),
+                        emptyMessage = UserTicketsStrings.EMPTY_MY_TICKETS,
                         showUpvote = false,
                         onTicketClick = { ticket -> onNavigateToTicketDetail(ticket.id) },
                         onUpvote = {},
@@ -238,6 +271,18 @@ private fun TicketCard(
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatusChip(ticket.status)
+                val priorityEnum = TicketPriority.entries.find { it.value == ticket.priority }
+                if (priorityEnum != null && priorityEnum != TicketPriority.MEDIUM) {
+                    SuggestionChip(
+                        onClick = {},
+                        label = {
+                            Text(
+                                "${priorityEnum.emoji} ${priorityEnum.label}",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
+                    )
+                }
                 if (ticket.category != GENERAL_CATEGORY) {
                     SuggestionChip(
                         onClick = {},
