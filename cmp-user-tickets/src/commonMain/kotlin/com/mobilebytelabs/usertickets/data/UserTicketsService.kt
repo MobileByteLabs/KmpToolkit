@@ -29,10 +29,12 @@ internal class UserTicketsServiceImpl : UserTicketsService {
                 filter {
                     eq("product_type", productType)
                     eq("is_private", false)
-                    neq("status", "completed")
-                    neq("status", "resolved")
-                    neq("status", "implemented")
-                    neq("status", "closed")
+                    and {
+                        neq("status", "completed")
+                        neq("status", "resolved")
+                        neq("status", "implemented")
+                        neq("status", "closed")
+                    }
                 }
                 order("upvotes", Order.DESCENDING)
             }
@@ -48,11 +50,7 @@ internal class UserTicketsServiceImpl : UserTicketsService {
                 filter {
                     eq("product_type", productType)
                     eq("is_private", false)
-                    or {
-                        eq("status", "completed")
-                        eq("status", "resolved")
-                        eq("status", "implemented")
-                    }
+                    isIn("status", listOf("completed", "resolved", "implemented"))
                 }
                 order("updated_at", Order.DESCENDING)
             }
