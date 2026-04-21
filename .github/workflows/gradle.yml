@@ -22,6 +22,7 @@ jobs:
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -55,6 +56,7 @@ jobs:
   build:
     name: Build & Test (${{ matrix.name }})
     needs: quality
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -64,10 +66,10 @@ jobs:
             os: ubuntu-latest
           - name: iOS Simulator
             target: iosSimulatorArm64Test
-            os: macos-latest
-          - name: macOS
-            target: macosArm64Test
-            os: macos-latest
+            os: macos-14
+          - name: Linux Native
+            target: linuxX64Test
+            os: ubuntu-latest
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -95,7 +97,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Run Tests
-        run: ./gradlew ${{ matrix.target }}
+        run: ./gradlew ${{ matrix.target }} --parallel
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v7
@@ -110,7 +112,8 @@ jobs:
   build-all:
     name: Build All Libraries (All Targets)
     needs: build
-    runs-on: macos-latest
+    runs-on: macos-14
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -144,7 +147,7 @@ jobs:
             fi
           done
           echo "Building modules:$MODULES"
-          ./gradlew $MODULES
+          ./gradlew $MODULES --parallel
 
       - name: Build Summary
         run: |
