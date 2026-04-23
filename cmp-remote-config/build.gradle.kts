@@ -57,8 +57,8 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.ui)
             implementation(compose.materialIconsExtended)
-            // Shared config from user-tickets module
-            implementation(project(":cmp-user-tickets"))
+            // Shared config from product-tickets module
+            implementation(project(":cmp-product-tickets"))
 
             // Supabase
             implementation(libs.supabase.postgrest)
