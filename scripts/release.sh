@@ -19,6 +19,7 @@
 #   ./scripts/release.sh --env /path/to/.env      # explicit .env path (auto-discovered by default)
 #   ./scripts/release.sh list                     # list publishable modules
 #   ./scripts/release.sh verify                   # run quality gates only
+#   ./scripts/release.sh publish                  # direct publish to Maven Central (no CI)
 #
 # Prerequisites:
 #   - .env file with credentials (auto-discovered from workspace root; or --env flag)
@@ -83,7 +84,7 @@ while [[ $# -gt 0 ]]; do
         --local)       LOCAL_MAVEN=true; shift ;;
         --bump)        BUMP_TYPE="$2"; shift 2 ;;
         -y)            SKIP_CONFIRM=true; shift ;;
-        list|verify|local|help)
+        list|verify|local|publish|help)
             COMMAND="$1"; shift ;;
         *) shift ;;
     esac
@@ -173,6 +174,74 @@ cmd_local() {
     done
     echo ""
     log_pass "Use with: repositories { mavenLocal() }"
+}
+
+# =============================================================================
+# publish — Direct publish to Maven Central (no CI required)
+# =============================================================================
+cmd_publish() {
+    load_credentials
+
+    if [[ -z "${MAVEN_CENTRAL_USERNAME:-}" ]]; then
+        log_fail "MAVEN_CENTRAL_USERNAME not set — check your .env file"
+    fi
+
+    local modules
+    modules=($(discover_modules "$TARGET_MODULE"))
+
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  ${BOLD}KmpToolkit — Direct Maven Central Publish${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    for module in "${modules[@]}"; do
+        echo "    • $module  $(get_group):$(get_artifact "$module"):$(get_version "$module")"
+    done
+    echo ""
+    echo -e "   Target: ${BOLD}Maven Central${NC} (${MAVEN_CENTRAL_STAGING_URL:-https://central.sonatype.com})"
+    echo ""
+
+    if [[ "$SKIP_CONFIRM" != true ]]; then
+        read -r -p "   Publish now? [y/N] " confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] || { echo "   Aborted."; exit 0; }
+    fi
+
+    # Step 1: Quality gate (fast)
+    log_step "[1/3] Quality gates..."
+    "$SCRIPT_DIR/verify.sh" --quick
+
+    # Step 2: Maven Local sign+build gate (proves artifacts are signable)
+    log_step "[2/3] Maven Local sign gate..."
+    for module in "${modules[@]}"; do
+        ./gradlew ":${module}:publishToMavenLocal" \
+            --no-configuration-cache --quiet 2>/dev/null
+        log_pass "$module signed + built locally"
+    done
+
+    # Step 3: Publish directly to Maven Central
+    log_step "[3/3] Publishing to Maven Central..."
+    for module in "${modules[@]}"; do
+        local version
+        version=$(get_version "$module")
+        local artifact
+        artifact=$(get_artifact "$module")
+
+        log_step "  → $(get_group):${artifact}:${version}"
+        ./gradlew ":${module}:publishAllPublicationsToMavenCentralRepository" \
+            --no-configuration-cache 2>&1 | tail -5
+        log_pass "$(get_group):${artifact}:${version} → Maven Central"
+    done
+
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}${BOLD}Published to Maven Central!${NC}"
+    echo -e "${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  Artifacts will be visible at:"
+    echo -e "${CYAN}║${NC}    https://central.sonatype.com/namespace/io.github.mobilebytelabs"
+    echo -e "${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  Propagation to search.maven.org: ~10–30 min"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
 }
 
 # =============================================================================
@@ -379,7 +448,8 @@ cmd_help() {
     echo "  ./scripts/release.sh -y                       Skip confirmation"
     echo "  ./scripts/release.sh list                     List modules"
     echo "  ./scripts/release.sh verify                   Quality gates only"
-    echo "  ./scripts/release.sh local                    Maven Local publish"
+    echo "  ./scripts/release.sh local                    Maven Local publish (~/.m2)"
+    echo "  ./scripts/release.sh publish                  Direct Maven Central publish (no CI)"
     echo "  ./scripts/release.sh help                     This help"
     echo ""
 }
@@ -391,6 +461,7 @@ case "$COMMAND" in
     list)    cmd_list ;;
     verify)  cmd_verify ;;
     local)   cmd_local ;;
+    publish) cmd_publish ;;
     help)    cmd_help ;;
     release) cmd_release ;;
     *)       cmd_help ;;
