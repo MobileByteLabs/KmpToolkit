@@ -16,11 +16,14 @@
 #   ./scripts/release.sh --dry-run                # checks only, no merge/tag/push
 #   ./scripts/release.sh --skip-merge             # skip development→main merge
 #   ./scripts/release.sh --local                  # also publish to local Maven (~/.m2)
+#   ./scripts/release.sh --env /path/to/.env      # explicit .env path (auto-discovered by default)
 #   ./scripts/release.sh list                     # list publishable modules
 #   ./scripts/release.sh verify                   # run quality gates only
 #
 # Prerequisites:
-#   - Credentials JSON (--credentials or KMPTOOLKIT_CREDENTIALS env)
+#   - .env file with credentials (auto-discovered from workspace root; or --env flag)
+#   - Keys required: MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD, GPG_KEY_ID,
+#                    GPG_FULL_KEY_ID, GPG_PASSPHRASE, GITHUB_REPO
 #   - git clean (no uncommitted changes)
 #   - gh CLI installed (for PR merge fallback + GitHub Release)
 #
@@ -51,7 +54,7 @@ log_fail()    { echo -e "   ${RED}❌${NC} $1"; exit 1; }
 # =============================================================================
 EXPLICIT_VERSION=""
 TARGET_MODULE=""
-CREDS_FILE="${KMPTOOLKIT_CREDENTIALS:-}"
+ENV_FILE=""
 DRY_RUN=false
 SKIP_MERGE=false
 LOCAL_MAVEN=false
@@ -59,11 +62,22 @@ BUMP_TYPE=""
 SKIP_CONFIRM=false
 COMMAND=""
 
+# Auto-discover .env from workspace root → repo root
+for _candidate in \
+    "${ROOT_DIR}/../../.env" \
+    "${ROOT_DIR}/../.env" \
+    "${ROOT_DIR}/.env" \
+    "${SCRIPT_DIR}/../.env"; do
+    _candidate="$(cd "$(dirname "$_candidate")" 2>/dev/null && pwd)/$(basename "$_candidate")"
+    if [[ -f "$_candidate" ]]; then ENV_FILE="$_candidate"; break; fi
+done
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version)     EXPLICIT_VERSION="$2"; shift 2 ;;
         --module)      TARGET_MODULE="$2"; shift 2 ;;
-        --credentials) CREDS_FILE="$2"; shift 2 ;;
+        --env)         ENV_FILE="$2"; shift 2 ;;
+        --credentials) ENV_FILE="$2"; shift 2 ;;
         --dry-run)     DRY_RUN=true; shift ;;
         --skip-merge)  SKIP_MERGE=true; shift ;;
         --local)       LOCAL_MAVEN=true; shift ;;
@@ -100,23 +114,28 @@ get_group()    { echo "io.github.mobilebytelabs"; }
 # Credentials
 # =============================================================================
 load_credentials() {
-    if [ -z "$CREDS_FILE" ] || [ ! -f "$CREDS_FILE" ]; then
-        log_warn "No credentials file — local Maven and signing unavailable"
+    if [[ -z "$ENV_FILE" || ! -f "$ENV_FILE" ]]; then
+        log_warn "No .env found — Maven Central + signing unavailable"
+        log_warn "Searched: workspace .env, repo .env"
+        log_warn "Pass --env /path/to/.env or set KMPTOOLKIT_ENV env var"
         return
     fi
 
-    export ORG_GRADLE_PROJECT_mavenCentralUsername=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['maven_central']['username'])")
-    export ORG_GRADLE_PROJECT_mavenCentralPassword=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['maven_central']['password'])")
+    # Source only KEY=VALUE lines (skip comments and blank lines)
+    set -a
+    # shellcheck disable=SC1090
+    source <(grep -E '^[A-Z_]+=' "$ENV_FILE" | grep -v '^#')
+    set +a
 
-    local gpg_key_id=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['key_id'])")
-    local gpg_passphrase=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['passphrase'])")
-    local gpg_full_key_id=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['full_key_id'])")
+    export ORG_GRADLE_PROJECT_mavenCentralUsername="${MAVEN_CENTRAL_USERNAME}"
+    export ORG_GRADLE_PROJECT_mavenCentralPassword="${MAVEN_CENTRAL_PASSWORD}"
+    export ORG_GRADLE_PROJECT_signingInMemoryKeyId="${GPG_KEY_ID}"
+    export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="${GPG_PASSPHRASE}"
+    export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --yes \
+        --pinentry-mode loopback --passphrase "${GPG_PASSPHRASE}" \
+        --export-secret-keys --armor "${GPG_FULL_KEY_ID}" 2>/dev/null)"
 
-    export ORG_GRADLE_PROJECT_signingInMemoryKeyId="$gpg_key_id"
-    export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="$gpg_passphrase"
-    export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --yes --pinentry-mode loopback --passphrase "$gpg_passphrase" --export-secret-keys --armor "$gpg_full_key_id" 2>/dev/null)"
-
-    log_pass "Credentials loaded"
+    log_pass "Credentials loaded from $(basename "$ENV_FILE")"
 }
 
 # =============================================================================
@@ -160,8 +179,7 @@ cmd_local() {
 # release — Full release pipeline
 # =============================================================================
 cmd_release() {
-    local github_repo
-    github_repo=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['github']['repo'])" 2>/dev/null || echo "MobileByteLabs/KmpToolkit")
+    local github_repo="${GITHUB_REPO:-MobileByteLabs/KmpToolkit}"
 
     # ── Resolve version ──────────────────────────────────────────
     local modules=($(discover_modules "$TARGET_MODULE"))
@@ -357,6 +375,7 @@ cmd_help() {
     echo "  ./scripts/release.sh --dry-run                Steps 1-3 only (verify)"
     echo "  ./scripts/release.sh --module cmp-clipboard   Single module"
     echo "  ./scripts/release.sh --skip-merge             Skip dev→main merge"
+    echo "  ./scripts/release.sh --env /path/.env         Explicit .env path"
     echo "  ./scripts/release.sh -y                       Skip confirmation"
     echo "  ./scripts/release.sh list                     List modules"
     echo "  ./scripts/release.sh verify                   Quality gates only"
