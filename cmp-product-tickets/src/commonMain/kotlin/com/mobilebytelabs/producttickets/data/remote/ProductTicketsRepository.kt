@@ -33,6 +33,7 @@ class ProductTicketsRepository internal constructor(private val service: Product
         deviceInfo: String? = null,
     ): UserTicket? {
         val insert = UserTicketInsert(
+            boardType = ProductTicketsConfig.boardType,
             ticketType = ticketType.value,
             title = title,
             description = description,

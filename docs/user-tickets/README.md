@@ -1,6 +1,6 @@
 # cmp-product-tickets
 
-> `io.github.mobilebytelabs:kmptoolkit-product-tickets:3.0.0`
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmptoolkit-product-tickets.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmptoolkit-product-tickets)
 
 A complete user feedback system for Kotlin Multiplatform apps. Covers three ticket types — feature requests, bug reports, and private support messages — with upvoting, status tracking, and per-project Supabase isolation.
 

@@ -13,7 +13,7 @@ plugins {
 // LIBRARY CONFIGURATION
 // ============================================================================
 group = "io.github.mobilebytelabs"
-version = "2.1.0"
+version = providers.gradleProperty("kmptoolkit.version").get()
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {

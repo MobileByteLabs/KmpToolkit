@@ -1,19 +1,19 @@
 # cmp-remote-config — Integration Guide
 
-> `io.github.mobilebytelabs:kmptoolkit-remote-config:2.1.0`
+> `io.github.mobilebytelabs:kmptoolkit-remote-config:3.1.0`
 
 ---
 
 ## Prerequisites
 
-**cmp-user-tickets must be configured first.** `cmp-remote-config` piggybacks on
-`FeatureRequestConfig` for Supabase credentials. If you haven't done this yet:
+**cmp-product-tickets must be configured first.** `cmp-remote-config` reuses
+`ProductTicketsConfig` for Supabase credentials. If you haven't done this yet:
 
 ```kotlin
-FeatureRequestConfig.init(
+ProductTicketsConfig.init(
     supabaseUrl     = "https://YOUR_PROJECT.supabase.co",
     supabaseAnonKey = "YOUR_ANON_KEY",
-    productType     = "your_app_name",
+    boardType       = "your_app_name",  // used as product_type in remote config queries
 )
 ```
 
@@ -27,10 +27,10 @@ See [docs/user-tickets/SETUP.md](../user-tickets/SETUP.md).
 
 ```toml
 [versions]
-kmptoolkit-remote-config = "2.1.0"
+kmptoolkit = "3.1.0"
 
 [libraries]
-kmptoolkit-remote-config = { module = "io.github.mobilebytelabs:kmptoolkit-remote-config", version.ref = "kmptoolkit-remote-config" }
+kmptoolkit-remote-config = { module = "io.github.mobilebytelabs:kmptoolkit-remote-config", version.ref = "kmptoolkit" }
 ```
 
 ### `shared/build.gradle.kts`
@@ -50,7 +50,7 @@ import com.mobilebytelabs.remoteconfig.di.remoteConfigModule
 
 startKoin {
     modules(
-        featureRequestModule,   // required — provides credentials
+        productTicketsModule,   // required — provides credentials
         remoteConfigModule,     // add this
     )
 }

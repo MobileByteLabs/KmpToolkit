@@ -14,7 +14,7 @@ plugins {
 // Copy this module structure when adding new library modules.
 // ============================================================================
 group = "io.github.mobilebytelabs"
-version = "2.1.0"
+version = providers.gradleProperty("kmptoolkit.version").get()
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {

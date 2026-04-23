@@ -2,9 +2,7 @@
 
 Compose Multiplatform toast notification system.
 
-```
-io.github.mobilebytelabs:kmp-toast:2.1.0
-```
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmp-toast.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmp-toast)
 
 ---
 

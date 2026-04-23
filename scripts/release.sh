@@ -107,7 +107,7 @@ discover_modules() {
     done
 }
 
-get_version()  { grep -m1 'version = ' "$1/build.gradle.kts" | sed 's/.*"\(.*\)".*/\1/'; }
+get_version()  { grep -m1 '^kmptoolkit\.version=' "$ROOT_DIR/gradle.properties" | cut -d= -f2; }
 get_artifact() { grep 'coordinates(' "$1/build.gradle.kts" | grep -oE '"kmp[^"]*"|"kmptoolkit[^"]*"' | head -1 | tr -d '"'; }
 get_group()    { echo "io.github.mobilebytelabs"; }
 
@@ -308,25 +308,23 @@ cmd_release() {
         exit 0
     fi
 
-    # ── Step 4: Unify ALL module versions ──────────────────────────
-    log_step "[4/8] Setting ALL modules to $VERSION..."
-    local any_changed=false
-    for module in "${modules[@]}"; do
-        local mod_version=$(get_version "$module")
-        if [ "$mod_version" != "$VERSION" ]; then
-            sed -i '' "s/version = \"$mod_version\"/version = \"$VERSION\"/" "${module}/build.gradle.kts"
-            log_pass "$module: $mod_version → $VERSION"
-            any_changed=true
-        else
-            log_pass "$module: already $VERSION"
-        fi
-    done
-    if [ "$any_changed" = true ]; then
-        git add -A
+    # ── Step 4: Bump version in gradle.properties (single source of truth) ──
+    log_step "[4/8] Setting kmptoolkit.version=$VERSION in gradle.properties..."
+    local current_in_props
+    current_in_props=$(grep -m1 '^kmptoolkit\.version=' "$ROOT_DIR/gradle.properties" | cut -d= -f2)
+    if [ "$current_in_props" != "$VERSION" ]; then
+        sed -i '' "s/^kmptoolkit\.version=.*/kmptoolkit.version=$VERSION/" "$ROOT_DIR/gradle.properties"
+        # Update version comment hint
+        local next_patch; IFS='.' read -r _maj _min _pat <<< "$VERSION"; _pat=$((_pat+1)); next_patch="$_maj.$_min.$_pat"
+        local next_minor; next_minor="$_maj.$((_min+1)).0"
+        local next_major; next_major="$((_maj+1)).0.0"
+        sed -i '' "s/# Current:.*$/# Current: $VERSION | Next patch: $next_patch | Next minor: $next_minor | Next major: $next_major/" \
+            "$ROOT_DIR/gradle.properties"
+        git add "$ROOT_DIR/gradle.properties"
         git commit -m "chore: bump version to $VERSION" --no-verify
-        log_pass "Versions bumped to $VERSION"
+        log_pass "gradle.properties: $current_in_props → $VERSION (all modules updated)"
     else
-        log_step "[2/6] Version unchanged ($VERSION)"
+        log_pass "gradle.properties: already $VERSION"
     fi
 
     # ── Step 5: Merge development → main ─────────────────────────

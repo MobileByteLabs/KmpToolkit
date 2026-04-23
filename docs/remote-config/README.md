@@ -2,12 +2,10 @@
 
 Server-driven UI system for Kotlin Multiplatform — powered by Supabase.
 
-```
-io.github.mobilebytelabs:kmptoolkit-remote-config:2.1.0
-```
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmptoolkit-remote-config.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmptoolkit-remote-config)
 
-> **Prerequisite**: `cmp-user-tickets` must be configured first. `cmp-remote-config` reuses
-> `FeatureRequestConfig` credentials (Supabase URL + anon key + product type).
+> **Prerequisite**: `cmp-product-tickets` must be configured first. `cmp-remote-config` reuses
+> `ProductTicketsConfig` credentials (Supabase URL + anon key + board type).
 
 ---
 
@@ -59,12 +57,12 @@ scheduling, platform targeting, and action routing.
 ## Module Identity
 
 ```yaml
-artifact:       io.github.mobilebytelabs:kmptoolkit-remote-config:2.1.0
+artifact:       io.github.mobilebytelabs:kmptoolkit-remote-config:3.1.0
 package:        com.mobilebytelabs.remoteconfig
 supabase_table: product_remote_config
 di_module:      remoteConfigModule
 ui_composable:  RemoteConfigHost(onAction)
-depends_on:     cmp-user-tickets (FeatureRequestConfig credentials)
+depends_on:     cmp-product-tickets (ProductTicketsConfig credentials)
 ```
 
 ---
@@ -72,13 +70,13 @@ depends_on:     cmp-user-tickets (FeatureRequestConfig credentials)
 ## Quick Start
 
 ```kotlin
-// 1. Prerequisites — cmp-user-tickets already configured:
-FeatureRequestConfig.init(supabaseUrl, supabaseAnonKey, productType)
+// 1. Prerequisites — cmp-product-tickets already configured:
+ProductTicketsConfig.init(supabaseUrl, supabaseAnonKey, boardType = "your_app")
 
 // 2. Add remoteConfigModule to Koin
 startKoin {
     modules(
-        featureRequestModule,
+        productTicketsModule,
         remoteConfigModule,   // add this
     )
 }

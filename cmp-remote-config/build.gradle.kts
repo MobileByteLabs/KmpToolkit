@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "io.github.mobilebytelabs"
-version = "2.1.0"
+version = providers.gradleProperty("kmptoolkit.version").get()
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
@@ -57,8 +57,8 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.ui)
             implementation(compose.materialIconsExtended)
-            // Shared config from user-tickets module
-            implementation(project(":cmp-user-tickets"))
+            // Shared config from product-tickets module
+            implementation(project(":cmp-product-tickets"))
 
             // Supabase
             implementation(libs.supabase.postgrest)
