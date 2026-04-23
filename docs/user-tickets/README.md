@@ -1,8 +1,8 @@
-# cmp-user-tickets
+# cmp-product-tickets
 
-> `io.github.mobilebytelabs:kmptoolkit-user-tickets:2.1.0`
+> `io.github.mobilebytelabs:kmptoolkit-product-tickets:3.0.0`
 
-A complete user feedback system for Kotlin Multiplatform apps. Covers three ticket types — feature requests, bug reports, and private support messages — with upvoting, status tracking, and multi-app support via a shared Supabase table.
+A complete user feedback system for Kotlin Multiplatform apps. Covers three ticket types — feature requests, bug reports, and private support messages — with upvoting, status tracking, and per-project Supabase isolation.
 
 ---
 
@@ -10,7 +10,7 @@ A complete user feedback system for Kotlin Multiplatform apps. Covers three tick
 
 ```
 ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
-│ User Tickets       +  │  │ New Feature Request  │  │ Dark mode            │
+│ Product Tickets    +  │  │ New Feature Request  │  │ Dark mode            │
 │                       │  │                      │  │                      │
 │ [Requests][Resolved]  │  │ What's your idea?    │  │ [Planned]         ▲5 │
 │                       │  │ ┌──────────────────┐ │  │ ─────────────────── │
@@ -24,7 +24,7 @@ A complete user feedback system for Kotlin Multiplatform apps. Covers three tick
 │                       │  │                      │   Detail + Upvote
 │ [+ New Request]       │  │ [    Submit     ]    │
 └──────────────────────┘  └──────────────────────┘
-  UserTicketsScreen          CreateTicketScreen
+  ProductTicketsScreen        CreateTicketScreen
 ```
 
 ---
@@ -42,11 +42,12 @@ A complete user feedback system for Kotlin Multiplatform apps. Covers three tick
 ## Features
 
 - **Three ticket types** — Feature Request (public + upvote), Bug Report (public), Contact Support (private)
-- **Upvoting** — atomic increment via Supabase RPC, prevents race conditions
+- **Upvoting** — unique per-user vote via `toggle_vote` RPC + `ticket_votes` table
 - **Status tracking** — Pending → In Review → Planned → In Progress → Resolved/Completed
+- **Admin comments** — via `add_comment` RPC + `ticket_comments` table
 - **Resolution notes** — resolved tickets show how they were addressed
 - **Admin response** — support tickets show admin replies with timestamp
-- **Multi-app** — `productType` filter lets all your apps share one Supabase table
+- **Per-project isolation** — each app has its own Supabase project with `product_tickets` table (no shared table, no `productType` filter)
 - **My Tickets** — private support messages visible only to the submitting user (requires `userId`)
 
 ---
@@ -85,25 +86,29 @@ A complete user feedback system for Kotlin Multiplatform apps. Covers three tick
 ## Module Structure
 
 ```
-com.mobilebytelabs.usertickets/
+com.mobilebytelabs.producttickets/
 ├── config/
-│   └── FeatureRequestConfig.kt       # Init: supabaseUrl, anonKey, productType, userId?
-├── model/
-│   ├── UserTicket.kt                 # Data class (maps to user_tickets table)
-│   ├── TicketType.kt                 # Enums: TicketType, TicketCategory, TicketStatus
-│   └── UserTicketInsert.kt           # Insert payload
+│   └── ProductTicketsConfig.kt       # Init: supabaseUrl, anonKey, userId?
+├── domain/
+│   └── model/
+│       ├── UserTicket.kt             # Data class (maps to product_tickets table)
+│       ├── TicketType.kt             # Enums: TicketType, TicketCategory, TicketStatus
+│       └── UserTicketInsert.kt       # Insert payload (user-submittable fields only)
 ├── data/
-│   ├── FeatureRequestClient.kt       # Supabase client (internal)
-│   ├── UserTicketsService.kt         # getPublicTickets, submitTicket, upvoteTicket
-│   └── UserTicketsRepository.kt      # Business logic
+│   └── remote/
+│       ├── dto/
+│       │   └── UserTicketDto.kt      # Supabase JSON DTO
+│       ├── ProductTicketsClient.kt   # Supabase client (internal)
+│       ├── ProductTicketsService.kt  # getPublicTickets, submitTicket, toggleVote
+│       └── ProductTicketsRepository.kt  # Business logic
 ├── di/
-│   └── FeatureRequestModule.kt       # Koin module: featureRequestModule
+│   └── ProductTicketsModule.kt       # Koin module: productTicketsModule
 └── ui/
-    ├── UserTicketsScreen.kt           # Wishlist (tabs: Requests / Resolved)
+    ├── ProductTicketsScreen.kt        # Wishlist (tabs: Requests / Resolved)
     ├── CreateTicketScreen.kt          # Submit form
     ├── TicketDetailScreen.kt          # Detail + upvote
-    ├── UserTicketsViewModel.kt        # State management
-    └── UserTicketsNavigation.kt       # Nav destinations + extension fns
+    ├── ProductTicketsViewModel.kt     # State management
+    └── ProductTicketsNavigation.kt    # Nav destinations + extension fns
 ```
 
 ---
@@ -115,14 +120,30 @@ For AI-assisted one-shot setup, see [CLAUDE_AI_SETUP.md](CLAUDE_AI_SETUP.md).
 
 ---
 
-## Multi-App Support
+## Per-Project Isolation
 
-All apps share one `user_tickets` table, filtered by `product_type`:
+Each app has its own dedicated Supabase project with a `product_tickets` table. No shared tables, no `product_type` column needed.
 
-| App | productType |
-|-----|:-----------|
-| Reels Downloader | `reels_downloader` |
-| Byte Wallpaper | `wallpaper` |
-| Mood Movies | `mood_movies` |
+| App | Supabase Project |
+|-----|:----------------|
+| Reels Downloader | `reels-downloader.supabase.co` |
+| Byte Wallpaper | `byte-wallpaper.supabase.co` |
+| Mood Movies | `mood-movies.supabase.co` |
 
-Each app only sees its own tickets. Contact Support tickets (`is_private = true`) are also filtered by `user_id`.
+Contact Support tickets (`is_private = true`) are additionally filtered by `user_id`.
+
+---
+
+## Migration from cmp-user-tickets (v2.x)
+
+| Change | v2.x | v3.0.0 |
+|--------|------|--------|
+| Module | `cmp-user-tickets` | `cmp-product-tickets` |
+| Artifact | `kmptoolkit-user-tickets` | `kmptoolkit-product-tickets` |
+| Table | `user_tickets` | `product_tickets` |
+| Config | `FeatureRequestConfig.init(url, key, productType, userId?)` | `ProductTicketsConfig.init(url, key, userId?)` |
+| DI | `featureRequestModule` | `productTicketsModule` |
+| Nav | `featureWishlistDestination` | `productTicketsDestination` |
+| Package | `com.mobilebytelabs.usertickets` | `com.mobilebytelabs.producttickets` |
+
+Run `/lib-sync cmp-product-tickets` to auto-migrate all references.
