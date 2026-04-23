@@ -16,11 +16,15 @@
 #   ./scripts/release.sh --dry-run                # checks only, no merge/tag/push
 #   ./scripts/release.sh --skip-merge             # skip development→main merge
 #   ./scripts/release.sh --local                  # also publish to local Maven (~/.m2)
+#   ./scripts/release.sh --env /path/to/.env      # explicit .env path (auto-discovered by default)
 #   ./scripts/release.sh list                     # list publishable modules
 #   ./scripts/release.sh verify                   # run quality gates only
+#   ./scripts/release.sh publish                  # direct publish to Maven Central (no CI)
 #
 # Prerequisites:
-#   - Credentials JSON (--credentials or KMPTOOLKIT_CREDENTIALS env)
+#   - .env file with credentials (auto-discovered from workspace root; or --env flag)
+#   - Keys required: MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD, GPG_KEY_ID,
+#                    GPG_FULL_KEY_ID, GPG_PASSPHRASE, GITHUB_REPO
 #   - git clean (no uncommitted changes)
 #   - gh CLI installed (for PR merge fallback + GitHub Release)
 #
@@ -51,7 +55,7 @@ log_fail()    { echo -e "   ${RED}❌${NC} $1"; exit 1; }
 # =============================================================================
 EXPLICIT_VERSION=""
 TARGET_MODULE=""
-CREDS_FILE="${KMPTOOLKIT_CREDENTIALS:-}"
+ENV_FILE=""
 DRY_RUN=false
 SKIP_MERGE=false
 LOCAL_MAVEN=false
@@ -59,17 +63,28 @@ BUMP_TYPE=""
 SKIP_CONFIRM=false
 COMMAND=""
 
+# Auto-discover .env from workspace root → repo root
+for _candidate in \
+    "${ROOT_DIR}/../../.env" \
+    "${ROOT_DIR}/../.env" \
+    "${ROOT_DIR}/.env" \
+    "${SCRIPT_DIR}/../.env"; do
+    _candidate="$(cd "$(dirname "$_candidate")" 2>/dev/null && pwd)/$(basename "$_candidate")"
+    if [[ -f "$_candidate" ]]; then ENV_FILE="$_candidate"; break; fi
+done
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version)     EXPLICIT_VERSION="$2"; shift 2 ;;
         --module)      TARGET_MODULE="$2"; shift 2 ;;
-        --credentials) CREDS_FILE="$2"; shift 2 ;;
+        --env)         ENV_FILE="$2"; shift 2 ;;
+        --credentials) ENV_FILE="$2"; shift 2 ;;
         --dry-run)     DRY_RUN=true; shift ;;
         --skip-merge)  SKIP_MERGE=true; shift ;;
         --local)       LOCAL_MAVEN=true; shift ;;
         --bump)        BUMP_TYPE="$2"; shift 2 ;;
         -y)            SKIP_CONFIRM=true; shift ;;
-        list|verify|local|help)
+        list|verify|local|publish|help)
             COMMAND="$1"; shift ;;
         *) shift ;;
     esac
@@ -100,23 +115,28 @@ get_group()    { echo "io.github.mobilebytelabs"; }
 # Credentials
 # =============================================================================
 load_credentials() {
-    if [ -z "$CREDS_FILE" ] || [ ! -f "$CREDS_FILE" ]; then
-        log_warn "No credentials file — local Maven and signing unavailable"
+    if [[ -z "$ENV_FILE" || ! -f "$ENV_FILE" ]]; then
+        log_warn "No .env found — Maven Central + signing unavailable"
+        log_warn "Searched: workspace .env, repo .env"
+        log_warn "Pass --env /path/to/.env or set KMPTOOLKIT_ENV env var"
         return
     fi
 
-    export ORG_GRADLE_PROJECT_mavenCentralUsername=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['maven_central']['username'])")
-    export ORG_GRADLE_PROJECT_mavenCentralPassword=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['maven_central']['password'])")
+    # Source only KEY=VALUE lines (skip comments and blank lines)
+    set -a
+    # shellcheck disable=SC1090
+    source <(grep -E '^[A-Z_]+=' "$ENV_FILE" | grep -v '^#')
+    set +a
 
-    local gpg_key_id=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['key_id'])")
-    local gpg_passphrase=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['passphrase'])")
-    local gpg_full_key_id=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['gpg']['full_key_id'])")
+    export ORG_GRADLE_PROJECT_mavenCentralUsername="${MAVEN_CENTRAL_USERNAME}"
+    export ORG_GRADLE_PROJECT_mavenCentralPassword="${MAVEN_CENTRAL_PASSWORD}"
+    export ORG_GRADLE_PROJECT_signingInMemoryKeyId="${GPG_KEY_ID}"
+    export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="${GPG_PASSPHRASE}"
+    export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --yes \
+        --pinentry-mode loopback --passphrase "${GPG_PASSPHRASE}" \
+        --export-secret-keys --armor "${GPG_FULL_KEY_ID}" 2>/dev/null)"
 
-    export ORG_GRADLE_PROJECT_signingInMemoryKeyId="$gpg_key_id"
-    export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="$gpg_passphrase"
-    export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --yes --pinentry-mode loopback --passphrase "$gpg_passphrase" --export-secret-keys --armor "$gpg_full_key_id" 2>/dev/null)"
-
-    log_pass "Credentials loaded"
+    log_pass "Credentials loaded from $(basename "$ENV_FILE")"
 }
 
 # =============================================================================
@@ -157,11 +177,78 @@ cmd_local() {
 }
 
 # =============================================================================
+# publish — Direct publish to Maven Central (no CI required)
+# =============================================================================
+cmd_publish() {
+    load_credentials
+
+    if [[ -z "${MAVEN_CENTRAL_USERNAME:-}" ]]; then
+        log_fail "MAVEN_CENTRAL_USERNAME not set — check your .env file"
+    fi
+
+    local modules
+    modules=($(discover_modules "$TARGET_MODULE"))
+
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  ${BOLD}KmpToolkit — Direct Maven Central Publish${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    for module in "${modules[@]}"; do
+        echo "    • $module  $(get_group):$(get_artifact "$module"):$(get_version "$module")"
+    done
+    echo ""
+    echo -e "   Target: ${BOLD}Maven Central${NC} (${MAVEN_CENTRAL_STAGING_URL:-https://central.sonatype.com})"
+    echo ""
+
+    if [[ "$SKIP_CONFIRM" != true ]]; then
+        read -r -p "   Publish now? [y/N] " confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] || { echo "   Aborted."; exit 0; }
+    fi
+
+    # Step 1: Quality gate (fast)
+    log_step "[1/3] Quality gates..."
+    "$SCRIPT_DIR/verify.sh" --quick
+
+    # Step 2: Maven Local sign+build gate (proves artifacts are signable)
+    log_step "[2/3] Maven Local sign gate..."
+    for module in "${modules[@]}"; do
+        ./gradlew ":${module}:publishToMavenLocal" \
+            --no-configuration-cache --quiet 2>/dev/null
+        log_pass "$module signed + built locally"
+    done
+
+    # Step 3: Publish directly to Maven Central
+    log_step "[3/3] Publishing to Maven Central..."
+    for module in "${modules[@]}"; do
+        local version
+        version=$(get_version "$module")
+        local artifact
+        artifact=$(get_artifact "$module")
+
+        log_step "  → $(get_group):${artifact}:${version}"
+        ./gradlew ":${module}:publishAllPublicationsToMavenCentralRepository" \
+            --no-configuration-cache 2>&1 | tail -5
+        log_pass "$(get_group):${artifact}:${version} → Maven Central"
+    done
+
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}${BOLD}Published to Maven Central!${NC}"
+    echo -e "${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  Artifacts will be visible at:"
+    echo -e "${CYAN}║${NC}    https://central.sonatype.com/namespace/io.github.mobilebytelabs"
+    echo -e "${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  Propagation to search.maven.org: ~10–30 min"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+# =============================================================================
 # release — Full release pipeline
 # =============================================================================
 cmd_release() {
-    local github_repo
-    github_repo=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['github']['repo'])" 2>/dev/null || echo "MobileByteLabs/KmpToolkit")
+    local github_repo="${GITHUB_REPO:-MobileByteLabs/KmpToolkit}"
 
     # ── Resolve version ──────────────────────────────────────────
     local modules=($(discover_modules "$TARGET_MODULE"))
@@ -357,10 +444,12 @@ cmd_help() {
     echo "  ./scripts/release.sh --dry-run                Steps 1-3 only (verify)"
     echo "  ./scripts/release.sh --module cmp-clipboard   Single module"
     echo "  ./scripts/release.sh --skip-merge             Skip dev→main merge"
+    echo "  ./scripts/release.sh --env /path/.env         Explicit .env path"
     echo "  ./scripts/release.sh -y                       Skip confirmation"
     echo "  ./scripts/release.sh list                     List modules"
     echo "  ./scripts/release.sh verify                   Quality gates only"
-    echo "  ./scripts/release.sh local                    Maven Local publish"
+    echo "  ./scripts/release.sh local                    Maven Local publish (~/.m2)"
+    echo "  ./scripts/release.sh publish                  Direct Maven Central publish (no CI)"
     echo "  ./scripts/release.sh help                     This help"
     echo ""
 }
@@ -372,6 +461,7 @@ case "$COMMAND" in
     list)    cmd_list ;;
     verify)  cmd_verify ;;
     local)   cmd_local ;;
+    publish) cmd_publish ;;
     help)    cmd_help ;;
     release) cmd_release ;;
     *)       cmd_help ;;
