@@ -2,9 +2,7 @@
 
 Cross-platform in-app update manager for Kotlin Multiplatform.
 
-```
-io.github.mobilebytelabs:kmp-in-app-update:2.1.0
-```
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmp-in-app-update.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmp-in-app-update)
 
 ---
 

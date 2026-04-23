@@ -2,9 +2,7 @@
 
 Cross-platform floating UI, bubbles, and notifications for Kotlin Multiplatform.
 
-```
-io.github.mobilebytelabs:kmp-bubble:2.1.0
-```
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmp-bubble.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmp-bubble)
 
 ---
 

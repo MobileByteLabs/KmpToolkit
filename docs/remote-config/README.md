@@ -2,9 +2,7 @@
 
 Server-driven UI system for Kotlin Multiplatform — powered by Supabase.
 
-```
-io.github.mobilebytelabs:kmptoolkit-remote-config:2.1.0
-```
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmptoolkit-remote-config.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmptoolkit-remote-config)
 
 > **Prerequisite**: `cmp-product-tickets` must be configured first. `cmp-remote-config` reuses
 > `ProductTicketsConfig` credentials (Supabase URL + anon key + board type).
