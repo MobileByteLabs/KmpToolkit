@@ -1,5 +1,13 @@
 package com.mobilebytelabs.producttickets.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -60,13 +68,27 @@ fun NavGraphBuilder.ticketDetailDestination(onBackClick: () -> Unit) {
     composable<TicketDetailRoute> { backStackEntry ->
         val route = backStackEntry.toRoute<TicketDetailRoute>()
         val viewModel: ProductTicketsViewModel = koinViewModel()
-        val ticket = viewModel.getTicketById(route.ticketId)
-        if (ticket != null) {
-            TicketDetailScreen(
-                onBackClick = onBackClick,
-                ticket = ticket,
-                onUpvote = { viewModel.upvoteTicket(ticket.id) },
-            )
+        val detailState by viewModel.detailState.collectAsStateWithLifecycle()
+
+        LaunchedEffect(route.ticketId) {
+            viewModel.loadTicketDetail(route.ticketId)
+        }
+
+        when {
+            detailState.isLoading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            detailState.ticket != null -> {
+                val ticket = detailState.ticket!!
+                TicketDetailScreen(
+                    onBackClick = onBackClick,
+                    ticket = ticket,
+                    onUpvote = { viewModel.upvoteTicket(ticket.id) },
+                )
+            }
         }
     }
 }
