@@ -25,6 +25,8 @@ data class ProductTicketsState(
     val successMessage: String? = null,
 )
 
+data class TicketDetailState(val ticket: UserTicket? = null, val isLoading: Boolean = true, val error: String? = null)
+
 enum class TicketsTab(val label: String) {
     REQUESTED(ProductTicketsStrings.TAB_REQUESTED),
     ROADMAP(ProductTicketsStrings.TAB_ROADMAP),
@@ -36,6 +38,9 @@ class ProductTicketsViewModel(private val repository: ProductTicketsRepository) 
 
     private val _state = MutableStateFlow(ProductTicketsState())
     val state: StateFlow<ProductTicketsState> = _state.asStateFlow()
+
+    private val _detailState = MutableStateFlow(TicketDetailState())
+    val detailState: StateFlow<TicketDetailState> = _detailState.asStateFlow()
 
     init {
         loadAll()
@@ -140,6 +145,24 @@ class ProductTicketsViewModel(private val repository: ProductTicketsRepository) 
         return state.publicTickets.find { it.id == ticketId }
             ?: state.resolvedTickets.find { it.id == ticketId }
             ?: state.myTickets.find { it.id == ticketId }
+    }
+
+    fun loadTicketDetail(ticketId: String) {
+        // Check in-memory lists first for instant display
+        val cached = getTicketById(ticketId)
+        if (cached != null) {
+            _detailState.value = TicketDetailState(ticket = cached, isLoading = false)
+            return
+        }
+        _detailState.value = TicketDetailState(isLoading = true)
+        viewModelScope.launch {
+            val ticket = repository.getTicketById(ticketId)
+            _detailState.value = TicketDetailState(ticket = ticket, isLoading = false)
+        }
+    }
+
+    fun clearTicketDetail() {
+        _detailState.value = TicketDetailState()
     }
 
     fun fetchTicketById(ticketId: String, onResult: (UserTicket?) -> Unit) {
