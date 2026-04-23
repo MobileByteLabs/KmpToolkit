@@ -1,418 +1,497 @@
 #!/usr/bin/env node
-// =============================================================================
-// Ticket Dashboard — localhost:7575
-// Kanban board + detail panel + analytics for cmp-user-tickets
-//
-// Usage: node tickets-dashboard/serve.js
-// Env:   SHARED_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (from .env)
-// =============================================================================
+/**
+ * Tickets Dashboard — localhost:7575
+ * Kanban | List | Roadmap | Analytics views with drag-drop + detail panel
+ * Usage: node serve.js [--env /path/to/.env]
+ */
 
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+const http    = require('http')
+const https   = require('https')
+const fs      = require('fs')
+const path    = require('path')
+const { execSync } = require('child_process')
 
-const PORT = process.env.TICKETS_PORT || 7575;
+const PORT = 7575
 
-// ── Load .env ────────────────────────────────────────────────────────────
-function loadEnv() {
-  const envPaths = [
-    path.resolve(__dirname, '..', '.env'),
-    path.resolve(__dirname, '..', '..', '.env'),
-    path.resolve(__dirname, '..', '..', '..', '.env'),
-    path.resolve(__dirname, '..', '..', '..', '..', '.env'),
-    path.resolve(__dirname, '..', 'server-layer', '.env'),
-  ];
-  for (const p of envPaths) {
-    if (fs.existsSync(p)) {
-      const lines = fs.readFileSync(p, 'utf8').split('\n');
-      for (const line of lines) {
-        const match = line.match(/^([^#=]+)=(.*)$/);
-        if (match) process.env[match[1].trim()] = match[2].trim();
-      }
-      console.log(`Loaded env from: ${p}`);
-      return;
+// --- Load .env ---
+function loadEnv(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return {}
+  const env = {}
+  fs.readFileSync(filePath, 'utf-8').split('\n').forEach(line => {
+    const m = line.match(/^([^#=\s][^=]*)=(.*)$/)
+    if (m) env[m[1].trim()] = m[2].trim()
+  })
+  return env
+}
+
+const argIdx = process.argv.indexOf('--env')
+let envPath = argIdx !== -1 ? process.argv[argIdx + 1] : null
+if (!envPath) {
+  const candidates = [
+    path.join(__dirname, '../../../workspaces/mbs/reels-downloader/server-layer/.env'),
+    path.join(process.cwd(), 'server-layer/.env'),
+    path.join(process.cwd(), '.env'),
+  ]
+  envPath = candidates.find(p => fs.existsSync(p)) || null
+}
+
+const env = loadEnv(envPath)
+const SUPABASE_URL = env.SUPABASE_URL || process.env.SUPABASE_URL || ''
+const SUPABASE_KEY = env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ''
+const SERVICE_KEY  = env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY
+const TABLE        = 'product_tickets'
+const PROJECT_NAME = env.PROJECT_NAME || new URL(SUPABASE_URL || 'http://unknown').hostname.split('.')[0]
+
+console.log(`🎫 Tickets Dashboard`)
+console.log(`   Project:  ${PROJECT_NAME}`)
+console.log(`   Supabase: ${SUPABASE_URL || '⚠️  not configured'}`)
+console.log(`   Server:   http://localhost:${PORT}`)
+console.log(``)
+
+// --- Views ---
+const kanban  = require('./views/kanban')
+const list    = require('./views/list')
+const roadmap = require('./views/roadmap')
+const analytics = require('./views/analytics')
+const panel   = require('./views/detail-panel')
+const tmpl    = require('./shared/page-template')
+
+// --- HTML page ---
+function buildPage(activeView) {
+  const body = `
+  <div class="header">
+    <div class="header-brand">
+      <span class="logo">🎫</span>
+      <span class="title">Tickets</span>
+      <span class="product">${PROJECT_NAME}</span>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat total"><div class="val" id="st-total">—</div><div class="lbl">Total</div></div>
+      <div class="header-stat open"><div class="val" id="st-open">—</div><div class="lbl">Open</div></div>
+      <div class="header-stat resolved"><div class="val" id="st-resolved">—</div><div class="lbl">Done</div></div>
+    </div>
+    <input class="header-search" id="search-input" placeholder="Search..." oninput="onSearch()">
+    <button class="refresh-btn" onclick="loadTickets()">↻ Refresh</button>
+  </div>
+
+  <div class="view-tabs">
+    <button class="view-tab ${activeView==='kanban'?'active':''}" onclick="switchView('kanban')">🗂 Kanban</button>
+    <button class="view-tab ${activeView==='list'?'active':''}" onclick="switchView('list')">📋 List</button>
+    <button class="view-tab ${activeView==='roadmap'?'active':''}" onclick="switchView('roadmap')">🗺️ Roadmap</button>
+    <button class="view-tab ${activeView==='analytics'?'active':''}" onclick="switchView('analytics')">📊 Analytics</button>
+  </div>
+
+  <div id="main-content"></div>
+
+  <div class="panel-overlay" id="panel-overlay" onclick="closeDetail()"></div>
+  <div class="detail-panel" id="detail-panel"></div>
+  `
+
+  const scripts = `
+  // Shared state
+  let allTickets = []
+  let currentView = '${activeView}'
+  let searchQuery = ''
+
+  function switchView(v) {
+    currentView = v
+    document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.textContent.toLowerCase().includes(v.substring(0,4))))
+    renderView()
+    history.replaceState(null,'','/?view=' + v)
+  }
+
+  function onSearch() {
+    searchQuery = document.getElementById('search-input').value.toLowerCase()
+    renderView()
+  }
+
+  function filtered() {
+    if (!searchQuery) return allTickets
+    return allTickets.filter(t =>
+      (t.title||'').toLowerCase().includes(searchQuery) ||
+      (t.description||'').toLowerCase().includes(searchQuery)
+    )
+  }
+
+  function renderView() {
+    const tickets = filtered()
+    const el = document.getElementById('main-content')
+    if (currentView === 'kanban')    el.innerHTML = kanbanRender(tickets)
+    else if (currentView === 'list') el.innerHTML = listRender(tickets)
+    else if (currentView === 'roadmap') el.innerHTML = roadmapRender(tickets)
+    else if (currentView === 'analytics') el.innerHTML = analyticsRender(tickets)
+  }
+
+  async function loadTickets() {
+    const btn = document.querySelector('.refresh-btn')
+    if (btn) { btn.textContent = '↻ ...'; btn.disabled = true }
+    try {
+      const r = await fetch('/api/tickets')
+      allTickets = await r.json()
+      // Update header stats
+      document.getElementById('st-total').textContent = allTickets.length
+      const open = allTickets.filter(t => ['pending','in_review','in_progress','planned'].includes(t.status)).length
+      document.getElementById('st-open').textContent = open
+      const done = allTickets.filter(t => ['resolved','completed'].includes(t.status)).length
+      document.getElementById('st-resolved').textContent = done
+      renderView()
+    } catch(e) {
+      document.getElementById('main-content').innerHTML = '<div style="text-align:center;padding:60px;color:var(--danger)">⚠️ ' + e.message + '</div>'
+    } finally {
+      if (btn) { btn.textContent = '↻ Refresh'; btn.disabled = false }
     }
   }
-  console.error('No .env found. Set SHARED_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
-  process.exit(1);
-}
-loadEnv();
 
-const SUPABASE_URL = process.env.SHARED_SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Inline view renderers (server pre-baked as JS functions)
+  ${kanban.scripts}
+  ${panel.scripts}
 
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('Missing SHARED_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
-  process.exit(1);
-}
+  // Boot
+  loadTickets()
+  // Auto-refresh every 60s
+  setInterval(loadTickets, 60000)
+  `
 
-// ── Supabase API ─────────────────────────────────────────────────────────
-async function supaFetch(endpoint, options = {}) {
-  const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'apikey': SERVICE_KEY,
-      'Authorization': `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...options.headers,
-    },
-  });
-  return res.json();
+  return tmpl({
+    title: `Tickets — ${PROJECT_NAME}`,
+    body: body + kanban.css + panel.css + list.css + roadmap.css + analytics.css,
+    scripts
+  })
 }
 
-async function getTickets(productType) {
-  const filter = productType && productType !== 'all' ? `&product_type=eq.${productType}` : '';
-  return supaFetch(`user_tickets?order=upvotes.desc&select=*${filter}`);
+// --- Supabase helpers ---
+function supabaseFetch(path, method = 'GET', body = null) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(SUPABASE_URL + path)
+    const bodyBuf = body ? Buffer.from(JSON.stringify(body)) : null
+    const opts = {
+      method,
+      hostname: u.hostname,
+      path: u.pathname + u.search,
+      headers: {
+        'apikey': SERVICE_KEY,
+        'Authorization': `Bearer ${SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'PATCH' ? 'return=minimal' : undefined,
+        ...(bodyBuf ? { 'Content-Length': bodyBuf.length } : {}),
+      }
+    }
+    // clean undefined headers
+    Object.keys(opts.headers).forEach(k => opts.headers[k] === undefined && delete opts.headers[k])
+    const req = https.request(opts, r => {
+      let data = ''
+      r.on('data', d => data += d)
+      r.on('end', () => {
+        try { resolve(data ? JSON.parse(data) : {}) }
+        catch(_) { resolve(data) }
+      })
+    })
+    req.on('error', reject)
+    if (bodyBuf) req.write(bodyBuf)
+    req.end()
+  })
 }
 
-async function getProductTypes() {
-  const tickets = await supaFetch('user_tickets?select=product_type');
-  return [...new Set(tickets.map(t => t.product_type))].sort();
-}
-
-async function updateTicket(id, data) {
-  return supaFetch(`user_tickets?id=eq.${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
-}
-
-// ── HTML Rendering ───────────────────────────────────────────────────────
-const STATUS_COLS = ['pending', 'in_review', 'planned', 'in_progress', 'resolved'];
-const STATUS_LABELS = {
-  pending: 'Pending', in_review: 'In Review', planned: 'Planned',
-  in_progress: 'In Progress', resolved: 'Resolved', completed: 'Completed', closed: 'Closed'
-};
-const TYPE_EMOJI = { feature_request: '💡', bug_report: '🐛', contact_support: '📩', roadmap_item: '🗺️' };
-const PRIORITY_COLORS = { low: '#22c55e', medium: '#eab308', high: '#ef4444', critical: '#a855f7' };
-
-function renderPage(tickets, products, activeProduct) {
-  const stats = {
-    total: tickets.length,
-    pending: tickets.filter(t => t.status === 'pending').length,
-    in_progress: tickets.filter(t => t.status === 'in_progress').length,
-    resolved: tickets.filter(t => ['resolved', 'completed'].includes(t.status)).length,
-    needs_reply: tickets.filter(t => !t.admin_response && !t.is_private).length,
-  };
-
-  const kanbanCols = STATUS_COLS.map(status => {
-    const col_tickets = tickets.filter(t => t.status === status && !t.is_private);
-    return `
-      <div class="kanban-col" data-status="${status}">
-        <div class="col-header">
-          <span>${STATUS_LABELS[status]}</span>
-          <span class="badge">${col_tickets.length}</span>
-        </div>
-        <div class="col-cards" ondrop="drop(event,'${status}')" ondragover="event.preventDefault()">
-          ${col_tickets.map(t => renderCard(t)).join('')}
-        </div>
-      </div>`;
-  }).join('');
-
-  const topVoted = [...tickets].filter(t => !t.is_private).sort((a, b) => b.upvotes - a.upvotes).slice(0, 5);
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ticket Dashboard</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0f172a; color:#e2e8f0; }
-  .header { background:#1e293b; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; }
-  .header h1 { font-size:20px; color:#f8fafc; }
-  .stats { display:flex; gap:24px; }
-  .stat { text-align:center; }
-  .stat-val { font-size:24px; font-weight:700; color:#60a5fa; }
-  .stat-label { font-size:11px; color:#94a3b8; text-transform:uppercase; }
-  .tabs { background:#1e293b; padding:0 24px; display:flex; gap:4px; border-bottom:1px solid #334155; }
-  .tab { padding:10px 20px; cursor:pointer; color:#94a3b8; border-bottom:2px solid transparent; font-size:14px; }
-  .tab.active { color:#60a5fa; border-bottom-color:#60a5fa; }
-  .tab:hover { color:#f8fafc; }
-  .view { display:none; padding:20px 24px; }
-  .view.active { display:block; }
-  .kanban { display:flex; gap:16px; overflow-x:auto; min-height:calc(100vh - 160px); }
-  .kanban-col { flex:1; min-width:220px; background:#1e293b; border-radius:12px; padding:12px; }
-  .col-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-weight:600; font-size:14px; color:#cbd5e1; }
-  .badge { background:#334155; padding:2px 8px; border-radius:10px; font-size:12px; }
-  .col-cards { display:flex; flex-direction:column; gap:10px; min-height:100px; }
-  .card { background:#0f172a; border:1px solid #334155; border-radius:10px; padding:14px; cursor:pointer; transition:border-color .15s; }
-  .card:hover { border-color:#60a5fa; }
-  .card[draggable=true] { cursor:grab; }
-  .card-title { font-size:14px; font-weight:600; color:#f1f5f9; margin-bottom:6px; display:flex; gap:6px; align-items:center; }
-  .card-desc { font-size:12px; color:#94a3b8; margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .card-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .chip { padding:2px 8px; border-radius:6px; font-size:11px; font-weight:500; }
-  .chip-priority { border:1px solid; }
-  .chip-votes { background:#1e3a5f; color:#60a5fa; }
-  .chip-replied { background:#166534; color:#4ade80; }
-  .detail-overlay { display:none; position:fixed; top:0; right:0; bottom:0; width:480px; background:#1e293b; border-left:1px solid #334155; overflow-y:auto; z-index:100; box-shadow:-4px 0 20px rgba(0,0,0,.5); }
-  .detail-overlay.open { display:block; }
-  .detail-header { padding:16px 20px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center; }
-  .detail-body { padding:20px; }
-  .detail-body h3 { font-size:16px; margin-bottom:12px; color:#f8fafc; }
-  .detail-body p { font-size:14px; color:#cbd5e1; line-height:1.6; margin-bottom:16px; }
-  .detail-body label { font-size:12px; color:#94a3b8; display:block; margin-bottom:4px; text-transform:uppercase; }
-  .detail-body select, .detail-body textarea { width:100%; padding:10px; border:1px solid #334155; border-radius:8px; background:#0f172a; color:#e2e8f0; font-size:14px; margin-bottom:12px; }
-  .detail-body textarea { min-height:80px; resize:vertical; }
-  .btn { padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:600; }
-  .btn-primary { background:#3b82f6; color:#fff; }
-  .btn-primary:hover { background:#2563eb; }
-  .btn-close { background:#334155; color:#e2e8f0; }
-  .btn-close:hover { background:#475569; }
-  .btn-group { display:flex; gap:8px; margin-top:12px; }
-  .analytics { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-  .analytics-card { background:#1e293b; border-radius:12px; padding:20px; }
-  .analytics-card h3 { font-size:14px; color:#94a3b8; margin-bottom:12px; }
-  .bar-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-  .bar-label { width:100px; font-size:13px; color:#cbd5e1; }
-  .bar-fill { height:20px; border-radius:4px; background:#3b82f6; transition:width .3s; }
-  .bar-val { font-size:12px; color:#94a3b8; }
-  .roadmap-section { margin-bottom:24px; }
-  .roadmap-section h3 { font-size:16px; color:#94a3b8; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #334155; }
-  .toast { position:fixed; bottom:20px; right:20px; background:#166534; color:#fff; padding:12px 20px; border-radius:8px; font-size:14px; display:none; z-index:200; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <div style="display:flex;align-items:center;gap:16px">
-      <h1>🎫 Ticket Dashboard</h1>
-      <select onchange="location.href='/?product='+this.value" style="background:#0f172a;color:#60a5fa;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer">
-        <option value="all" ${activeProduct === 'all' ? 'selected' : ''}>All Products</option>
-        ${products.map(p => `<option value="${p}" ${activeProduct === p ? 'selected' : ''}>${p.replace(/_/g, ' ')}</option>`).join('')}
-      </select>
-    </div>
-    <div class="stats">
-      <div class="stat"><div class="stat-val">${stats.total}</div><div class="stat-label">Total</div></div>
-      <div class="stat"><div class="stat-val">${stats.pending}</div><div class="stat-label">Pending</div></div>
-      <div class="stat"><div class="stat-val">${stats.in_progress}</div><div class="stat-label">Active</div></div>
-      <div class="stat"><div class="stat-val">${stats.resolved}</div><div class="stat-label">Resolved</div></div>
-      <div class="stat"><div class="stat-val">${stats.needs_reply}</div><div class="stat-label">Needs Reply</div></div>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <div class="tab active" onclick="switchView('kanban')">Kanban</div>
-    <div class="tab" onclick="switchView('roadmap')">Roadmap</div>
-    <div class="tab" onclick="switchView('analytics')">Analytics</div>
-  </div>
-
-  <div id="view-kanban" class="view active">
-    <div class="kanban">${kanbanCols}</div>
-  </div>
-
-  <div id="view-roadmap" class="view">
-    <div class="roadmap-section">
-      <h3>🚧 In Progress</h3>
-      ${tickets.filter(t => t.status === 'in_progress' && !t.is_private).map(t => renderCard(t)).join('') || '<p style="color:#64748b">No tickets in progress</p>'}
-    </div>
-    <div class="roadmap-section">
-      <h3>📋 Planned</h3>
-      ${tickets.filter(t => t.status === 'planned' && !t.is_private).map(t => renderCard(t)).join('') || '<p style="color:#64748b">No planned tickets</p>'}
-    </div>
-    <div class="roadmap-section">
-      <h3>✅ Recently Shipped</h3>
-      ${tickets.filter(t => ['resolved', 'completed'].includes(t.status) && !t.is_private).map(t => renderCard(t)).join('') || '<p style="color:#64748b">No shipped tickets</p>'}
-    </div>
-  </div>
-
-  <div id="view-analytics" class="view">
-    <div class="analytics">
-      <div class="analytics-card">
-        <h3>Top Voted</h3>
-        ${topVoted.map(t => `<div class="bar-row">
-          <span class="bar-label">${(t.title || '').slice(0, 20)}</span>
-          <div class="bar-fill" style="width:${Math.min(t.upvotes * 15, 200)}px"></div>
-          <span class="bar-val">⬆${t.upvotes}</span>
-        </div>`).join('')}
-      </div>
-      <div class="analytics-card">
-        <h3>By Status</h3>
-        ${Object.entries(STATUS_LABELS).map(([k, v]) => {
-          const count = tickets.filter(t => t.status === k).length;
-          return count ? `<div class="bar-row">
-            <span class="bar-label">${v}</span>
-            <div class="bar-fill" style="width:${count * 30}px;background:${k === 'resolved' ? '#22c55e' : k === 'in_progress' ? '#eab308' : '#3b82f6'}"></div>
-            <span class="bar-val">${count}</span>
-          </div>` : '';
-        }).join('')}
-      </div>
-      <div class="analytics-card">
-        <h3>By Type</h3>
-        ${['feature_request', 'bug_report', 'contact_support'].map(type => {
-          const count = tickets.filter(t => t.ticket_type === type).length;
-          return `<div class="bar-row">
-            <span class="bar-label">${TYPE_EMOJI[type]} ${type.replace('_', ' ')}</span>
-            <div class="bar-fill" style="width:${count * 40}px"></div>
-            <span class="bar-val">${count}</span>
-          </div>`;
-        }).join('')}
-      </div>
-      <div class="analytics-card">
-        <h3>Summary</h3>
-        <p style="color:#cbd5e1;font-size:14px;line-height:1.8">
-          Total tickets: <strong>${stats.total}</strong><br>
-          Response rate: <strong>${stats.total ? Math.round((stats.total - stats.needs_reply) / stats.total * 100) : 0}%</strong><br>
-          Needs reply: <strong style="color:${stats.needs_reply ? '#ef4444' : '#22c55e'}">${stats.needs_reply}</strong>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div id="detail-panel" class="detail-overlay">
-    <div class="detail-header">
-      <h2 style="font-size:16px" id="detail-title"></h2>
-      <button class="btn btn-close" onclick="closeDetail()">✕</button>
-    </div>
-    <div class="detail-body">
-      <p id="detail-desc"></p>
-      <label>Status</label>
-      <select id="detail-status" onchange="updateField('status',this.value)">
-        ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
-      <label>Priority</label>
-      <select id="detail-priority" onchange="updateField('priority',this.value)">
-        <option value="low">🟢 Low</option>
-        <option value="medium">🟡 Medium</option>
-        <option value="high">🔴 High</option>
-        <option value="critical">🟣 Critical</option>
-      </select>
-      <label>Admin Response</label>
-      <textarea id="detail-response" placeholder="Type your reply..."></textarea>
-      <div class="btn-group">
-        <button class="btn btn-primary" onclick="sendReply()">Send Reply</button>
-        <button class="btn btn-primary" style="background:#166534" onclick="updateField('status','resolved')">Resolve</button>
-      </div>
-      <div id="detail-resolution" style="margin-top:16px"></div>
-      <div style="margin-top:16px">
-        <label>Copy for Claude Code</label>
-        <code id="detail-claude-cmd" style="display:block;background:#0f172a;padding:8px;border-radius:6px;font-size:12px;color:#60a5fa;cursor:pointer;word-break:break-all" onclick="navigator.clipboard.writeText(this.textContent)"></code>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast" class="toast"></div>
-
-<script>
-const TICKETS = ${JSON.stringify(tickets)};
-let currentTicketId = null;
-
-function switchView(view) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('view-' + view).classList.add('active');
-  event.target.classList.add('active');
-}
-
-function openDetail(id) {
-  const t = TICKETS.find(x => x.id === id);
-  if (!t) return;
-  currentTicketId = id;
-  document.getElementById('detail-title').textContent = (({'feature_request':'💡','bug_report':'🐛','contact_support':'📩'}[t.ticket_type]||'📝') + ' ' + t.title);
-  document.getElementById('detail-desc').textContent = t.description;
-  document.getElementById('detail-status').value = t.status;
-  document.getElementById('detail-priority').value = t.priority || 'medium';
-  document.getElementById('detail-response').value = t.admin_response || '';
-  document.getElementById('detail-resolution').innerHTML = t.resolution ? '<label>Resolution</label><p style="color:#4ade80">' + t.resolution + '</p>' : '';
-  document.getElementById('detail-claude-cmd').textContent = '/tickets reply ' + id.slice(0, 8) + ' ""';
-  document.getElementById('detail-panel').classList.add('open');
-}
-
-function closeDetail() {
-  document.getElementById('detail-panel').classList.remove('open');
-  currentTicketId = null;
-}
-
-async function updateField(field, value) {
-  if (!currentTicketId) return;
-  const body = { [field]: value };
-  if (field === 'status' || field === 'admin_response') body.responded_at = new Date().toISOString();
-  const res = await fetch('/api/update', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: currentTicketId, ...body })
-  });
-  if (res.ok) {
-    showToast(field + ' updated!');
-    setTimeout(() => location.reload(), 500);
-  }
-}
-
-async function sendReply() {
-  const msg = document.getElementById('detail-response').value;
-  if (!msg || !currentTicketId) return;
-  await updateField('admin_response', msg);
-}
-
-function drag(ev, id) { ev.dataTransfer.setData('text/plain', id); }
-function drop(ev, status) {
-  ev.preventDefault();
-  const id = ev.dataTransfer.getData('text/plain');
-  currentTicketId = id;
-  updateField('status', status);
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = '✅ ' + msg;
-  t.style.display = 'block';
-  setTimeout(() => t.style.display = 'none', 2000);
-}
-</script>
-</body>
-</html>`;
-}
-
-function renderCard(t) {
-  const emoji = TYPE_EMOJI[t.ticket_type] || '📝';
-  const prioColor = PRIORITY_COLORS[t.priority] || '#eab308';
-  return `<div class="card" draggable="true" ondragstart="drag(event,'${t.id}')" onclick="openDetail('${t.id}')">
-    <div class="card-title">${emoji} ${(t.title || '').slice(0, 35)}${(t.title||'').length > 35 ? '...' : ''}</div>
-    <div class="card-desc">${(t.description || '').slice(0, 80)}</div>
-    <div class="card-meta">
-      <span class="chip chip-votes">⬆${t.upvotes}</span>
-      <span class="chip chip-priority" style="border-color:${prioColor};color:${prioColor}">${t.priority || 'med'}</span>
-      ${t.admin_response ? '<span class="chip chip-replied">replied</span>' : ''}
-    </div>
-  </div>`;
-}
-
-// ── HTTP Server ──────────────────────────────────────────────────────────
+// --- Server ---
 const server = http.createServer(async (req, res) => {
-  if (req.method === 'POST' && req.url === '/api/update') {
-    let body = '';
-    req.on('data', c => body += c);
+  const url = new URL(req.url, `http://localhost:${PORT}`)
+  const activeView = url.searchParams.get('view') || 'kanban'
+
+  // GET /api/tickets
+  if (req.method === 'GET' && url.pathname === '/api/tickets') {
+    try {
+      const data = await supabaseFetch('/rest/v1/product_tickets?order=upvotes.desc,created_at.desc&select=*')
+      // Client-side rendering needs the view functions — inject them
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(Array.isArray(data) ? data : []))
+    } catch(e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }))
+    }
+    return
+  }
+
+  // GET /api/views/:name — return rendered HTML fragment + scripts for client
+  if (req.method === 'GET' && url.pathname.startsWith('/api/views/')) {
+    const viewName = url.pathname.split('/').pop()
+    const views = { kanban, list, roadmap, analytics }
+    const v = views[viewName]
+    if (!v) { res.writeHead(404); res.end('not found'); return }
+    // Fetch tickets and render server-side
+    try {
+      const data = await supabaseFetch('/rest/v1/product_tickets?order=upvotes.desc,created_at.desc&select=*')
+      const tickets = Array.isArray(data) ? data : []
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ html: v.render(tickets), scripts: v.scripts }))
+    } catch(e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }))
+    }
+    return
+  }
+
+  // PATCH /api/tickets/:id
+  if (req.method === 'PATCH' && url.pathname.startsWith('/api/tickets/')) {
+    const id = url.pathname.split('/').pop()
+    let body = ''
+    req.on('data', d => body += d)
     req.on('end', async () => {
       try {
-        const data = JSON.parse(body);
-        const { id, ...fields } = data;
-        await updateTicket(id, fields);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true }));
-      } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: e.message }));
+        await supabaseFetch(`/rest/v1/product_tickets?id=eq.${id}`, 'PATCH', JSON.parse(body))
+        res.writeHead(200); res.end(JSON.stringify({ ok: true }))
+      } catch(e) {
+        res.writeHead(500); res.end(JSON.stringify({ error: e.message }))
       }
-    });
-    return;
+    })
+    return
   }
 
-  // Default: render dashboard
-  try {
-    const url = new URL(req.url, `http://localhost:${PORT}`);
-    const activeProduct = url.searchParams.get('product') || 'all';
-    const [tickets, products] = await Promise.all([getTickets(activeProduct), getProductTypes()]);
-    const html = renderPage(tickets, products, activeProduct);
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(html);
-  } catch (e) {
-    res.writeHead(500, { 'Content-Type': 'text/plain' });
-    res.end('Error: ' + e.message);
+  // Serve main HTML (with inline view renderers)
+  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
+    // Fetch tickets server-side for initial render
+    let tickets = []
+    try { tickets = await supabaseFetch('/rest/v1/product_tickets?order=upvotes.desc,created_at.desc&select=*') } catch(_) {}
+    if (!Array.isArray(tickets)) tickets = []
+
+    // Inject server-side rendered views as JS functions the client calls
+    const views = { kanban, list, roadmap, analytics }
+    const clientViewFns = Object.entries(views).map(([name, v]) => {
+      return `function ${name}Render(tickets) { ${injectViewRender(v)} }`
+    }).join('\n\n')
+
+    function injectViewRender(v) {
+      // Convert server render() to a client-callable function
+      // We serialize the logic inline
+      const src = v.render.toString()
+      // Return the body of render()
+      const match = src.match(/\{([\s\S]*)\}$/)
+      return match ? match[1] : 'return ""'
+    }
+
+    const html = buildPageWithData(activeView, tickets, clientViewFns)
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    res.end(html)
+    return
   }
-});
+
+  res.writeHead(404); res.end()
+})
+
+function buildPageWithData(activeView, tickets, clientViewFns) {
+  const body = `
+  <div class="header">
+    <div class="header-brand">
+      <span class="logo">🎫</span>
+      <span class="title">Tickets</span>
+      <span class="product">${PROJECT_NAME}</span>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat total"><div class="val" id="st-total">${tickets.length}</div><div class="lbl">Total</div></div>
+      <div class="header-stat open"><div class="val" id="st-open">${tickets.filter(t=>['pending','in_review','in_progress','planned'].includes(t.status)).length}</div><div class="lbl">Open</div></div>
+      <div class="header-stat resolved"><div class="val" id="st-resolved">${tickets.filter(t=>['resolved','completed'].includes(t.status)).length}</div><div class="lbl">Done</div></div>
+    </div>
+    <input class="header-search" id="search-input" placeholder="Search tickets..." oninput="onSearch()">
+    <button class="refresh-btn" onclick="loadTickets()">↻ Refresh</button>
+  </div>
+
+  <div class="view-tabs">
+    <button class="view-tab ${activeView==='kanban'?'active':''}" onclick="switchView('kanban')">🗂 Kanban</button>
+    <button class="view-tab ${activeView==='list'?'active':''}" onclick="switchView('list')">📋 List</button>
+    <button class="view-tab ${activeView==='roadmap'?'active':''}" onclick="switchView('roadmap')">🗺️ Roadmap</button>
+    <button class="view-tab ${activeView==='analytics'?'active':''}" onclick="switchView('analytics')">📊 Analytics</button>
+  </div>
+
+  <div id="main-content"></div>
+  <div class="panel-overlay" id="panel-overlay" onclick="closeDetail()"></div>
+  <div class="detail-panel" id="detail-panel"></div>
+  `
+
+  const scripts = `
+  let allTickets = ${JSON.stringify(tickets)};
+  let currentView = '${activeView}';
+  let searchQuery = '';
+
+  function switchView(v) {
+    currentView = v;
+    document.querySelectorAll('.view-tab').forEach(t => {
+      const names = { kanban:'kanban', list:'list', roadmap:'roadmap', analytics:'analytics' };
+      t.classList.toggle('active', t.textContent.toLowerCase().includes(v.substring(0,4)));
+    });
+    renderView();
+    history.replaceState(null,'','/?view='+v);
+  }
+
+  function onSearch() {
+    searchQuery = document.getElementById('search-input').value.toLowerCase();
+    renderView();
+  }
+
+  function filtered() {
+    if (!searchQuery) return allTickets;
+    return allTickets.filter(t =>
+      (t.title||'').toLowerCase().includes(searchQuery) ||
+      (t.description||'').toLowerCase().includes(searchQuery)
+    );
+  }
+
+  function renderView() {
+    const tickets = filtered();
+    const el = document.getElementById('main-content');
+    if (currentView === 'kanban') el.innerHTML = kanbanRender(tickets);
+    else if (currentView === 'list') el.innerHTML = listRender(tickets);
+    else if (currentView === 'roadmap') el.innerHTML = roadmapRender(tickets);
+    else if (currentView === 'analytics') el.innerHTML = analyticsRender(tickets);
+  }
+
+  async function loadTickets() {
+    const btn = document.querySelector('.refresh-btn');
+    if (btn) { btn.textContent = '↻ ...'; btn.disabled = true; }
+    try {
+      const r = await fetch('/api/tickets');
+      allTickets = await r.json();
+      document.getElementById('st-total').textContent = allTickets.length;
+      const open = allTickets.filter(t => ['pending','in_review','in_progress','planned'].includes(t.status)).length;
+      document.getElementById('st-open').textContent = open;
+      const done = allTickets.filter(t => ['resolved','completed'].includes(t.status)).length;
+      document.getElementById('st-resolved').textContent = done;
+      renderView();
+    } catch(e) {
+      document.getElementById('main-content').innerHTML = '<div style="text-align:center;padding:60px;color:var(--danger)">⚠️ '+e.message+'</div>';
+    } finally {
+      if (btn) { btn.textContent = '↻ Refresh'; btn.disabled = false; }
+    }
+  }
+
+  // --- Kanban render ---
+  function kanbanRender(tickets) {
+    const COLS = [
+      {id:'pending',label:'Pending',color:'#8b90b0'},
+      {id:'in_review',label:'In Review',color:'#f5a623'},
+      {id:'planned',label:'Planned',color:'#00d4aa'},
+      {id:'in_progress',label:'In Progress',color:'#6c63ff'},
+      {id:'resolved',label:'Done',color:'#00c896'},
+      {id:'closed',label:'Closed',color:'#ff5a5f'},
+    ];
+    const byStatus = {};
+    COLS.forEach(c => byStatus[c.id] = []);
+    tickets.forEach(t => { const s = t.status||'pending'; if(byStatus[s]) byStatus[s].push(t); else byStatus.pending.push(t); });
+    return '<div class="kanban-wrap"><div class="kanban-board">' + COLS.map(col => {
+      const cards = byStatus[col.id];
+      const cardHtml = cards.length === 0 ? '<div class="kanban-empty">Drop here</div>' :
+        cards.map(t => {
+          const title = t.title && t.title.startsWith('http') ? '🔗 ' + t.title.split('/').slice(-2).join('/') : (t.title||'(no title)');
+          return '<div class="kanban-card'+(t.admin_response?' has-reply':'')+'" draggable="true" data-id="'+t.id+'" onclick="openDetail(this.dataset.id)" ondragstart="onDragStart(event,this.dataset.id)" ondragend="onDragEnd(event)"><div class="card-emoji">'+(TYPE_EMOJI[t.ticket_type]||'📋')+'</div><div class="card-title">'+escHtml(title)+'</div><div class="card-meta"><span class="card-votes">⬆ '+(t.upvotes||0)+'</span><span class="card-prio '+(t.priority||'low')+'">'+(t.priority||'low')+'</span></div></div>';
+        }).join('');
+      return '<div class="kanban-col"><div class="kanban-col-header" style="background:'+col.color+'22;color:'+col.color+';border-top:2px solid '+col.color+';">'+col.label+'<span class="count">'+cards.length+'</span></div><div class="kanban-cards" data-status="'+col.id+'" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,event.currentTarget.dataset.status)">'+cardHtml+'</div></div>';
+    }).join('') + '</div></div>';
+  }
+
+  // --- List render ---
+  function listRender(tickets) {
+    if (!tickets.length) return '<div style="text-align:center;padding:60px;color:var(--text3)">No tickets found</div>';
+    return '<div class="list-wrap"><table class="list-table"><thead><tr><th></th><th>Title</th><th>Status</th><th>Priority</th><th>Votes</th><th>Category</th><th>Created</th><th>Response</th></tr></thead><tbody>'+
+      tickets.map(t => {
+        const title = t.title && t.title.startsWith('http') ? '🔗 '+t.title.split('/').slice(-2).join('/') : (t.title||'(no title)');
+        return '<tr data-id="'+t.id+'" onclick="openDetail(this.dataset.id)"><td>'+(TYPE_EMOJI[t.ticket_type]||'📋')+'</td><td class="col-title"><span class="title-text">'+escHtml(title)+'</span></td><td><span class="badge status-'+(t.status||'pending')+'">'+(STATUS_LABEL[t.status]||t.status)+'</span></td><td><span class="badge prio-'+(t.priority||'low')+'">'+(t.priority||'low')+'</span></td><td class="col-votes">⬆ '+(t.upvotes||0)+'</td><td style="color:var(--text3);font-size:12px">'+escHtml(t.category||'')+'</td><td style="color:var(--text3);font-size:12px;white-space:nowrap">'+fmt(t.created_at)+'</td><td>'+(t.admin_response?'<span class="has-reply">✅</span>':'<span style="color:var(--text3)">—</span>')+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+
+  // --- Roadmap render ---
+  function roadmapRender(tickets) {
+    const shipped = tickets.filter(t=>['resolved','completed','closed'].includes(t.status)).sort((a,b)=>b.upvotes-a.upvotes);
+    const inProg  = tickets.filter(t=>t.status==='in_progress').sort((a,b)=>b.upvotes-a.upvotes);
+    const planned = tickets.filter(t=>['planned','in_review'].includes(t.status)).sort((a,b)=>b.upvotes-a.upvotes);
+    const pending = tickets.filter(t=>t.status==='pending').sort((a,b)=>b.upvotes-a.upvotes).slice(0,5);
+    function ri(t) {
+      const title = t.title&&t.title.startsWith('http')?'🔗 '+t.title.split('/').slice(-2).join('/'):(t.title||'(no title)');
+      return '<div class="roadmap-item" data-id="'+t.id+'" onclick="openDetail(this.dataset.id)"><span class="ri-emoji">'+(TYPE_EMOJI[t.ticket_type]||'📋')+'</span><span class="ri-title">'+escHtml(title)+'</span><span class="badge status-'+t.status+'">'+(STATUS_LABEL[t.status]||t.status)+'</span><span class="ri-votes">⬆ '+(t.upvotes||0)+'</span><span class="ri-date">'+fmt(t.updated_at||t.created_at)+'</span></div>';
+    }
+    function sec(icon, label, items, color) {
+      if (!items.length) return '';
+      return '<div class="roadmap-section"><div class="roadmap-section-title" style="color:'+color+'">'+icon+' '+label+' ('+items.length+')</div>'+items.map(ri).join('')+'</div>';
+    }
+    return '<div class="roadmap-wrap">'+sec('🔄','In Progress',inProg,'#6c63ff')+sec('📋','Planned',planned,'#00d4aa')+sec('💡','Top Requested',pending,'#f5a623')+sec('✅','Shipped',shipped,'#00c896')+'</div>';
+  }
+
+  // --- Analytics render ---
+  function analyticsRender(tickets) {
+    const total = tickets.length;
+    if (!total) return '<div style="text-align:center;padding:60px;color:var(--text3)">No data yet</div>';
+    const statuses = {pending:0,in_review:0,planned:0,in_progress:0,resolved:0,completed:0,closed:0};
+    const types = {feature_request:0,bug_report:0,contact_support:0,roadmap_item:0};
+    let totalVotes=0,withReply=0;
+    tickets.forEach(t=>{if(statuses[t.status]!==undefined)statuses[t.status]++;if(types[t.ticket_type]!==undefined)types[t.ticket_type]++;totalVotes+=(t.upvotes||0);if(t.admin_response)withReply++;});
+    const open=(statuses.pending+statuses.in_review+statuses.in_progress+statuses.planned);
+    const rRate=total?Math.round(withReply/total*100):0;
+    const topV=[...tickets].sort((a,b)=>(b.upvotes||0)-(a.upvotes||0)).slice(0,5);
+    const maxV=topV[0]?.upvotes||1;
+    const SC={'#8b90b0':'pending','#f5a623':'in_review','#00d4aa':'planned','#6c63ff':'in_progress','#00c896':'resolved','#00c896':'completed','#ff5a5f':'closed'};
+    const SCOL={pending:'#8b90b0',in_review:'#f5a623',planned:'#00d4aa',in_progress:'#6c63ff',resolved:'#00c896',completed:'#00c896',closed:'#ff5a5f'};
+    const TCOL={feature_request:'#6c63ff',bug_report:'#ff5a5f',contact_support:'#f5a623',roadmap_item:'#00d4aa'};
+    function bar(label,count,max,color){const p=max?Math.round(count/max*100):0;return '<div class="bar-row"><span class="bar-label">'+label+'</span><div class="bar-track"><div class="bar-fill" style="width:'+p+'%;background:'+color+'"></div></div><span class="bar-val">'+count+'</span></div>';}
+    const sBars=Object.entries(statuses).filter(([,n])=>n>0).map(([s,n])=>bar(STATUS_LABEL[s]||s,n,total,SCOL[s]||'#6c63ff')).join('');
+    const tBars=Object.entries(types).filter(([,n])=>n>0).map(([t,n])=>bar(t.replace('_',' '),n,total,TCOL[t]||'#6c63ff')).join('');
+    const tvRows=topV.map((t,i)=>{const title=t.title&&t.title.startsWith('http')?'🔗 '+t.title.split('/').slice(-2).join('/'):(t.title||'(no title)');return '<div class="top-voted-item"><span class="rank">#'+(i+1)+'</span><span class="tv-title">'+escHtml(title)+'</span><div style="flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin:0 10px"><div style="width:'+Math.round((t.upvotes||0)/maxV*100)+'%;height:100%;background:var(--accent);border-radius:2px"></div></div><span class="tv-votes">⬆ '+(t.upvotes||0)+'</span></div>';}).join('');
+    return '<div class="analytics-wrap"><div class="analytics-card"><h3>Overview</h3><div class="stat-grid"><div class="stat-box"><div class="sv" style="color:var(--accent)">'+total+'</div><div class="sl">Total</div></div><div class="stat-box"><div class="sv" style="color:var(--warn)">'+open+'</div><div class="sl">Open</div></div><div class="stat-box"><div class="sv" style="color:var(--success)">'+(statuses.resolved+statuses.completed)+'</div><div class="sl">Resolved</div></div><div class="stat-box"><div class="sv" style="color:var(--accent2)">'+rRate+'%</div><div class="sl">Reply Rate</div></div></div></div><div class="analytics-card"><h3>By Type</h3>'+tBars+'</div><div class="analytics-card"><h3>By Status</h3>'+sBars+'</div><div class="analytics-card"><h3>Totals</h3><div class="stat-grid"><div class="stat-box"><div class="sv" style="color:var(--accent)">'+totalVotes+'</div><div class="sl">Total Votes</div></div><div class="stat-box"><div class="sv" style="color:var(--success)">'+withReply+'</div><div class="sl">Replied</div></div><div class="stat-box"><div class="sv" style="color:var(--text2)">'+(total-withReply)+'</div><div class="sl">No Reply</div></div><div class="stat-box"><div class="sv" style="color:var(--accent2)">'+Math.round(totalVotes/(total||1)*10)/10+'</div><div class="sl">Avg Votes</div></div></div></div><div class="analytics-card full"><h3>Top Voted</h3>'+tvRows+'</div></div>';
+  }
+
+  ${kanban.scripts}
+  ${panel.scripts}
+
+  // Initial render
+  renderView();
+  // Auto-refresh every 60s
+  setInterval(loadTickets, 60000);
+  `
+
+  return require('./shared/page-template')({
+    title: `Tickets — ${PROJECT_NAME}`,
+    body: body + kanban.css + panel.css + `
+      ${list.css}
+      <style>
+      .list-wrap { padding: 20px 24px 40px; }
+      .list-table { width: 100%; border-collapse: collapse; }
+      .list-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text3); padding: 10px 14px; border-bottom: 1px solid var(--border); user-select: none; white-space: nowrap; }
+      .list-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+      .list-table tr:hover td { background: var(--surface2); cursor: pointer; }
+      .list-table .col-title { max-width: 300px; }
+      .list-table .title-text { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; display: block; }
+      .list-table .col-votes { text-align: center; color: var(--accent); font-weight: 700; }
+      .has-reply { color: var(--success); font-size: 12px; }
+      .roadmap-wrap { padding: 24px; max-width: 860px; }
+      .roadmap-section { margin-bottom: 28px; }
+      .roadmap-section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+      .roadmap-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+      .roadmap-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: border-color .2s; }
+      .roadmap-item:hover { border-color: var(--accent); }
+      .ri-emoji { font-size: 18px; }
+      .ri-title { font-size: 14px; font-weight: 500; flex: 1; }
+      .ri-votes { font-size: 13px; color: var(--accent); font-weight: 700; }
+      .ri-date { font-size: 11px; color: var(--text3); }
+      .analytics-wrap { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1000px; }
+      .analytics-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+      .analytics-card.full { grid-column: 1 / -1; }
+      .analytics-card h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text2); margin-bottom: 16px; }
+      .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+      .bar-row .bar-label { font-size: 12px; color: var(--text2); width: 100px; flex-shrink: 0; }
+      .bar-row .bar-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+      .bar-row .bar-fill { height: 100%; border-radius: 4px; }
+      .bar-row .bar-val { font-size: 12px; color: var(--text2); width: 30px; text-align: right; }
+      .top-voted-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+      .top-voted-item:last-child { border-bottom: none; }
+      .rank { font-size: 13px; font-weight: 700; color: var(--text3); width: 20px; }
+      .tv-title { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tv-votes { color: var(--accent); font-weight: 700; font-size: 13px; }
+      .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .stat-box { background: var(--surface2); border-radius: 8px; padding: 14px; text-align: center; }
+      .stat-box .sv { font-size: 28px; font-weight: 800; }
+      .stat-box .sl { font-size: 11px; color: var(--text2); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+      </style>
+    `,
+    scripts
+  })
+}
 
 server.listen(PORT, () => {
-  console.log(`\n🎫 Ticket Dashboard running at http://localhost:${PORT}\n`);
-});
+  console.log(`✅ Dashboard ready → http://localhost:${PORT}`)
+  try { execSync(`open http://localhost:${PORT}`) } catch(_) {}
+})
+process.on('SIGINT', () => { console.log('\n👋 Bye'); process.exit(0) })

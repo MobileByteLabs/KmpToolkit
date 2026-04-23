@@ -1,8 +1,9 @@
-# /tickets — User Ticket Management
+# /tickets — Product Ticket Management
 
-Manage user tickets from Claude Code. Dashboard, sync to YAML, reply, status updates, roadmap.
+Manage product tickets from Claude Code. Dashboard, sync to YAML, reply, status updates, roadmap.
 
 **Standalone**: This skill works in any project that uses `cmp-user-tickets` with a Supabase backend.
+Each project uses its **own** Supabase instance — no shared Supabase, no `product_type` filter.
 
 ## Usage
 
@@ -14,16 +15,16 @@ Manage user tickets from Claude Code. Dashboard, sync to YAML, reply, status upd
 /tickets status {id} {status}      # Change status (pending|in_review|planned|in_progress|resolved|completed|closed)
 /tickets roadmap                   # Show/create roadmap items
 /tickets stats                     # Quick analytics
-/tickets comment {id} "message"     # Add admin comment on a ticket
+/tickets comment {id} "message"    # Add admin comment on a ticket
 /tickets dashboard                 # Open web dashboard at localhost:7575
 /tickets info                      # Show this help
 ```
 
 ## Setup
 
-Requires `.env` in the project with:
+Requires `.env` in the project root with:
 ```
-SHARED_SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 Get keys from: Supabase Dashboard → Settings → API
@@ -32,10 +33,9 @@ Get keys from: Supabase Dashboard → Settings → API
 
 ### Step 0: Load Environment
 
-1. Find `.env` — search current directory, then parent dirs, then `server-layer/.env`
-2. Parse `SHARED_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
-3. Derive `product_type` from `.env` `PROJECT_NAME` or ask user
-4. If keys missing → show setup guide with Supabase dashboard link
+1. Find `.env` — search current directory, then parent dirs, then `server-layer/.env`, then `tickets-layer/.env`
+2. Parse `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
+3. If keys missing → show setup guide with Supabase dashboard link
 
 ### Step 1: Route Subcommand
 
@@ -59,15 +59,15 @@ Fetch all tickets and show matrix. Re-render after each action (MATRIX-LOOP).
 
 **Fetch:**
 ```bash
-curl -s "${SUPABASE_URL}/rest/v1/user_tickets?product_type=eq.${PRODUCT_TYPE}&order=upvotes.desc&select=*" \
-  -H "apikey: ${SERVICE_ROLE_KEY}" \
-  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}"
+curl -s "${SUPABASE_URL}/rest/v1/product_tickets?order=upvotes.desc&select=*" \
+  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}"
 ```
 
 **Display:**
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║  USER TICKETS — {product_type}                                               ║
+║  PRODUCT TICKETS — {project_name}                                            ║
 ║  {total} total | {pending} pending | {in_progress} active | {resolved} done  ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                               ║
@@ -96,14 +96,13 @@ After each action, re-render the dashboard with fresh data.
 
 ### Sync (`/tickets sync`)
 
-Pull ALL tickets → write `TICKETS.yaml` in current directory.
+Pull ALL tickets → write `TICKETS.yaml` in current directory (or `tickets-layer/cache/tickets.yaml` if tickets-layer exists).
 
 ```yaml
 # TICKETS.yaml — synced from Supabase
 # Edit status, admin_response, resolution, priority then run /tickets push
-synced_at: "2026-04-21T12:00:00Z"
-supabase_url: "https://sgxloojlaywdrrglfjun.supabase.co"
-product_type: "reels_downloader"
+synced_at: "2026-04-22T12:00:00Z"
+supabase_url: "https://your-project.supabase.co"
 
 tickets:
   - id: "b9567127-..."  # read-only
@@ -137,9 +136,9 @@ tickets:
 ### Reply (`/tickets reply {id} "message"`)
 
 ```bash
-curl -s -X PATCH "${SUPABASE_URL}/rest/v1/user_tickets?id=eq.${ID}" \
-  -H "apikey: ${SERVICE_ROLE_KEY}" \
-  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+curl -s -X PATCH "${SUPABASE_URL}/rest/v1/product_tickets?id=eq.${ID}" \
+  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"admin_response":"${MESSAGE}","responded_at":"${TIMESTAMP}"}'
 ```
@@ -153,9 +152,9 @@ Accept full UUID or first 8 chars as short ID.
 Valid statuses: `pending`, `in_review`, `planned`, `in_progress`, `resolved`, `completed`, `closed`
 
 ```bash
-curl -s -X PATCH "${SUPABASE_URL}/rest/v1/user_tickets?id=eq.${ID}" \
-  -H "apikey: ${SERVICE_ROLE_KEY}" \
-  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+curl -s -X PATCH "${SUPABASE_URL}/rest/v1/product_tickets?id=eq.${ID}" \
+  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"status":"${STATUS}"}'
 ```
@@ -167,8 +166,8 @@ curl -s -X PATCH "${SUPABASE_URL}/rest/v1/user_tickets?id=eq.${ID}" \
 ```bash
 # /tickets comment b9567127 "Great idea, adding to roadmap"
 curl -s -X POST "${SUPABASE_URL}/rest/v1/rpc/add_comment" \
-  -H "apikey: ${SERVICE_ROLE_KEY}" \
-  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"p_ticket_id":"${ID}","p_author_type":"admin","p_author_name":"Admin","p_content":"${MESSAGE}"}'
 ```
@@ -214,39 +213,61 @@ Needs Reply:  {n} tickets without admin_response
 ## Supabase Table Schema
 
 ```sql
--- user_tickets (existing)
-CREATE TABLE user_tickets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_type TEXT NOT NULL,
-    ticket_type TEXT NOT NULL DEFAULT 'feature_request',
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    category TEXT DEFAULT 'general',
-    status TEXT DEFAULT 'pending',
-    priority TEXT DEFAULT 'medium',
-    is_private BOOLEAN NOT NULL DEFAULT false,
-    user_id TEXT,
-    user_email TEXT,
-    device_info TEXT,
-    resolution TEXT,
-    admin_response TEXT,
-    responded_at TIMESTAMPTZ,
-    upvotes INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+-- product_tickets (per-project — no product_type column, each project has own Supabase)
+CREATE TABLE IF NOT EXISTS product_tickets (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_type      TEXT NOT NULL DEFAULT 'feature_request',
+    title            TEXT NOT NULL,
+    description      TEXT,
+    category         TEXT DEFAULT 'general',
+    status           TEXT DEFAULT 'pending',
+    priority         TEXT DEFAULT 'medium',
+    severity         TEXT,
+    platform         TEXT,
+    app_version      TEXT,
+    milestone        TEXT,
+    labels           TEXT[] DEFAULT ARRAY[]::TEXT[],
+    attachments      TEXT[] DEFAULT ARRAY[]::TEXT[],
+    is_private       BOOLEAN NOT NULL DEFAULT false,
+    user_id          TEXT,
+    user_email       TEXT,
+    device_info      JSONB,
+    upvotes          INT NOT NULL DEFAULT 0,
+    admin_response   TEXT,
+    responded_at     TIMESTAMPTZ,
+    resolution       TEXT,
+    internal_notes   TEXT,
+    assignee         TEXT,
+    created_at       TIMESTAMPTZ DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- RLS
+ALTER TABLE product_tickets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public tickets readable by anyone" ON product_tickets FOR SELECT USING (is_private = false);
+CREATE POLICY "Anyone can submit a ticket" ON product_tickets FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role full access" ON product_tickets FOR ALL USING (auth.role() = 'service_role');
+
 -- Indexes
-CREATE INDEX idx_user_tickets_product ON user_tickets(product_type);
-CREATE INDEX idx_user_tickets_user ON user_tickets(user_id);
+CREATE INDEX idx_product_tickets_status   ON product_tickets(status);
+CREATE INDEX idx_product_tickets_priority ON product_tickets(priority);
+CREATE INDEX idx_product_tickets_type     ON product_tickets(ticket_type);
+CREATE INDEX idx_product_tickets_created  ON product_tickets(created_at DESC);
+CREATE INDEX idx_product_tickets_votes    ON product_tickets(upvotes DESC);
 
 -- RPC: atomic upvote
-CREATE OR REPLACE FUNCTION upvote_ticket(ticket_id UUID)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+CREATE OR REPLACE FUNCTION upvote_ticket(p_ticket_id UUID)
+RETURNS INT LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE new_count INT;
 BEGIN
-    UPDATE user_tickets SET upvotes = upvotes + 1, updated_at = NOW() WHERE id = ticket_id;
+    UPDATE product_tickets SET upvotes = upvotes + 1, updated_at = NOW() WHERE id = p_ticket_id;
+    SELECT upvotes INTO new_count FROM product_tickets WHERE id = p_ticket_id;
+    RETURN new_count;
 END;
 $$;
 ```
+
+Full migration: `layers/tickets/templates/migrations/000_create_product_tickets.sql`
+Rename migration (existing projects): `migrations/006_rename_to_product_tickets.sql`
 
 $ARGUMENTS
