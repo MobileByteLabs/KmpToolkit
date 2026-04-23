@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "io.github.mobilebytelabs"
-version = "3.1.0"
+version = providers.gradleProperty("kmptoolkit.version").get()
 
 @OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
