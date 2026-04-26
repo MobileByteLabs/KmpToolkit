@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -42,14 +43,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
 
-            // KMP Clipboard library
-            implementation(project(":cmp-clipboard"))
-            // KMP Bubble library
-            implementation(project(":cmp-bubble"))
-            // KMP Toast library
-            implementation(project(":cmp-toast"))
-            // KMP Open URL library
-            implementation(project(":cmp-open-url"))
+            // KMP Deep Link library
+            implementation(project(":cmp-deep-link"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -62,14 +57,14 @@ kotlin {
 }
 
 android {
-    namespace = "io.github.mobilebytelabs.kmptoolkit.sample.clipboard"
+    namespace = "io.github.mobilebytelabs.kmptoolkit.sample.deeplink"
     compileSdk =
         libs.versions.android.compileSdk
             .get()
             .toInt()
 
     defaultConfig {
-        applicationId = "io.github.mobilebytelabs.kmptoolkit.sample.clipboard"
+        applicationId = "io.github.mobilebytelabs.kmptoolkit.sample.deeplink"
         minSdk =
             libs.versions.android.minSdk
                 .get()
@@ -103,11 +98,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "io.github.mobilebytelabs.kmptoolkit.sample.clipboard.MainKt"
+        mainClass = "io.github.mobilebytelabs.kmptoolkit.sample.deeplink.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.github.mobilebytelabs.kmptoolkit.sample.clipboard"
+            packageName = "io.github.mobilebytelabs.kmptoolkit.sample.deeplink"
             packageVersion = "1.0.0"
         }
     }

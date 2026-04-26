@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!--
+            Auto-init ContentProvider: registers DeepLinkActivityCallbacks on the Application
+            so deep link intents are handled without any consumer setup.
+            Uses ${applicationId} placeholder to avoid authority conflicts across apps.
+        -->
+        <provider
+            android:name="com.mobilebytelabs.kmptoolkit.deeplink.DeepLinkInitProvider"
+            android:authorities="${applicationId}.kmptoolkit.deeplink.init"
+            android:exported="false"
+            android:multiprocess="true" />
+    </application>
+</manifest>

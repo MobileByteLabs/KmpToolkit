@@ -45,6 +45,7 @@ enum class Screen {
     Home,
     Clipboard,
     Bubble,
+    OpenUrl,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +67,7 @@ fun App() {
                                     Screen.Home -> "KMP Toolkit"
                                     Screen.Clipboard -> "Clipboard"
                                     Screen.Bubble -> "Bubble"
+                                    Screen.OpenUrl -> "Open URL"
                                 },
                             )
                         },
@@ -91,6 +93,7 @@ fun App() {
                         Screen.Home -> HomeGrid(onItemClick = { currentScreen = it })
                         Screen.Clipboard -> ClipboardDemoTabs()
                         Screen.Bubble -> BubbleScreen()
+                        Screen.OpenUrl -> OpenUrlScreen()
                     }
                 }
             }
@@ -147,6 +150,12 @@ private fun HomeGrid(onItemClick: (Screen) -> Unit) {
             emoji = "\uD83D\uDCAC",
             color = Color(0xFFE91E63),
         ) to Screen.Bubble,
+        LibraryItem(
+            title = "Open URL",
+            subtitle = "Browser, email, maps, phone, SMS",
+            emoji = "\uD83C\uDF10",
+            color = Color(0xFF1565C0),
+        ) to Screen.OpenUrl,
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
