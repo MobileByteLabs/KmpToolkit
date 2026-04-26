@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 fun App() {
     MaterialTheme {
         var selectedTab by remember { mutableStateOf(0) }
-        val tabs = listOf("Scheme", "Route", "Builder", "Stream")
+        val tabs = listOf("Handler", "Routes", "Builder", "Stream")
 
         Scaffold(
             topBar = {
