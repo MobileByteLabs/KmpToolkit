@@ -1,5 +1,6 @@
 package com.mobilebytelabs.kmptoolkit.deeplink
 
+import com.mobilebytelabs.kmptoolkit.deeplink.internal.UriParser
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
@@ -29,4 +30,14 @@ data class DeepLink(
     val queryParams: Map<String, String>,
     val fragment: String?,
     val timestamp: Instant = Clock.System.now(),
-)
+) {
+    companion object {
+        /**
+         * Parse a URI string into a [DeepLink] without going through [DeepLinkHandler].
+         *
+         * Useful for one-shot parsing in tests and demos where you already have the URI
+         * string and don't need to emit it through the global handler.
+         */
+        fun parse(uri: String): DeepLink = UriParser.parse(uri)
+    }
+}

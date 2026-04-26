@@ -15,8 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mobilebytelabs.kmptoolkit.deeplink.DeepLink
 import com.mobilebytelabs.kmptoolkit.deeplink.deepLinkParser
-import com.mobilebytelabs.kmptoolkit.deeplink.internal.UriParser
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -48,7 +48,7 @@ fun RouteParserDemo() {
 
         Button(
             onClick = {
-                val link = UriParser.parse("demo://open/product/99")
+                val link = DeepLink.parse("demo://open/product/99")
                 productResult = parser.parse(link)
                 profileResult = null
             },
@@ -57,7 +57,7 @@ fun RouteParserDemo() {
 
         Button(
             onClick = {
-                val link = UriParser.parse("demo://open/user/rajan/posts?tab=videos")
+                val link = DeepLink.parse("demo://open/user/rajan/posts?tab=videos")
                 profileResult = parser.parse(link)
                 productResult = null
             },
