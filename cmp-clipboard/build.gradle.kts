@@ -131,7 +131,7 @@ kotlin {
             // Lifecycle for ProcessLifecycleOwner (app foreground detection)
             implementation(libs.androidx.lifecycle.process)
             // Core KTX for NotificationCompat, ContextCompat
-            implementation("androidx.core:core-ktx:1.16.0")
+            implementation("androidx.core:core-ktx:1.18.0")
         }
     }
 }
