@@ -372,13 +372,19 @@ run_platform_verify() {
             fi
         fi
 
-        # iOS test (macOS host only)
+        # iOS test (macOS host only) — 5-minute hard timeout guard
         if grep -q "iosSimulatorArm64()" "$BUILD_FILE" 2>/dev/null || grep -q "iosArm64()" "$BUILD_FILE" 2>/dev/null; then
             if $CAN_IOS; then
-                if ./gradlew ":${MODULE}:iosSimulatorArm64Test" --daemon -q 2>/dev/null; then
+                ./gradlew ":${MODULE}:iosSimulatorArm64Test" --daemon -q 2>/dev/null &
+                IOS_PID=$!
+                ( sleep 300 && kill "$IOS_PID" 2>/dev/null ) &
+                TIMEOUT_PID=$!
+                if wait "$IOS_PID" 2>/dev/null; then
+                    kill "$TIMEOUT_PID" 2>/dev/null; wait "$TIMEOUT_PID" 2>/dev/null
                     IOS_RESULT="${GREEN}pass${NC}"
                     PLATFORM_PASS=$((PLATFORM_PASS + 1))
                 else
+                    kill "$TIMEOUT_PID" 2>/dev/null; wait "$TIMEOUT_PID" 2>/dev/null
                     IOS_RESULT="${RED}FAIL${NC}"
                     PLATFORM_FAIL=$((PLATFORM_FAIL + 1))
                 fi
