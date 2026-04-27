@@ -1,14 +1,20 @@
 # Publish to Maven Central
 # Automatically discovers and publishes all cmp-* library modules
-# Triggered by: tag push (v*), GitHub release, or manual dispatch
+#
+# Triggers:
+#   - Schedule: every Monday 00:00 UTC (weekly) — runs on development branch
+#   - Schedule: 1st of every month 00:00 UTC (monthly) — runs on development branch
+#   - Manual dispatch: workflow_dispatch (pick branch + optional specific module)
+#
+# CI gates (gradle.yml) must pass before publish runs.
+# Build checks run on every push/PR — publish is separate and scheduled.
 
 name: Publish
 
 on:
-  push:
-    tags: ['v*']
-  release:
-    types: [published]
+  schedule:
+    - cron: '0 0 * * 1'   # weekly — every Monday 00:00 UTC
+    - cron: '0 0 1 * *'   # monthly — 1st of every month 00:00 UTC
   workflow_dispatch:
     inputs:
       module:
@@ -62,9 +68,9 @@ jobs:
           echo "modules_list=$MODULES_LIST" >> $GITHUB_OUTPUT
           echo "Discovered modules: $MODULES_LIST"
 
-  # Run tests first
+  # Run full CI gate first — quality + build-all must pass before publish
   test:
-    name: Run Tests
+    name: CI Gate (Quality + Build All Platforms)
     needs: discover
     uses: ./.github/workflows/gradle.yml
 

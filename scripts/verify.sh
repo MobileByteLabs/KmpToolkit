@@ -1,23 +1,26 @@
 #!/bin/bash
 
 # ============================================================================
-# verify.sh — Single script to verify and fix everything before push/PR
+# verify.sh — Verify and fix before push/PR
 #
-# Mirrors the EXACT checks that run in CI (GitHub Actions gradle.yml):
-#   1. spotlessApply (auto-fix formatting)
-#   2. spotlessCheck (verify formatting is clean)
-#   3. detekt (static analysis)
-#   4. jvmTest (unit tests for all cmp-* modules)
-#   5. assemble all cmp-* modules (build all targets)
+# DEFAULT: smart mode — detects which cmp-* modules changed vs base branch,
+#          runs quality checks + platform matrix ONLY for those modules.
+#          Falls back to all modules when root config files change.
 #
 # Usage:
-#   ./scripts/verify.sh              # Full verify (fix + check + test + build)
+#   ./scripts/verify.sh              # Smart: changed modules only + platform matrix
+#   ./scripts/verify.sh --all        # All modules: quality + platform matrix
 #   ./scripts/verify.sh --fix        # Only fix formatting (spotlessApply)
-#   ./scripts/verify.sh --check      # Only check (no fix, no build)
-#   ./scripts/verify.sh --quick      # Fix + check + test (skip full build)
-#   ./scripts/verify.sh --ci         # Exact CI mirror (check + test + build)
-#   ./scripts/verify.sh --platforms  # Multi-target platform verification matrix
-#   ./scripts/verify.sh --local      # Maven Local publish gate (build proof)
+#   ./scripts/verify.sh --check      # Only quality checks (spotless + detekt)
+#   ./scripts/verify.sh --quick      # Changed modules: quality + jvm tests only (no build)
+#   ./scripts/verify.sh --ci         # Exact CI mirror: all modules, no auto-fix
+#   ./scripts/verify.sh --local      # Maven Local publish gate
+#
+# Smart detection:
+#   - Compares HEAD against merge-base with origin/development
+#   - Finds which cmp-* dirs have changed files
+#   - Builds/tests ONLY those modules → fast feedback on active work
+#   - If root config changed (build.gradle.kts, gradle/, settings.gradle.kts) → ALL modules
 #
 # After running this, your PR will pass all CI checks guaranteed.
 # ============================================================================
@@ -42,7 +45,91 @@ STEPS=()
 cd "$(git rev-parse --show-toplevel 2>/dev/null || echo '.')"
 
 # Parse mode
-MODE="${1:-full}"
+MODE="${1:-smart}"
+
+# Resolved module list (set in main, consumed by all step functions)
+# Newline-separated module names, or "__NONE__" if nothing changed
+RESOLVED_MODULES=""
+
+# ── Smart Change Detection ──────────────────────────────────────────────────
+# Returns space-separated list of changed cmp-* module names, or "ALL" if root
+# config files changed.
+
+detect_changed_modules() {
+    local BASE_BRANCH="${BASE_BRANCH:-development}"
+
+    # Find merge base against origin/development (or local development)
+    local MERGE_BASE
+    MERGE_BASE=$(git merge-base HEAD "origin/${BASE_BRANCH}" 2>/dev/null) \
+        || MERGE_BASE=$(git merge-base HEAD "${BASE_BRANCH}" 2>/dev/null) \
+        || MERGE_BASE=$(git rev-parse HEAD~1 2>/dev/null) \
+        || MERGE_BASE=""
+
+    local CHANGED_FILES
+    if [ -n "$MERGE_BASE" ]; then
+        CHANGED_FILES=$(git diff --name-only "$MERGE_BASE" HEAD 2>/dev/null)
+    else
+        # Fallback: staged + unstaged changes
+        CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
+    fi
+
+    if [ -z "$CHANGED_FILES" ]; then
+        # Nothing changed — nothing to verify
+        echo "NONE"
+        return
+    fi
+
+    # Root config change → must rebuild all (affects every module)
+    if echo "$CHANGED_FILES" | grep -qE \
+        "^(build\.gradle\.kts|settings\.gradle\.kts|gradle/|buildSrc/|gradle\.properties|\.github/)"; then
+        echo "ALL"
+        return
+    fi
+
+    # Extract distinct cmp-* module dirs from changed paths
+    local MODULES
+    MODULES=$(echo "$CHANGED_FILES" \
+        | grep "^cmp-" \
+        | cut -d/ -f1 \
+        | grep -v "^cmp-library$" \
+        | sort -u \
+        | tr '\n' ' ' \
+        | sed 's/ $//')
+
+    if [ -z "$MODULES" ]; then
+        # Changed files don't belong to any cmp-* module (e.g. docs, samples)
+        echo "NONE"
+    else
+        echo "$MODULES"
+    fi
+}
+
+# Resolve TARGET_MODULES for this run
+resolve_target_modules() {
+    local scope="$1"   # "smart" | "all"
+
+    if [ "$scope" = "all" ]; then
+        # All cmp-* modules except template
+        for dir in cmp-*/; do
+            [ -d "$dir" ] && [ "${dir%/}" != "cmp-library" ] && echo "${dir%/}"
+        done
+        return
+    fi
+
+    # Smart: detect changed
+    local DETECTED
+    DETECTED=$(detect_changed_modules)
+
+    if [ "$DETECTED" = "NONE" ]; then
+        echo "__NONE__"
+    elif [ "$DETECTED" = "ALL" ]; then
+        for dir in cmp-*/; do
+            [ -d "$dir" ] && [ "${dir%/}" != "cmp-library" ] && echo "${dir%/}"
+        done
+    else
+        echo "$DETECTED" | tr ' ' '\n'
+    fi
+}
 
 print_header() {
     echo ""
@@ -129,7 +216,7 @@ run_detekt() {
     fi
 }
 
-# ── Step 4: JVM Tests (all cmp-* modules) ───────────────────────────────
+# ── Step 4: JVM Tests (changed or all cmp-* modules) ────────────────────
 
 run_tests() {
     echo -e "\n${BOLD}[4/5] JVM Tests — per-module${NC}"
@@ -139,32 +226,32 @@ run_tests() {
     FAILED_MODULES=0
     SKIPPED_MODULES=0
 
-    for dir in cmp-*/; do
-        if [ -d "$dir" ]; then
-            MODULE="${dir%/}"
+    while IFS= read -r MODULE; do
+        [ -z "$MODULE" ] && continue
+        dir="${MODULE}/"
+        [ -d "$dir" ] || continue
 
-            # Check if module has JVM target by looking for jvm() in build.gradle.kts
-            if ! grep -q "jvm()" "${dir}build.gradle.kts" 2>/dev/null; then
-                SKIPPED_MODULES=$((SKIPPED_MODULES + 1))
-                echo -e "    ${BLUE}SKIP${NC} ${MODULE} (no JVM target)"
-                continue
-            fi
-
-            OUTPUT=$(./gradlew ":${MODULE}:jvmTest" --daemon 2>&1)
-            if echo "$OUTPUT" | grep -q "BUILD SUCCESSFUL"; then
-                COUNT=0
-                if [ -d "${dir}build/test-results/jvmTest" ]; then
-                    COUNT=$(find "${dir}build/test-results/jvmTest" -name "*.xml" -exec grep -c "testcase" {} + 2>/dev/null | awk -F: '{sum+=$2} END {print sum}')
-                fi
-                TOTAL_TESTS=$((TOTAL_TESTS + COUNT))
-                PASSED_MODULES=$((PASSED_MODULES + 1))
-                echo -e "    ${GREEN}PASS${NC} ${MODULE} (${COUNT} tests)"
-            else
-                FAILED_MODULES=$((FAILED_MODULES + 1))
-                echo -e "    ${RED}FAIL${NC} ${MODULE}"
-            fi
+        # Check if module has JVM target by looking for jvm() in build.gradle.kts
+        if ! grep -q "jvm()" "${dir}build.gradle.kts" 2>/dev/null; then
+            SKIPPED_MODULES=$((SKIPPED_MODULES + 1))
+            echo -e "    ${BLUE}SKIP${NC} ${MODULE} (no JVM target)"
+            continue
         fi
-    done
+
+        OUTPUT=$(./gradlew ":${MODULE}:jvmTest" --daemon 2>&1)
+        if echo "$OUTPUT" | grep -q "BUILD SUCCESSFUL"; then
+            COUNT=0
+            if [ -d "${dir}build/test-results/jvmTest" ]; then
+                COUNT=$(find "${dir}build/test-results/jvmTest" -name "*.xml" -exec grep -c "testcase" {} + 2>/dev/null | awk -F: '{sum+=$2} END {print sum}')
+            fi
+            TOTAL_TESTS=$((TOTAL_TESTS + COUNT))
+            PASSED_MODULES=$((PASSED_MODULES + 1))
+            echo -e "    ${GREEN}PASS${NC} ${MODULE} (${COUNT} tests)"
+        else
+            FAILED_MODULES=$((FAILED_MODULES + 1))
+            echo -e "    ${RED}FAIL${NC} ${MODULE}"
+        fi
+    done <<< "$RESOLVED_MODULES"
 
     if [ $FAILED_MODULES -eq 0 ]; then
         step_pass "jvmTest (${PASSED_MODULES} modules, ${TOTAL_TESTS} tests, ${SKIPPED_MODULES} skipped)"
@@ -174,26 +261,26 @@ run_tests() {
     fi
 }
 
-# ── Step 5: Build All (assemble all targets) ────────────────────────────
+# ── Step 5: Build All (assemble changed or all modules) ─────────────────
 
 run_build_all() {
-    echo -e "\n${BOLD}[5/5] Build All — assemble all cmp-* modules${NC}"
+    echo -e "\n${BOLD}[5/5] Build All — assemble cmp-* modules${NC}"
 
     BUILD_TASKS=""
-    for dir in cmp-*/; do
-        if [ -d "$dir" ]; then
-            MODULE="${dir%/}"
-            BUILD_TASKS="$BUILD_TASKS :${MODULE}:assemble"
-        fi
-    done
+    while IFS= read -r MODULE; do
+        [ -z "$MODULE" ] && continue
+        [ -d "${MODULE}/" ] && BUILD_TASKS="$BUILD_TASKS :${MODULE}:assemble"
+    done <<< "$RESOLVED_MODULES"
 
     if [ -z "$BUILD_TASKS" ]; then
-        step_skip "assemble (no cmp-* modules found)"
+        step_skip "assemble (no modules to build)"
         return 0
     fi
 
+    MODULE_COUNT=$(echo "$BUILD_TASKS" | wc -w | tr -d ' ')
+    echo -e "  Building ${MODULE_COUNT} module(s)..."
+
     if ./gradlew $BUILD_TASKS --daemon 2>/dev/null; then
-        MODULE_COUNT=$(echo "$BUILD_TASKS" | wc -w | tr -d ' ')
         step_pass "assemble (${MODULE_COUNT} modules, all targets)"
     else
         step_fail "assemble"
@@ -261,9 +348,10 @@ run_platform_verify() {
     printf "  %-20s %-6s %-6s %-7s %-6s %-6s\n" "Module" "JVM" "iOS" "macOS" "JS" "Wasm"
     printf "  %-20s %-6s %-6s %-7s %-6s %-6s\n" "────────────────────" "─────" "─────" "──────" "─────" "─────"
 
-    for dir in cmp-*/; do
+    while IFS= read -r MODULE; do
+        [ -z "$MODULE" ] && continue
+        dir="${MODULE}/"
         [ -d "$dir" ] || continue
-        MODULE="${dir%/}"
         BUILD_FILE="${dir}build.gradle.kts"
         [ -f "$BUILD_FILE" ] || continue
 
@@ -339,7 +427,7 @@ run_platform_verify() {
         fi
 
         printf "  %-20s %-6b %-6b %-7b %-6b %-6b\n" "$MODULE" "$JVM_RESULT" "$IOS_RESULT" "$MACOS_RESULT" "$JS_RESULT" "$WASM_RESULT"
-    done
+    done <<< "$RESOLVED_MODULES"
 
     echo ""
     if [ $PLATFORM_FAIL -eq 0 ]; then
@@ -359,9 +447,10 @@ run_local_publish() {
     LOCAL_FAIL=0
     GROUP=""
 
-    for dir in cmp-*/; do
+    while IFS= read -r MODULE; do
+        [ -z "$MODULE" ] && continue
+        dir="${MODULE}/"
         [ -d "$dir" ] || continue
-        MODULE="${dir%/}"
         BUILD_FILE="${dir}build.gradle.kts"
         [ -f "$BUILD_FILE" ] || continue
 
@@ -394,7 +483,7 @@ run_local_publish() {
             echo -e "    ${RED}FAIL${NC} ${MODULE}"
             LOCAL_FAIL=$((LOCAL_FAIL + 1))
         fi
-    done
+    done <<< "$RESOLVED_MODULES"
 
     echo ""
     if [ $LOCAL_FAIL -eq 0 ]; then
@@ -405,46 +494,91 @@ run_local_publish() {
     fi
 }
 
+# ── Resolve target modules + display smart detection banner ─────────────
+
+resolve_and_show() {
+    local scope="$1"  # "smart" | "all"
+
+    RESOLVED_MODULES=$(resolve_target_modules "$scope")
+
+    if [ "$RESOLVED_MODULES" = "__NONE__" ]; then
+        echo -e "  ${BLUE}Smart:${NC} No changes detected vs origin/development"
+        echo -e "  ${BLUE}→${NC}     Nothing to build or test. Use ${BOLD}--all${NC} to force.\n"
+        return 1
+    fi
+
+    if [ "$scope" = "smart" ]; then
+        MODULE_COUNT=$(echo "$RESOLVED_MODULES" | grep -c '[^[:space:]]' | tr -d ' ')
+        echo -e "  ${BLUE}Smart:${NC} ${MODULE_COUNT} changed module(s) detected"
+        echo "$RESOLVED_MODULES" | while IFS= read -r m; do
+            [ -n "$m" ] && echo -e "    ${BLUE}→${NC} $m"
+        done
+        echo ""
+    else
+        MODULE_COUNT=$(echo "$RESOLVED_MODULES" | grep -c '[^[:space:]]' | tr -d ' ')
+        echo -e "  ${BLUE}All:${NC} ${MODULE_COUNT} module(s) (full run)\n"
+    fi
+
+    return 0
+}
+
 # ── Main ────────────────────────────────────────────────────────────────
 
 print_header
 
 case "$MODE" in
     --fix)
+        # Quality-only — no module detection needed
+        RESOLVED_MODULES=$(resolve_target_modules "all")
         run_spotless_fix || true
         ;;
     --check)
+        # Quality-only — no module detection needed
+        RESOLVED_MODULES=$(resolve_target_modules "all")
         run_spotless_check || true
         run_detekt || true
         ;;
     --quick)
+        # Changed modules: quality + jvm tests (no platform build)
+        resolve_and_show "smart" || { print_summary; exit 0; }
         run_spotless_fix || true
         run_spotless_check || true
         run_detekt || true
         run_tests || true
         ;;
     --ci)
-        # Exact CI mirror — no auto-fix, just check
+        # Exact CI mirror — all modules, no auto-fix
+        RESOLVED_MODULES=$(resolve_target_modules "all")
         run_spotless_check || true
         run_detekt || true
         run_tests || true
         run_build_all || true
         ;;
+    --all)
+        # Explicit full run: quality + platform matrix for ALL modules
+        resolve_and_show "all" || { print_summary; exit 0; }
+        run_spotless_fix || true
+        run_spotless_check || true
+        run_detekt || true
+        run_platform_verify || true
+        ;;
     --platforms)
-        # Multi-target platform verification matrix
+        # Multi-target platform verification matrix (all modules)
+        RESOLVED_MODULES=$(resolve_target_modules "all")
         run_platform_verify || true
         ;;
     --local)
         # Maven Local publish gate
+        RESOLVED_MODULES=$(resolve_target_modules "all")
         run_local_publish || true
         ;;
-    --full|*)
-        # Default: fix + check + test + build
+    smart|*)
+        # DEFAULT: smart — quality checks + platform matrix for changed modules only
+        resolve_and_show "smart" || { print_summary; exit 0; }
         run_spotless_fix || true
         run_spotless_check || true
         run_detekt || true
-        run_tests || true
-        run_build_all || true
+        run_platform_verify || true
         ;;
 esac
 

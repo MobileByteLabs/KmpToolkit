@@ -146,10 +146,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-deep-link", version.toString())
+    coordinates(group.toString(), "cmp-deep-link", version.toString())
 
     pom {
-        name = "KMP Deep Link"
+        name = "CMP Deep Link"
         description =
             "Unified deep link handling for Kotlin Multiplatform — Android, iOS, macOS, JVM, JS, Wasm, Linux, Windows"
         inceptionYear = "2026"

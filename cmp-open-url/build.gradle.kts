@@ -130,10 +130,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-open-url", version.toString())
+    coordinates(group.toString(), "cmp-open-url", version.toString())
 
     pom {
-        name = "KMP Open URL"
+        name = "CMP Open URL"
         description =
             "Cross-platform URL opening for Kotlin Multiplatform — browser, email, maps, phone, SMS, and custom URI schemes"
         inceptionYear = "2025"

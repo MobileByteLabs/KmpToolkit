@@ -143,10 +143,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-clipboard", version.toString())
+    coordinates(group.toString(), "cmp-clipboard", version.toString())
 
     pom {
-        name = "KMP Clipboard"
+        name = "CMP Clipboard"
         description = "Cross-platform clipboard utilities for Kotlin Multiplatform"
         inceptionYear = "2025"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"

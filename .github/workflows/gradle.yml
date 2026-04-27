@@ -1,13 +1,23 @@
 # CI Workflow for KMP Library
-# Runs tests on all platforms and performs code quality checks
+# Runs quality checks (Spotless, Detekt) + builds/tests across all platforms
+#
+# Triggers:
+#   - push to development or main
+#   - pull_request targeting development or main
+#   - workflow_call (invoked by publish.yml before every Maven publish)
+#
+# Flow: detect-changes → quality → build (JVM/iOS/Linux tests) → build-all (all targets, macOS runner)
+# Smart detection: on push/PR only changed cmp-* modules are tested.
+# workflow_call (publish gate) always builds all modules.
+# build-all is the final gate before publish.
 
 name: CI
 
 on:
   push:
-    branches: [ "main", "development" ]
+    branches: [ "development", "main" ]
   pull_request:
-    branches: [ "main", "development" ]
+    branches: [ "development", "main" ]
   workflow_call:
 
 permissions:
@@ -18,11 +28,70 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Detect which cmp-* modules changed (skipped on workflow_call = publish gate always builds all)
+  detect-changes:
+    name: Detect Changed Modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.detect.outputs.modules }}
+      build_all: ${{ steps.detect.outputs.build_all }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0   # need full history for merge-base diff
+
+      - name: Detect changed cmp-* modules
+        id: detect
+        run: |
+          # workflow_call (publish gate) always builds everything
+          if [ "${{ github.event_name }}" = "workflow_call" ]; then
+            echo "build_all=true" >> $GITHUB_OUTPUT
+            echo "modules=" >> $GITHUB_OUTPUT
+            echo "▶ Publish gate — building all modules"
+            exit 0
+          fi
+
+          # Find merge base against target branch
+          BASE_SHA=$(git merge-base HEAD "origin/${{ github.base_ref || 'development' }}" 2>/dev/null || git rev-parse HEAD~1)
+          CHANGED=$(git diff --name-only "$BASE_SHA" HEAD)
+
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # Root config change → all modules
+          if echo "$CHANGED" | grep -qE "^(build\.gradle\.kts|settings\.gradle\.kts|gradle/|buildSrc/|gradle\.properties|\.github/)"; then
+            echo "build_all=true" >> $GITHUB_OUTPUT
+            echo "modules=" >> $GITHUB_OUTPUT
+            echo "▶ Root config changed — building all modules"
+            exit 0
+          fi
+
+          # Extract distinct changed cmp-* modules
+          MODULES=$(echo "$CHANGED" \
+            | grep "^cmp-" \
+            | cut -d/ -f1 \
+            | grep -v "^cmp-library$" \
+            | sort -u \
+            | tr '\n' ' ' \
+            | sed 's/ $//')
+
+          if [ -z "$MODULES" ]; then
+            echo "build_all=false" >> $GITHUB_OUTPUT
+            echo "modules=NONE" >> $GITHUB_OUTPUT
+            echo "▶ No cmp-* modules changed — skipping build/test"
+          else
+            echo "build_all=false" >> $GITHUB_OUTPUT
+            echo "modules=$MODULES" >> $GITHUB_OUTPUT
+            echo "▶ Changed modules: $MODULES"
+          fi
+
   # Code quality checks
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: detect-changes
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -52,10 +121,12 @@ jobs:
           name: detekt-report
           path: build/reports/detekt/
 
-  # Build and test on multiple platforms
+  # Build and test on multiple platforms (smart: only changed modules)
   build:
     name: Build & Test (${{ matrix.name }})
-    needs: quality
+    needs: [detect-changes, quality]
+    # Skip entirely if no cmp-* modules changed (and not publish gate)
+    if: needs.detect-changes.outputs.modules != 'NONE'
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -96,8 +167,33 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Run Tests
-        run: ./gradlew ${{ matrix.target }} --parallel
+      - name: Run Tests (smart — changed modules only)
+        run: |
+          BUILD_ALL="${{ needs.detect-changes.outputs.build_all }}"
+          MODULES="${{ needs.detect-changes.outputs.modules }}"
+
+          if [ "$BUILD_ALL" = "true" ] || [ -z "$MODULES" ]; then
+            # All modules: discover and run
+            TASKS=""
+            for dir in cmp-*/; do
+              [ "$dir" = "cmp-library/" ] && continue
+              [ -d "$dir" ] && TASKS="$TASKS :${dir%/}:${{ matrix.target }}"
+            done
+          else
+            # Changed modules only
+            TASKS=""
+            for MODULE in $MODULES; do
+              [ -d "${MODULE}/" ] && TASKS="$TASKS :${MODULE}:${{ matrix.target }}"
+            done
+          fi
+
+          if [ -z "$TASKS" ]; then
+            echo "No modules with ${{ matrix.target }} target — skipping"
+            exit 0
+          fi
+
+          echo "Running: ./gradlew $TASKS --parallel"
+          ./gradlew $TASKS --parallel
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v7
@@ -109,9 +205,11 @@ jobs:
             **/build/test-results/
 
   # Build all library modules for all targets to ensure compilation works
+  # Runs on: workflow_call (publish gate), root-config changes, or any cmp-* change
   build-all:
     name: Build All Libraries (All Targets)
-    needs: build
+    needs: [detect-changes, build]
+    if: always() && needs.detect-changes.outputs.modules != 'NONE' && needs.build.result != 'failure'
     runs-on: macos-14
     timeout-minutes: 45
     steps:
@@ -135,18 +233,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build All Libraries
+      - name: Build All Libraries (All Targets)
         run: |
-          # Dynamically discover and build all cmp-* library modules
+          # Dynamically discover all cmp-* library modules and compile for every target.
+          # Uses :assemble (covers all declared targets: Android, iOS, JVM, JS, Wasm, Linux, Windows, macOS)
           MODULES=""
           for dir in cmp-*/; do
+            [ "$dir" = "cmp-library/" ] && continue  # skip template module
             if [ -d "$dir" ]; then
               MODULE="${dir%/}"
               MODULES="$MODULES :$MODULE:assemble"
-              echo "Found library module: $MODULE"
+              echo "▶ $MODULE"
             fi
           done
-          echo "Building modules:$MODULES"
+          echo "Running: ./gradlew $MODULES --parallel"
           ./gradlew $MODULES --parallel
 
       - name: Build Summary

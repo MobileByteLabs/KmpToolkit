@@ -85,10 +85,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-toast", version.toString())
+    coordinates(group.toString(), "cmp-toast", version.toString())
 
     pom {
-        name = "KMP Toast"
+        name = "CMP Toast"
         description = "Cross-platform toast/snackbar for Compose Multiplatform"
         inceptionYear = "2025"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
