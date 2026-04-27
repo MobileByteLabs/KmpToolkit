@@ -47,6 +47,7 @@ kotlin {
 | **kmp-bubble** | `io.github.mobilebytelabs:kmp-bubble` | Bubbles, floating UI, notifications | `2.1.0` |
 | **kmp-toast** | `io.github.mobilebytelabs:kmp-toast` | Toast/Snackbar for Compose Multiplatform | `2.1.0` |
 | **kmp-in-app-update** | `io.github.mobilebytelabs:kmp-in-app-update` | In-app update checking | `2.1.0` |
+| **kmp-open-url** | `io.github.mobilebytelabs:kmp-open-url` | Cross-platform URL opening — browser, email, maps, phone, SMS, custom schemes | `3.2.1` |
 
 Each module is independently publishable and can be used standalone.
 
@@ -273,12 +274,14 @@ The `samples/` directory contains example applications:
 |--------|-------------|
 | `sample-clipboard` | Clipboard + Observer + Toast integration |
 | `sample-in-app-update` | In-App Update demo with GitHub Releases |
+| `sample-open-url` | Open URL demo — browser, email, maps, phone, SMS, custom schemes |
 
 Run samples:
 
 ```bash
 # Desktop (JVM)
 ./gradlew :samples:sample-clipboard:composeApp:run
+./gradlew :samples:sample-open-url:composeApp:run
 
 # Android
 ./gradlew :samples:sample-clipboard:composeApp:installDebug

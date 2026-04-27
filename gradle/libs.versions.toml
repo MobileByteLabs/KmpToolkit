@@ -7,6 +7,7 @@ android-minSdk = "24"
 android-compileSdk = "36"
 android-targetSdk = "36"
 vanniktechMavenPublish = "0.36.0"
+kotlinx-binary-compatibility-validator = "0.17.0"
 
 # Code Quality
 detekt = "1.23.8"
@@ -102,3 +103,4 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "kotlinx-binary-compatibility-validator" }

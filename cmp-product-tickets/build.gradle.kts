@@ -92,10 +92,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmptoolkit-product-tickets", version.toString())
+    coordinates(group.toString(), "cmp-product-tickets", version.toString())
 
     pom {
-        name = "KmpToolkit - Product Tickets"
+        name = "CMP Product Tickets"
         description =
             "Cross-platform product tickets module: feature requests, bug reports, and contact support for KMP apps"
         inceptionYear = "2026"

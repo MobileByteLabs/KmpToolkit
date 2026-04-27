@@ -1,13 +1,17 @@
-# CI Workflow for KMP Library
-# Runs tests on all platforms and performs code quality checks
+# CI Workflow — delegates to mbl-actionhub reusable CI workflow
+#
+# Triggers:
+#   - push to development or main
+#   - pull_request targeting development or main
+#   - workflow_call (invoked by publish.yml before every Maven publish)
 
 name: CI
 
 on:
   push:
-    branches: [ "main", "development" ]
+    branches: [ "development", "main" ]
   pull_request:
-    branches: [ "main", "development" ]
+    branches: [ "development", "main" ]
   workflow_call:
 
 permissions:
@@ -18,147 +22,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Code quality checks
-  quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'zulu'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Run Spotless Check
-        run: ./gradlew spotlessCheck
-
-      - name: Run Detekt
-        run: ./gradlew detekt
-
-      - name: Upload Detekt Report
-        uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: detekt-report
-          path: build/reports/detekt/
-
-  # Build and test on multiple platforms
-  build:
-    name: Build & Test (${{ matrix.name }})
-    needs: quality
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: JVM
-            target: jvmTest
-            os: ubuntu-latest
-          - name: iOS Simulator
-            target: iosSimulatorArm64Test
-            os: macos-14
-          - name: Linux Native
-            target: linuxX64Test
-            os: ubuntu-latest
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
-      - name: Cache Kotlin/Native
-        uses: actions/cache@v5
-        with:
-          path: ~/.konan
-          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts') }}
-          restore-keys: |
-            ${{ runner.os }}-konan-
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'zulu'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Run Tests
-        run: ./gradlew ${{ matrix.target }} --parallel
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: test-reports-${{ matrix.name }}
-          path: |
-            **/build/reports/tests/
-            **/build/test-results/
-
-  # Build all library modules for all targets to ensure compilation works
-  build-all:
-    name: Build All Libraries (All Targets)
-    needs: build
-    runs-on: macos-14
-    timeout-minutes: 45
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Cache Kotlin/Native
-        uses: actions/cache@v5
-        with:
-          path: ~/.konan
-          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts') }}
-          restore-keys: |
-            ${{ runner.os }}-konan-
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'zulu'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Build All Libraries
-        run: |
-          # Dynamically discover and build all cmp-* library modules
-          MODULES=""
-          for dir in cmp-*/; do
-            if [ -d "$dir" ]; then
-              MODULE="${dir%/}"
-              MODULES="$MODULES :$MODULE:assemble"
-              echo "Found library module: $MODULE"
-            fi
-          done
-          echo "Building modules:$MODULES"
-          ./gradlew $MODULES --parallel
-
-      - name: Build Summary
-        run: |
-          echo "## 📦 Library Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Module | Version | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|---------|--------|" >> $GITHUB_STEP_SUMMARY
-          for dir in cmp-*/; do
-            if [ -d "$dir" ]; then
-              MODULE="${dir%/}"
-              VERSION=$(grep -m1 'version = ' "${dir}build.gradle.kts" 2>/dev/null | sed 's/.*"\(.*\)".*/\1/' || echo "N/A")
-              echo "| $MODULE | $VERSION | ✅ Built |" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
+  ci:
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.0.1
+    with:
+      module-pattern: 'cmp-'
+      java-version: '21'
+      java-distribution: 'zulu'
+      run-ios-tests: true
+      run-linux-tests: true
+      run-quality: true

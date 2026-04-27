@@ -18,7 +18,7 @@ This file provides module context for the `/lib-sync` and `/sync-product-tickets
 ### Module Identity
 
 ```yaml
-artifact:       io.github.mobilebytelabs:kmptoolkit-product-tickets
+artifact:       io.github.mobilebytelabs:cmp-product-tickets
 version:        3.0.0
 package:        com.mobilebytelabs.producttickets
 supabase_table: product_tickets   # per-project, NO product_type column
@@ -110,7 +110,7 @@ ticketDetailDestination(onBackClick = { navController.popBackStack() })
 
 | v2.x | v3.0.0 |
 |------|--------|
-| `kmptoolkit-user-tickets:2.1.0` | `kmptoolkit-product-tickets:3.0.0` |
+| `kmptoolkit-user-tickets:2.1.0` | `cmp-product-tickets:3.0.0` |
 | `FeatureRequestConfig.init(url, key, productType, userId?)` | `ProductTicketsConfig.init(url, key, userId?)` |
 | `featureRequestModule` | `productTicketsModule` |
 | `featureWishlistDestination` | `productTicketsDestination` |

@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **New Module: kmp-open-url** (`io.github.mobilebytelabs:kmp-open-url:3.2.1`)
+  - Cross-platform URL opening for all 14 KMP targets
+  - `openUrl(url)` — open with default platform handler, never throws
+  - `openInBrowser(url)` — force system browser, bypasses app-association rules
+  - `openWithApp(url, AppHint)` — open with preferred app category, returns `OpenUrlResult`
+  - `canOpen(url)` — check URL handleability without opening
+  - `AppHint` sealed class: DEFAULT, BROWSER, EMAIL, MAPS, PHONE, SMS, Custom(packageName)
+  - `OpenUrlResult` sealed class: Success, NoHandler, Error(message)
+  - Android: `Intent.ACTION_VIEW` + ContentProvider auto-init (zero setup)
+  - iOS/macOS: `UIApplication.openURL` / `NSWorkspace.openURL` via shared `appleMain`
+  - tvOS/watchOS: graceful `NoHandler` — no crash
+  - JVM Desktop: `Desktop.getDesktop().browse()` + `xdg-open` headless fallback
+  - JS Browser: `window.open(url, "_blank")`
+  - wasmJs: `window.open` via `@JsFun` interop
+  - Linux Native: `xdg-open` via `platform.posix.system`
+  - Windows Native: `ShellExecuteW` via Win32 API
+  - wasmWasi: deliberate no-op (no display concept)
+
 - **New Module: kmp-clipboard** (`io.github.mobilebytelabs:kmp-clipboard:0.1.0`)
   - Extracted clipboard functionality into standalone module
   - ClipboardObserver for monitoring clipboard changes with app foreground detection

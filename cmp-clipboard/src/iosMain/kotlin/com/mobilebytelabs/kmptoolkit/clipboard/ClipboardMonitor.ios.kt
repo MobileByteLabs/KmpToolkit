@@ -39,8 +39,10 @@ internal class IosClipboardMonitor : ClipboardMonitor {
     override fun start(config: ClipboardMonitorConfig) {
         if (_state.value is ClipboardMonitorState.Monitoring) return
 
+        // Read changeCount only — avoids triggering iOS 16+ clipboard-access permission
+        // dialog on startup. Content is read lazily in checkClipboard() on first detected change.
         lastChangeCount = UIPasteboard.generalPasteboard.changeCount
-        lastContent = UIPasteboard.generalPasteboard.string
+        lastContent = null
 
         // Register for foreground notification
         foregroundObserver = NSNotificationCenter.defaultCenter.addObserverForName(

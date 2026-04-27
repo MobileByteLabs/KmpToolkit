@@ -100,10 +100,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-bubble", version.toString())
+    coordinates(group.toString(), "cmp-bubble", version.toString())
 
     pom {
-        name = "KMP Bubble"
+        name = "CMP Bubble"
         description = "Cross-platform floating UI, bubbles, and notifications for Kotlin Multiplatform"
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"

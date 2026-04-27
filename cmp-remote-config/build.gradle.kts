@@ -102,10 +102,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmptoolkit-remote-config", version.toString())
+    coordinates(group.toString(), "cmp-remote-config", version.toString())
 
     pom {
-        name = "KmpToolkit - Remote Config"
+        name = "CMP Remote Config"
         description = "Cross-platform remote config and messaging module for KMP apps"
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"

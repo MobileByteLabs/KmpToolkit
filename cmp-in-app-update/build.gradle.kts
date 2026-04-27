@@ -138,10 +138,10 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-in-app-update", version.toString())
+    coordinates(group.toString(), "cmp-in-app-update", version.toString())
 
     pom {
-        name = "KMP In-App Update"
+        name = "CMP In-App Update"
         description =
             "Cross-platform in-app update checking for Kotlin Multiplatform with support for GitHub Releases, Supabase, and custom backends"
         inceptionYear = "2025"
