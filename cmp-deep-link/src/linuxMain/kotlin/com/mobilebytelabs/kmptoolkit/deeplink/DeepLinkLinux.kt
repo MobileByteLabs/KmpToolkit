@@ -20,6 +20,9 @@ package com.mobilebytelabs.kmptoolkit.deeplink
  * ```
  *
  * See `docs/DESKTOP.md` for full setup instructions.
+ *
+ * **Note:** This one call is the irreducible minimum on Linux. The OS delivers the URI
+ * as a CLI argument; automatic interception without consumer `main()` wiring is not possible.
  */
 fun DeepLinkHandler.handleLaunchArgs(args: Array<String>) {
     args.firstOrNull { it.contains("://") || it.startsWith("https://") || it.startsWith("http://") }

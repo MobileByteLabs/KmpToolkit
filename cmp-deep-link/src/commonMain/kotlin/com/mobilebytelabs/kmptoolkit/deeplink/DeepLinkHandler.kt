@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.datetime.Clock
 
 /**
  * Singleton entry point for all deep link events across the application.
@@ -40,6 +41,15 @@ object DeepLinkHandler {
     private val _incoming = MutableSharedFlow<DeepLink>(replay = 0, extraBufferCapacity = Channel.UNLIMITED)
     private val _lastReceived = MutableStateFlow<DeepLink?>(null)
 
+    // Dedup window: suppress duplicate URI within 500ms.
+    // Prevents double-emit during auto-init transition when a consumer still has
+    // a manual handleDeepLinkIntent() call alongside the ContentProvider auto-init.
+    private const val DEDUP_WINDOW_MS = 500L
+
+    // Flag set by platform initBrowser() — prevents double-registration of
+    // hashchange/popstate listeners if initBrowser() is called more than once.
+    internal var browserInitialized = false
+
     /**
      * Hot [SharedFlow] that emits every parsed [DeepLink].
      * New subscribers receive only future links; use [lastReceived] for the latest value.
@@ -60,6 +70,12 @@ object DeepLinkHandler {
      * @param uri The raw URI string delivered by the OS (e.g. `myapp://open?ref=x`).
      */
     fun handle(uri: String) {
+        // Dedup: skip if the same URI was the last emitted within DEDUP_WINDOW_MS.
+        val last = _lastReceived.value
+        if (last != null && last.raw == uri) {
+            val ageMs = Clock.System.now().toEpochMilliseconds() - last.timestamp.toEpochMilliseconds()
+            if (ageMs < DEDUP_WINDOW_MS) return
+        }
         val link = UriParser.parse(uri)
         _lastReceived.value = link
         _incoming.tryEmit(link)

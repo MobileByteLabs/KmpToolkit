@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+        OpenUrlInitProvider automatically captures the Application context on startup.
+        No user code is required — the library is ready to use after installation.
+        -->
+        <provider
+            android:name="com.mobilebytelabs.kmptoolkit.openurl.OpenUrlInitProvider"
+            android:authorities="${applicationId}.kmptoolkit.openurl.init"
+            android:exported="false"
+            android:initOrder="98" />
+    </application>
+
+</manifest>

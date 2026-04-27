@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -50,6 +51,8 @@ kotlin {
             implementation(project(":cmp-toast"))
             // KMP Open URL library
             implementation(project(":cmp-open-url"))
+            // KMP Deep Link library
+            implementation(project(":cmp-deep-link"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

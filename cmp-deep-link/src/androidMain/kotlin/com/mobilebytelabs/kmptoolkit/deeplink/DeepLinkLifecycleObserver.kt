@@ -28,7 +28,19 @@ class DeepLinkLifecycleObserver(private val activity: ComponentActivity) : Defau
         activity.handleDeepLinkIntent()
     }
 
-    /** Call from [ComponentActivity.onNewIntent] to handle while-running links. */
+    /**
+     * Call from [ComponentActivity.onNewIntent] to handle while-running links.
+     *
+     * @deprecated onNewIntent is now handled automatically via `addOnNewIntentListener`
+     * registered by [DeepLinkActivityCallbacks] (installed by the library's ContentProvider
+     * auto-init). Remove your `onNewIntent` override and this manual call — they are
+     * no longer needed.
+     */
+    @Deprecated(
+        message = "onNewIntent is now handled automatically. " +
+            "Remove your onNewIntent override and the manual handleDeepLinkIntent(intent) call.",
+        level = DeprecationLevel.WARNING,
+    )
     fun onNewIntent(intent: Intent) {
         activity.handleDeepLinkIntent(intent)
     }

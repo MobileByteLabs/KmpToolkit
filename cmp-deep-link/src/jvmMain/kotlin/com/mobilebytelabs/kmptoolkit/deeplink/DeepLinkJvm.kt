@@ -19,6 +19,9 @@ package com.mobilebytelabs.kmptoolkit.deeplink
  * - Linux `.desktop` Exec= configuration
  * - Windows registry / AppxManifest setup
  * - macOS CFBundleURLTypes plist entries
+ *
+ * **Note:** This one call is the irreducible minimum on JVM/Desktop. The JVM has no
+ * static initializer that receives program arguments, so automatic wiring is not possible.
  */
 fun DeepLinkHandler.handleLaunchArgs(args: Array<String>) {
     args.firstOrNull { it.contains("://") || it.startsWith("https://") || it.startsWith("http://") }

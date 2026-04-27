@@ -9,19 +9,24 @@ package com.mobilebytelabs.kmptoolkit.deeplink
 enum class BrowserRoutingMode { HASH, HISTORY }
 
 /**
- * Browser (Wasm/JS) entry point for deep link handling.
- *
- * Call once at app startup to begin listening for URL changes.
- *
- * ## Usage
- *
- * ```kotlin
- * fun main() {
- *     DeepLinkHandler.initBrowser(BrowserRoutingMode.HASH)
- * }
- * ```
+ * Auto-registers browser listeners at module load time (HASH mode default).
+ * Runs via the Wasm module start function before any consumer code.
+ * The SSR guard prevents crashes in environments where `window` is undefined.
+ * Consumers who need HISTORY mode call [initBrowser] with [BrowserRoutingMode.HISTORY] explicitly.
  */
+@Suppress("unused")
+private val deepLinkAutoInit: Unit = run {
+    if (wasmIsBrowserEnvironment()) {
+        DeepLinkHandler.initBrowser(BrowserRoutingMode.HASH)
+    }
+}
+
+/** Browser (Wasm/JS) entry point. Call with [BrowserRoutingMode.HISTORY] to opt-in to history routing. */
 fun DeepLinkHandler.initBrowser(mode: BrowserRoutingMode = BrowserRoutingMode.HASH) {
+    // Guard: prevent double-registration if _autoInit already ran or consumer calls this explicitly.
+    if (browserInitialized) return
+    browserInitialized = true
+
     parseBrowserUrl(mode)
     when (mode) {
         BrowserRoutingMode.HASH ->
@@ -45,6 +50,9 @@ private fun DeepLinkHandler.parseBrowserUrl(mode: BrowserRoutingMode) {
     }
     if (uri.isNotBlank()) handle(uri)
 }
+
+@JsFun("() => typeof window !== 'undefined' && typeof window.location !== 'undefined'")
+private external fun wasmIsBrowserEnvironment(): Boolean
 
 @JsFun("(type, cb) => window.addEventListener(type, cb)")
 private external fun wasmAddEventListener(type: String, cb: () -> Unit)

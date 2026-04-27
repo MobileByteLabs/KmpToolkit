@@ -33,6 +33,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Deep links (launch + while-running) are handled automatically by cmp-deep-link's
+        // ContentProvider auto-init. No handleDeepLinkIntent() or onNewIntent() override needed.
         setContent {
             App()
         }

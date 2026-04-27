@@ -13,23 +13,23 @@ import org.w3c.dom.events.EventListener
 enum class BrowserRoutingMode { HASH, HISTORY }
 
 /**
- * Browser (JS) entry point for deep link handling.
- *
- * Call once at app startup. Parses the current URL immediately, then listens
- * for subsequent navigation events.
- *
- * ## Usage
- *
- * ```kotlin
- * fun main() {
- *     DeepLinkHandler.initBrowser(BrowserRoutingMode.HASH)
- *     // start your Compose Web app...
- * }
- * ```
- *
- * See `docs/WEB.md` for routing mode selection guidance.
+ * Auto-registers browser listeners at module load time (HASH mode default).
+ * Runs before any consumer code via the Kotlin/JS module IIFE.
+ * The SSR guard prevents crashes in Node.js where `window` is undefined.
+ * Consumers who need HISTORY mode call [initBrowser] with [BrowserRoutingMode.HISTORY] explicitly.
  */
+@Suppress("unused")
+private val deepLinkAutoInit: Unit = run {
+    if (js("typeof window !== 'undefined' && typeof window.location !== 'undefined'") as Boolean) {
+        DeepLinkHandler.initBrowser(BrowserRoutingMode.HASH)
+    }
+}
+
 fun DeepLinkHandler.initBrowser(mode: BrowserRoutingMode = BrowserRoutingMode.HASH) {
+    // Guard: prevent double-registration if deepLinkAutoInit already ran or consumer calls this explicitly.
+    if (browserInitialized) return
+    browserInitialized = true
+
     // Handle current URL on init
     parseBrowserUrl(mode)
 
