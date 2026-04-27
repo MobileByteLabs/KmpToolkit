@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   pr-check:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/pr-check-kmp.yml@v1.0.3
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/pr-check-kmp.yml@v1.0.4
     with:
       module-pattern: 'cmp-'
       java-version: '21'
