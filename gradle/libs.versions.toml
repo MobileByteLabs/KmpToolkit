@@ -27,7 +27,7 @@ navigation = "2.9.2"
 
 # AndroidX
 androidx-activityCompose = "1.12.2"
-androidx-lifecycle = "2.9.6"
+androidx-lifecycle = "2.10.0"
 playAppUpdate = "2.1.0"
 
 [libraries]
