@@ -1,61 +1,56 @@
 # KMP Toolkit
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmp-clipboard)](https://central.sonatype.com/search?q=io.github.mobilebytelabs)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-clipboard)](https://central.sonatype.com/search?q=io.github.mobilebytelabs)
 [![CI](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.2.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Cross-platform utilities for Kotlin Multiplatform. Zero configuration, works immediately on all platforms.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Modules](#modules)
-- [Features](#features)
-- [Platform Support](#platform-support)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Installation
-
-KMP Toolkit is available as modular libraries. Import only what you need:
-
-```kotlin
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            // All modules share the same version
-            val kmptoolkit = "2.1.0"
-
-            implementation("io.github.mobilebytelabs:kmp-clipboard:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:kmp-bubble:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:kmp-toast:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:kmp-in-app-update:$kmptoolkit")
-        }
-    }
-}
-```
-
-**No setup required!** All libraries automatically initialize on all platforms.
+A collection of production-ready Kotlin Multiplatform libraries — one dependency per feature, works out of the box on every platform.
 
 ## Modules
 
 | Module | Artifact | Description | Version |
 |--------|----------|-------------|:-------:|
-| **kmp-clipboard** | `io.github.mobilebytelabs:kmp-clipboard` | Clipboard copy/paste/observe/monitor/URL detect | `2.1.0` |
-| **kmp-bubble** | `io.github.mobilebytelabs:kmp-bubble` | Bubbles, floating UI, notifications | `2.1.0` |
-| **kmp-toast** | `io.github.mobilebytelabs:kmp-toast` | Toast/Snackbar for Compose Multiplatform | `2.1.0` |
-| **kmp-in-app-update** | `io.github.mobilebytelabs:kmp-in-app-update` | In-app update checking | `2.1.0` |
-| **kmp-open-url** | `io.github.mobilebytelabs:kmp-open-url` | Cross-platform URL opening — browser, email, maps, phone, SMS, custom schemes | `3.2.1` |
+| [cmp-clipboard](#cmp-clipboard) | `io.github.mobilebytelabs:cmp-clipboard` | Copy, paste, observe, monitor, URL detect | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-bubble](#cmp-bubble) | `io.github.mobilebytelabs:cmp-bubble` | Floating UI, bubbles, and notifications | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-toast](#cmp-toast) | `io.github.mobilebytelabs:cmp-toast` | Toast / Snackbar for Compose Multiplatform | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-open-url](#cmp-open-url) | `io.github.mobilebytelabs:cmp-open-url` | Open URLs — browser, email, maps, phone, SMS | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-deep-link](#cmp-deep-link) | `io.github.mobilebytelabs:cmp-deep-link` | Deep link handling across all KMP targets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-in-app-update](#cmp-in-app-update) | `io.github.mobilebytelabs:cmp-in-app-update` | In-app update checking (GitHub / App Store / Play) | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-remote-config](#cmp-remote-config) | `io.github.mobilebytelabs:cmp-remote-config` | Remote config and feature flags | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-product-tickets](#cmp-product-tickets) | `io.github.mobilebytelabs:cmp-product-tickets` | In-app feedback and support tickets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 
-Each module is independently publishable and can be used standalone.
+## Installation
 
-## Features
+All modules are published to Maven Central. Add only what you need:
 
-### Clipboard
+```kotlin
+// build.gradle.kts
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            val kmptoolkit = "3.2.1"
 
-Unified clipboard API — copy, paste, observe, monitor, history, URL detect, all in one.
+            implementation("io.github.mobilebytelabs:cmp-clipboard:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-bubble:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-toast:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-open-url:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-deep-link:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-in-app-update:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-remote-config:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-product-tickets:$kmptoolkit")
+        }
+    }
+}
+```
+
+Each module is completely independent — import only what your project needs.
+
+---
+
+## cmp-clipboard
+
+Cross-platform clipboard utilities — copy, paste, observe, monitor, and URL detection.
 
 ```kotlin
 import com.mobilebytelabs.kmptoolkit.clipboard.*
@@ -63,90 +58,47 @@ import com.mobilebytelabs.kmptoolkit.clipboard.*
 val clipboard = ClipboardManager(ClipboardManagerConfig.Full)
 clipboard.start()
 
-// Sync & async operations
+// Read & write
 clipboard.copy("Hello!")
-val text = clipboard.pasteAsync()   // works on JS/Wasm too
+val text = clipboard.pasteAsync()
 
-// Auto-observing content
+// Observe changes
 clipboard.content.collect { println("Clipboard: $it") }
 
-// Clipboard history (newest first)
+// Clipboard history
 clipboard.history.collect { entries -> println("${entries.size} items") }
 
 // URL detection (Instagram, TikTok, YouTube, etc.)
 clipboard.urlDetections.collect { det -> println("${det.matcher.name}: ${det.url}") }
 
 clipboard.stop()
-
-// Clear clipboard
-Clipboard.clear()
 ```
 
-### Clipboard Observer
-
-Observe clipboard changes with automatic app foreground detection.
+**Clipboard Monitor** — continuous background monitoring with social media URL detection:
 
 ```kotlin
-import com.mobilebytelabs.kmptoolkit.clipboard.createClipboardObserver
-
-val observer = createClipboardObserver()
-observer.startObserving()
-
-// Collect changes via StateFlow
-observer.clipboardContent.collect { content ->
-    println("Clipboard changed: $content")
-}
-
-observer.stopObserving()
-```
-
-### Clipboard Monitor (NEW in v0.2.0)
-
-Continuous clipboard monitoring with social media URL detection, floating FAB overlay, and background worker trigger. InSaver-style clipboard service for all platforms.
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.clipboard.*
-import com.mobilebytelabs.kmptoolkit.clipboard.monitor.*
-
 val monitor = createClipboardMonitor()
-
-// Add social media URL matchers (Instagram, TikTok, YouTube, etc.)
 SocialMediaUrlMatchers.all().forEach { monitor.addUrlMatcher(it) }
-
-// Optional: filter to only process URLs
-monitor.addFilter(ClipboardFilter.urlOnly())
-
-// Start monitoring (Android: starts ForegroundService + notification)
 monitor.start(ClipboardMonitorConfig.SocialMediaDownloader)
 
-// React to detected URLs
 monitor.urlDetections.collect { detection ->
     println("${detection.matcher.name}: ${detection.url}")
-    // "Instagram: https://www.instagram.com/reel/ABC123/"
 }
 ```
 
-**Features:**
-- 10 built-in URL matchers (Instagram, TikTok, YouTube, Twitter, Facebook, Snapchat, Pinterest, Reddit, LinkedIn, Threads)
-- Android: ForegroundService with persistent notification + floating FAB overlay
-- Content filters (URL-only, min/max length, pattern exclusion)
-- Async clipboard API (`getFromClipboardAsync()` — works on JS/Wasm)
-- Background worker trigger (Android WorkManager integration)
-- Custom URL matchers for any service
-- Permission management (overlay, notifications)
+10 built-in URL matchers: Instagram, TikTok, YouTube, Twitter/X, Facebook, Snapchat, Pinterest, Reddit, LinkedIn, Threads.
 
-See [Clipboard Monitor Documentation](docs/CLIPBOARD_MONITOR.md) for full API reference.
+---
 
-### Bubble (Floating UI & Notifications)
+## cmp-bubble
 
-Cross-platform bubbles, floating overlays, and notifications. Standalone — works with or without clipboard.
+Cross-platform floating UI, bubbles, and notifications.
 
 ```kotlin
 import com.mobilebytelabs.kmptoolkit.bubble.*
 
 val bubble = createBubble()
 
-// Show notification with actions
 bubble.show(
     title = "Download Complete",
     message = "video.mp4 saved",
@@ -155,27 +107,21 @@ bubble.show(
         BubbleAction("Share") { shareFile() }
     )
 )
-
-// Open a screen via deep link
-bubble.showScreen(
-    title = "Quick Reply",
-    route = "myapp://chat/reply/123"
-)
 ```
 
-**Features:**
-- Android 30+: Bubbles API (no permission needed), falls back to notification on older versions
-- iOS: Local notification banners with up to 3 action buttons
-- macOS: UNUserNotificationCenter
-- JVM: System tray notifications
-- JS/Wasm: Browser Notification API
-- Deep link support, persistent/service modes, state observation via StateFlow
+| Platform | Implementation |
+|----------|---------------|
+| Android 10+ | Bubbles API |
+| Android <10 | Notification fallback |
+| iOS / macOS | UNUserNotificationCenter banners |
+| JVM | System tray |
+| JS / Wasm | Browser Notification API |
 
-See [Bubble Documentation](docs/BUBBLE.md) for full API reference.
+---
 
-### Toast/Snackbar (Compose Multiplatform)
+## cmp-toast
 
-Cross-platform toast notifications for Compose apps.
+Toast and Snackbar for Compose Multiplatform — zero setup.
 
 ```kotlin
 import com.mobilebytelabs.kmptoolkit.toast.*
@@ -185,39 +131,86 @@ fun MyScreen() {
     val toastState = rememberToastHostState()
     val scope = rememberCoroutineScope()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize()) {
         Button(onClick = {
             scope.launch {
                 toastState.showToast(
-                    message = "Hello!",
+                    message = "Saved!",
                     duration = ToastDuration.SHORT,
                     style = ToastStyle.SUCCESS
                 )
             }
-        }) {
-            Text("Show Toast")
-        }
+        }) { Text("Save") }
 
         ToastHost(hostState = toastState)
     }
 }
 ```
 
-**Features:**
-- Duration: SHORT (2s), MEDIUM (3.5s), LONG (5s), INDEFINITE
-- Position: TOP, CENTER, BOTTOM
-- Style: DEFAULT, SUCCESS, ERROR, WARNING, INFO
-- Action button support
-- Swipe to dismiss
+Durations: `SHORT` · `MEDIUM` · `LONG` · `INDEFINITE`
+Styles: `DEFAULT` · `SUCCESS` · `ERROR` · `WARNING` · `INFO`
+Positions: `TOP` · `CENTER` · `BOTTOM`
 
-### In-App Update
+---
 
-Check for app updates with GitHub Releases, Supabase, or custom backends.
+## cmp-open-url
+
+Open any URL cross-platform — browser, email, maps, phone, SMS, or custom schemes.
+
+```kotlin
+import com.mobilebytelabs.kmptoolkit.openurl.*
+
+UrlOpener.open("https://example.com")
+UrlOpener.open("mailto:hello@example.com")
+UrlOpener.open("tel:+1234567890")
+UrlOpener.open("geo:37.7749,-122.4194")
+UrlOpener.open("sms:+1234567890")
+```
+
+Works on Android, iOS, macOS, JVM, JS, Wasm — no platform configuration needed.
+
+---
+
+## cmp-deep-link
+
+Unified deep link handling across all KMP targets. Receives, parses, and routes deep links with a type-safe DSL.
+
+```kotlin
+import com.mobilebytelabs.kmptoolkit.deeplink.*
+
+// Receive links
+DeepLinkHandler.incoming.collect { link ->
+    println("${link.scheme}://${link.host}${link.path}")
+}
+
+// Type-safe route matching
+val parser = deepLinkParser {
+    route<ProductRoute>("/product/{id}")
+    route<ProfileRoute>("/user/{username}")
+}
+
+val match: ProductRoute? = parser.parse(deepLink)
+```
+
+**Platform setup** (one-time, consumer app):
+
+| Platform | Setup |
+|----------|-------|
+| Android | `ComponentActivity.handleDeepLinkIntent()` extension |
+| iOS | AppDelegate `openURL` / SwiftUI `.onOpenURL` |
+| macOS | AppKit URL event handler |
+| JVM | `DeepLinkHandler.handleLaunchArgs(args)` |
+| JS / Wasm | `DeepLinkHandler.initBrowser()` — auto-listens to `hashchange` + `popstate` |
+
+---
+
+## cmp-in-app-update
+
+Check for app updates from GitHub Releases, App Store, Play Store, or a custom backend.
 
 ```kotlin
 import com.mobilebytelabs.kmptoolkit.appupdate.*
 
-// Check for updates using GitHub Releases
 val config = AppUpdateConfig.builder()
     .github(owner = "YourOrg", repo = "YourApp")
     .build()
@@ -225,85 +218,112 @@ val config = AppUpdateConfig.builder()
 when (val result = AppUpdate.checkForUpdate(config)) {
     is UpdateResult.Success -> {
         if (result.updateInfo.isAvailable) {
-            // Update available!
             println("New version: ${result.updateInfo.latestVersion}")
         }
     }
     is UpdateResult.Error -> println("Error: ${result.message}")
-    is UpdateResult.NotSupported -> println("Not supported on this platform")
-    is UpdateResult.Cancelled -> println("Cancelled")
+    is UpdateResult.NotSupported -> println("Not supported")
 }
 ```
 
+---
+
+## cmp-remote-config
+
+Remote configuration and feature flags for KMP apps.
+
+```kotlin
+import com.mobilebytelabs.remoteconfig.*
+
+RemoteConfig.init(RemoteConfigConfig(url = "https://your-config-endpoint"))
+
+val isFeatureEnabled: Boolean = RemoteConfig.getBoolean("new_feature", default = false)
+val apiUrl: String = RemoteConfig.getString("api_url", default = "https://api.example.com")
+
+// Observe changes
+RemoteConfig.values.collect { config -> /* update UI */ }
+```
+
+---
+
+## cmp-product-tickets
+
+In-app feedback and support ticket system backed by Supabase — drop-in Compose UI included.
+
+```kotlin
+import com.mobilebytelabs.producttickets.config.ProductTicketsConfig
+import com.mobilebytelabs.producttickets.di.productTicketsModule
+
+// Initialize (once, at app start)
+ProductTicketsConfig.init(
+    supabaseUrl = "https://your-project.supabase.co",
+    supabaseAnonKey = "your-anon-key",
+    userId = currentUserId  // optional
+)
+
+// Koin DI
+startKoin { modules(productTicketsModule) }
+```
+
+Navigation (Compose):
+
+```kotlin
+productTicketsDestination(
+    onBackClick = { navController.popBackStack() },
+    onNavigateToCreateTicket = { type -> navController.navigateToCreateTicket(type) },
+    onNavigateToTicketDetail = { id -> navController.navigateToTicketDetail(id) }
+)
+createTicketDestination(onBackClick = { navController.popBackStack() })
+ticketDetailDestination(onBackClick = { navController.popBackStack() })
+```
+
+---
+
 ## Platform Support
 
-| Platform | Clipboard | Monitor | Bubble | Toast | In-App Update |
-|----------|:---------:|:-------:|:------:|:-----:|:-------------:|
-| Android | ✅ | ✅ Service+FAB | ✅ Bubbles/Notif | ✅ | ✅ (Play Store) |
-| iOS | ✅ | ✅ Foreground | ✅ Banner | ✅ | ✅ (App Store) |
-| macOS | ✅ | ✅ Full | ✅ Notification | ✅ | ✅ (App Store) |
-| JVM | ✅ | ✅ Full | ✅ Tray | ✅ | ✅ (Custom) |
-| Linux | ✅ | ✅ Polling | ❌ | ❌ | ✅ (Custom) |
-| Windows | ✅ | ✅ Polling | ❌ | ❌ | ✅ (Custom) |
-| JavaScript | ✅ | ✅ Async | ✅ Notif API | ❌ | ❌ |
-| WebAssembly | ✅ | ✅ Async | ✅ Notif API | ❌ | ❌ |
-| tvOS | ⚠️ | ❌ | ❌ | ❌ | ⚠️ |
-| watchOS | ⚠️ | ❌ | ❌ | ❌ | ⚠️ |
-
-**Legend:** ✅ Full support | ⚠️ Limited | ❌ Not supported
-
-## Documentation
-
-| Topic | Link |
-|-------|------|
-| **Features** | [Wiki Home](https://github.com/MobileByteLabs/KmpToolkit/wiki) |
-| Clipboard API | [Clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) |
-| Clipboard Monitor | [Clipboard Monitor](docs/CLIPBOARD_MONITOR.md) |
-| Bubble API | [Bubble](docs/BUBBLE.md) |
-| Toast API | [Toast](https://github.com/MobileByteLabs/KmpToolkit/wiki/Toast) |
-| In-App Update API | [In-App Update](https://github.com/MobileByteLabs/KmpToolkit/wiki/In-App-Update) |
-| **Development** | |
-| Getting Started | [Development Guide](https://github.com/MobileByteLabs/KmpToolkit/wiki/Development-Guide) |
-| Adding Features | [Adding New Features](https://github.com/MobileByteLabs/KmpToolkit/wiki/Adding-New-Features) |
+| Platform | clipboard | bubble | toast | open-url | deep-link | in-app-update | remote-config | product-tickets |
+|----------|:---------:|:------:|:-----:|:--------:|:---------:|:-------------:|:-------------:|:---------------:|
+| Android | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| iOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| macOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| JVM | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| JS | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Wasm | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Linux | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Windows | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
 ## Sample Apps
-
-The `samples/` directory contains example applications:
-
-| Sample | Description |
-|--------|-------------|
-| `sample-clipboard` | Clipboard + Observer + Toast integration |
-| `sample-in-app-update` | In-App Update demo with GitHub Releases |
-| `sample-open-url` | Open URL demo — browser, email, maps, phone, SMS, custom schemes |
-
-Run samples:
 
 ```bash
 # Desktop (JVM)
 ./gradlew :samples:sample-clipboard:composeApp:run
 ./gradlew :samples:sample-open-url:composeApp:run
+./gradlew :samples:sample-deep-link:composeApp:run
 
 # Android
 ./gradlew :samples:sample-clipboard:composeApp:installDebug
+./gradlew :samples:sample-in-app-update:composeApp:installDebug
 ```
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+1. Copy `cmp-library` as a template: `cp -r cmp-library cmp-your-feature`
+2. Follow `cmp-library/TEMPLATE_README.md`
+3. Add the module to `settings.gradle.kts`
+4. Add a sample app under `samples/`
 
-### Creating a New Library Module
-
-1. Copy the template module: `cp -r cmp-library cmp-your-feature`
-2. Follow instructions in `cmp-library/TEMPLATE_README.md`
-3. Add to `settings.gradle.kts`
-4. Create a sample app in `samples/`
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
 ## License
 
 ```
 Copyright 2025 MobileByteLabs
 
-Licensed under the Apache License, Version 2.0
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
 ```
 
 See [LICENSE](LICENSE) for details.
