@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ci-local.sh — Run CI checks locally before pushing.
-# Mirrors the exact task list that GitHub Actions (mbl-actionhub v1.0.3+) will run.
+# Mirrors mbl-actionhub v1.1.0 fast gate (quality + JVM tests + compile-all).
 #
 # Usage:
-#   ./scripts/ci-local.sh             # quality + JVM + Linux tests (fast, ~2 min)
-#   ./scripts/ci-local.sh --all       # + iOS Simulator (slow, ~10 min)
+#   ./scripts/ci-local.sh             # fast gate: quality + JVM + Linux + compile (~3 min)
+#   ./scripts/ci-local.sh --all       # + iOS Simulator slow gate (~15 min, pre-release only)
 #   ./scripts/ci-local.sh --module cmp-deep-link  # single module
 #   ./scripts/ci-local.sh --act       # run via act (requires Docker)
 

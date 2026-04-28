@@ -23,11 +23,11 @@ concurrency:
 
 jobs:
   ci:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.0.3
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.1.0
     with:
       module-pattern: 'cmp-'
       java-version: '21'
       java-distribution: 'zulu'
-      run-ios-tests: true
-      run-linux-tests: true
       run-quality: true
+      # run-ios-tests / run-linux-tests omitted — defaults to false (fast gate)
+      # Add run-ios-tests: true on release branches or nightly scheduled runs
