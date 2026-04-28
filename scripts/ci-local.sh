@@ -25,4 +25,6 @@ if [ ! -f "$FRAMEWORK_CI" ]; then
   exit 1
 fi
 
-exec bash "$FRAMEWORK_CI" --project "$(git rev-parse --show-toplevel)" "$@"
+# Project root = one level up from scripts/ (reliable, no git dependency)
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+exec bash "$FRAMEWORK_CI" --project "$PROJECT_DIR" "$@"
