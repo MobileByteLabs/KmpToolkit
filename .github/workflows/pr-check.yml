@@ -1,5 +1,6 @@
 # PR Check Workflow — fast gate on pull requests
-# Runs quality + JVM + Linux tests on changed modules only (iOS skipped for speed)
+# Runs quality + JVM tests on changed modules only (iOS/Linux skipped for speed).
+# Full build (all modules) runs on push to development/main via gradle.yml.
 
 name: PR Check
 
@@ -16,10 +17,11 @@ concurrency:
 
 jobs:
   pr-check:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/pr-check-kmp.yml@v1.0.3
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.1.1
     with:
       module-pattern: 'cmp-'
       java-version: '21'
       java-distribution: 'zulu'
+      run-quality: true
       run-ios-tests: false
-      run-linux-tests: true
+      run-linux-tests: false
