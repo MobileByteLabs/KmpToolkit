@@ -99,7 +99,6 @@ kotlin {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
     signAllPublications()
 
     coordinates(group.toString(), "cmp-remote-config", version.toString())

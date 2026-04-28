@@ -89,7 +89,6 @@ kotlin {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
     signAllPublications()
 
     coordinates(group.toString(), "cmp-product-tickets", version.toString())

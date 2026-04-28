@@ -97,7 +97,6 @@ kotlin {
 // MAVEN CENTRAL PUBLISHING CONFIGURATION
 // ============================================================================
 mavenPublishing {
-    publishToMavenCentral()
     signAllPublications()
 
     coordinates(group.toString(), "cmp-bubble", version.toString())

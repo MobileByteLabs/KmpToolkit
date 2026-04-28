@@ -141,7 +141,6 @@ kotlin {
 // copying this module to create a new library.
 // ============================================================================
 mavenPublishing {
-    publishToMavenCentral()
     signAllPublications()
 
     coordinates(group.toString(), "kmp-template", version.toString())
