@@ -145,8 +145,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-deep-link", version.toString())
-
     pom {
         name = "CMP Deep Link"
         description =

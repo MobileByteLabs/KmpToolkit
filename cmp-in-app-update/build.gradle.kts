@@ -137,8 +137,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-in-app-update", version.toString())
-
     pom {
         name = "CMP In-App Update"
         description =

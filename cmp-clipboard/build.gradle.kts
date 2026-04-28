@@ -142,8 +142,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-clipboard", version.toString())
-
     pom {
         name = "CMP Clipboard"
         description = "Cross-platform clipboard utilities for Kotlin Multiplatform"

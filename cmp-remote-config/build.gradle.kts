@@ -101,8 +101,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-remote-config", version.toString())
-
     pom {
         name = "CMP Remote Config"
         description = "Cross-platform remote config and messaging module for KMP apps"

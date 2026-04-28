@@ -143,8 +143,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "kmp-template", version.toString())
-
     pom {
         name = "KMP Template Library"
         description =

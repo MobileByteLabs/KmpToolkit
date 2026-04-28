@@ -84,8 +84,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-toast", version.toString())
-
     pom {
         name = "CMP Toast"
         description = "Cross-platform toast/snackbar for Compose Multiplatform"

@@ -99,8 +99,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-bubble", version.toString())
-
     pom {
         name = "CMP Bubble"
         description = "Cross-platform floating UI, bubbles, and notifications for Kotlin Multiplatform"

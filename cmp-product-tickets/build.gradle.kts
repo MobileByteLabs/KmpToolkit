@@ -91,8 +91,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-product-tickets", version.toString())
-
     pom {
         name = "CMP Product Tickets"
         description =

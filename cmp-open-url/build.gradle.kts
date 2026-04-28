@@ -129,8 +129,6 @@ kotlin {
 mavenPublishing {
     signAllPublications()
 
-    coordinates(group.toString(), "cmp-open-url", version.toString())
-
     pom {
         name = "CMP Open URL"
         description =
