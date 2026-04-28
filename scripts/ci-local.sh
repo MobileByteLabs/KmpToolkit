@@ -17,7 +17,7 @@ while [ "$DIR" != "/" ]; do
   DIR="$(dirname "$DIR")"
 done
 
-FRAMEWORK_CI="${DIR}/.claude-runtime/scripts/ci-local.sh"
+FRAMEWORK_CI="${DIR}/layers/ci/scripts/ci-local.sh"
 
 if [ ! -f "$FRAMEWORK_CI" ]; then
   echo "  [ERROR] Framework ci-local.sh not found at: $FRAMEWORK_CI"
