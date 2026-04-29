@@ -26,11 +26,13 @@ internal interface ProductTicketsService {
 internal class ProductTicketsServiceImpl : ProductTicketsService {
 
     private val client get() = ProductTicketsClient.instance
+    private val boardType get() = ProductTicketsConfig.boardType
 
     override suspend fun getPublicTickets(): List<UserTicket> = try {
         client.postgrest[TABLE]
             .select {
                 filter {
+                    eq("board_type", boardType)
                     eq("is_private", false)
                     and {
                         neq("status", "completed")
@@ -51,6 +53,7 @@ internal class ProductTicketsServiceImpl : ProductTicketsService {
         client.postgrest[TABLE]
             .select {
                 filter {
+                    eq("board_type", boardType)
                     eq("is_private", false)
                     isIn("status", listOf("completed", "resolved", "implemented"))
                 }
@@ -68,6 +71,7 @@ internal class ProductTicketsServiceImpl : ProductTicketsService {
             client.postgrest[TABLE]
                 .select {
                     filter {
+                        eq("board_type", boardType)
                         eq("is_private", true)
                         eq("user_id", userId)
                     }
@@ -84,6 +88,7 @@ internal class ProductTicketsServiceImpl : ProductTicketsService {
         client.postgrest[TABLE]
             .select {
                 filter {
+                    eq("board_type", boardType)
                     eq("id", ticketId)
                 }
             }
