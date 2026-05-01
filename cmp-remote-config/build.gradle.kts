@@ -26,6 +26,7 @@ kotlin {
             libs.versions.android.minSdk
                 .get()
                 .toInt()
+        androidResources.enable = true
     }
 
     iosX64()
