@@ -19,6 +19,8 @@ A collection of production-ready Kotlin Multiplatform libraries — one dependen
 | [cmp-in-app-update](#cmp-in-app-update) | `io.github.mobilebytelabs:cmp-in-app-update` | In-app update checking (GitHub / App Store / Play) | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 | [cmp-remote-config](#cmp-remote-config) | `io.github.mobilebytelabs:cmp-remote-config` | Remote config and feature flags | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 | [cmp-product-tickets](#cmp-product-tickets) | `io.github.mobilebytelabs:cmp-product-tickets` | In-app feedback and support tickets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-network-monitor](#cmp-network-monitor) | `io.github.mobilebytelabs:cmp-network-monitor` | Reactive network connectivity monitoring — all 21 KMP targets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-network-monitor-compose](#cmp-network-monitor-compose) | `io.github.mobilebytelabs:cmp-network-monitor-compose` | Compose Multiplatform extensions for network monitoring | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 
 ## Installation
 
@@ -39,6 +41,9 @@ kotlin {
             implementation("io.github.mobilebytelabs:cmp-in-app-update:$kmptoolkit")
             implementation("io.github.mobilebytelabs:cmp-remote-config:$kmptoolkit")
             implementation("io.github.mobilebytelabs:cmp-product-tickets:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-network-monitor:$kmptoolkit")
+            // Optional: Compose extensions for network monitoring
+            implementation("io.github.mobilebytelabs:cmp-network-monitor-compose:$kmptoolkit")
         }
     }
 }
@@ -279,18 +284,88 @@ ticketDetailDestination(onBackClick = { navController.popBackStack() })
 
 ---
 
+## cmp-network-monitor
+
+Reactive network connectivity monitoring for **all 21 KMP targets** — push-based on mobile, adaptive polling on desktop/native.
+
+```kotlin
+import io.github.mobilebytelabs.kmptoolkit.networkmonitor.*
+
+val monitor = createNetworkMonitor()
+
+// Observe connectivity
+monitor.isOnline.collect { online -> updateUI(online) }
+
+// Rich status (Available / Unavailable / CaptivePortal)
+monitor.networkStatus.collect { status ->
+    when (status) {
+        is NetworkStatus.Available -> println("Online via ${status.info.type}")
+        is NetworkStatus.CaptivePortal -> showLoginPrompt(status.redirectUrl)
+        is NetworkStatus.Unavailable -> showOfflineBanner()
+    }
+}
+
+// Extensions
+monitor.requireOnline()                         // throws if offline
+monitor.ensureOnline()                          // suspends until online
+monitor.ifOnline { api.fetchData() }            // conditional execution
+monitor.retryOnReconnect(maxRetries = 3) { api.upload(payload) }
+```
+
+| Platform | API | Type |
+|----------|-----|------|
+| Android | ConnectivityManager + NetworkCallback | Push |
+| iOS/macOS/tvOS/watchOS | NWPathMonitor | Push |
+| JVM | NetworkInterface + HTTP HEAD + Adaptive Polling | Poll |
+| JS / WasmJS | navigator.onLine + events | Push |
+| Linux | /sys/class/net + Adaptive Polling | Poll |
+| Windows (MinGW) | Winsock2 + Adaptive Polling | Poll |
+
+See [docs/network-monitor/](docs/network-monitor/) for full setup guide.
+
+---
+
+## cmp-network-monitor-compose
+
+Compose Multiplatform extensions for `cmp-network-monitor` — auto UI switching, offline banners, and CompositionLocal support.
+
+```kotlin
+import io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.*
+
+// Auto-switch between online/offline UI
+NetworkAwareContent(
+    onlineContent = { MainContent() },
+    offlineContent = { OfflinePlaceholder() },
+    captivePortalContent = { portal -> CaptivePortalBanner(portal.redirectUrl) },
+)
+
+// Animated offline banner
+ConnectivityBanner()
+
+// Scoped monitor with auto-cleanup
+val monitor = rememberScopedNetworkMonitor()
+val isOnline by monitor.collectIsOnlineAsState()
+```
+
+Supports: Android, iOS, macOS, JVM, JS, WasmJS.
+
+---
+
 ## Platform Support
 
-| Platform | clipboard | bubble | toast | open-url | deep-link | in-app-update | remote-config | product-tickets |
-|----------|:---------:|:------:|:-----:|:--------:|:---------:|:-------------:|:-------------:|:---------------:|
-| Android | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| iOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| macOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| JVM | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| JS | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Wasm | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Linux | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Windows | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Platform | clipboard | bubble | toast | open-url | deep-link | in-app-update | remote-config | product-tickets | network-monitor | network-monitor-compose |
+|----------|:---------:|:------:|:-----:|:--------:|:---------:|:-------------:|:-------------:|:---------------:|:---------------:|:----------------------:|
+| Android | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| iOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| macOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| JVM | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| JS | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| Wasm | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| Linux | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Windows | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| tvOS | — | — | — | — | — | — | — | — | ✅ | ❌ |
+| watchOS | — | — | — | — | — | — | — | — | ✅ | ❌ |
+| WasmWASI | — | — | — | — | — | — | — | — | ✅ | ❌ |
 
 ## Sample Apps
 
@@ -299,10 +374,12 @@ ticketDetailDestination(onBackClick = { navController.popBackStack() })
 ./gradlew :samples:sample-clipboard:composeApp:run
 ./gradlew :samples:sample-open-url:composeApp:run
 ./gradlew :samples:sample-deep-link:composeApp:run
+./gradlew :samples:sample-network-monitor:composeApp:run
 
 # Android
 ./gradlew :samples:sample-clipboard:composeApp:installDebug
 ./gradlew :samples:sample-in-app-update:composeApp:installDebug
+./gradlew :samples:sample-network-monitor:composeApp:installDebug
 ```
 
 ## Contributing

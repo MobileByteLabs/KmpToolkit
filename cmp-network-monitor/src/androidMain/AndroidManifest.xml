@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application>
+        <!--
+        NetworkMonitorInitProvider automatically initializes the network monitor
+        when the app starts. This allows users to call createNetworkMonitor()
+        directly without any setup code.
+
+        The provider has no authority as it doesn't serve any content -
+        it exists solely to get the application context at startup.
+        -->
+        <provider
+            android:name="io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorInitProvider"
+            android:authorities="${applicationId}.kmptoolkit.networkmonitor.init"
+            android:exported="false"
+            android:initOrder="99" />
+    </application>
+
+</manifest>

@@ -1,5 +1,5 @@
 [versions]
-agp = "8.11.2"
+agp = "8.12.3"
 kotlin = "2.3.0"
 compose-multiplatform = "1.10.3"
 material3 = "1.10.0-alpha05"
@@ -16,6 +16,7 @@ ktlint = "1.8.0"
 
 # Testing
 junit = "4.13.2"
+turbine = "1.2.0"
 coroutines = "1.10.2"
 supabase = "3.2.6"
 ktor = "3.2.1"
@@ -36,6 +37,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
 junit = { module = "junit:junit", version.ref = "junit" }
+app-cash-turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 # Detekt
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
@@ -91,6 +93,10 @@ multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", vers
 # Image Loading
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version = "3.2.0" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version = "3.2.0" }
+
+# KmpToolkit (for consumer reference — modules use project() internally)
+cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version = "3.2.1" }
+cmp-network-monitor-compose = { module = "io.github.mobilebytelabs:cmp-network-monitor-compose", version = "3.2.1" }
 
 [plugins]
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }

@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { /* granted or not — app continues either way */ }
+    ) { /* granted or not -- app continues either way */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
