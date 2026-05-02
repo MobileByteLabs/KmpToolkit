@@ -32,7 +32,7 @@ internal actual suspend fun platformDetectCaptivePortal(config: NetworkMonitorCo
 
         val task = session.dataTaskWithRequest(request) { _: NSData?, response: NSURLResponse?, error: NSError? ->
             if (error != null) {
-                cont.resume(CaptivePortalResult.DetectionFailed(error.localizedDescription ?: "Unknown error"))
+                cont.resume(CaptivePortalResult.DetectionFailed(error.localizedDescription))
                 return@dataTaskWithRequest
             }
 

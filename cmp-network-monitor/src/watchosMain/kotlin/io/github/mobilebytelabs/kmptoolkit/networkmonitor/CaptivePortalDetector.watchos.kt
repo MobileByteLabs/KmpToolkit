@@ -1,5 +1,6 @@
 package io.github.mobilebytelabs.kmptoolkit.networkmonitor
 
+import kotlinx.cinterop.convert
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.Foundation.NSData
 import platform.Foundation.NSError
@@ -14,6 +15,7 @@ import platform.Foundation.setHTTPMethod
 import platform.Foundation.setValue
 import kotlin.coroutines.resume
 
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 internal actual suspend fun platformDetectCaptivePortal(config: NetworkMonitorConfig): CaptivePortalResult =
     suspendCancellableCoroutine { cont ->
         val url = NSURL.URLWithString(config.validationUrl) ?: run {
@@ -32,7 +34,7 @@ internal actual suspend fun platformDetectCaptivePortal(config: NetworkMonitorCo
 
         val task = session.dataTaskWithRequest(request) { _: NSData?, response: NSURLResponse?, error: NSError? ->
             if (error != null) {
-                cont.resume(CaptivePortalResult.DetectionFailed(error.localizedDescription ?: "Unknown error"))
+                cont.resume(CaptivePortalResult.DetectionFailed(error.localizedDescription))
                 return@dataTaskWithRequest
             }
 
@@ -42,7 +44,7 @@ internal actual suspend fun platformDetectCaptivePortal(config: NetworkMonitorCo
                 return@dataTaskWithRequest
             }
 
-            val code = httpResponse.statusCode.toInt()
+            val code: Int = httpResponse.statusCode.convert()
             when {
                 code == 204 || code == 200 -> cont.resume(CaptivePortalResult.NoCaptivePortal)
 

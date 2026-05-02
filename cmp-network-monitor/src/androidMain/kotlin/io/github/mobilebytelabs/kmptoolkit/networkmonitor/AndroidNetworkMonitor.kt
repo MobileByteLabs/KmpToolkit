@@ -93,6 +93,7 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
     }
 
     /** Memory pressure callback — suppresses bandwidth updates under pressure (T102-T103). */
+    @Suppress("DEPRECATION")
     private val memoryCallback = object : ComponentCallbacks2 {
         override fun onTrimMemory(level: Int) {
             suppressBandwidthUpdates = level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW
@@ -100,7 +101,6 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
 
         override fun onConfigurationChanged(newConfig: Configuration) {}
 
-        @Suppress("DEPRECATION")
         override fun onLowMemory() {
             suppressBandwidthUpdates = true
         }
