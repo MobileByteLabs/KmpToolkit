@@ -21,13 +21,22 @@ artifact:  io.github.mobilebytelabs:cmp-network-monitor
 version:   1.0.0
 package:   io.github.mobilebytelabs.kmptoolkit.networkmonitor
 supabase:  false
-di:        false   # no DI module — factory function
+di:        false   # factory function (provideNetworkMonitor), no Koin module
 nav:       false   # no nav destinations
 config:    none    # zero configuration required (Android auto-init via ContentProvider)
+
+companion_module:
+  artifact:  io.github.mobilebytelabs:cmp-network-monitor-compose
+  package:   io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose
+  requires:  compose-multiplatform
 
 api:
   # Factory
   - createNetworkMonitor(config: NetworkMonitorConfig = NetworkMonitorConfig()): NetworkMonitor
+  - createScopedNetworkMonitor(scope: CoroutineScope, config): NetworkMonitor
+
+  # DI Factory
+  - provideNetworkMonitor(config: NetworkMonitorConfig? = null): NetworkMonitor
 
   # Interface: NetworkMonitor
   - isOnline: StateFlow<Boolean>
@@ -36,29 +45,84 @@ api:
   - currentStatus: NetworkStatus
   - close()
 
-  # Extensions
+  # Singleton Provider
+  - NetworkMonitorProvider.install(config): NetworkMonitor
+  - NetworkMonitorProvider.get(): NetworkMonitor
+  - NetworkMonitorProvider.getOrNull(): NetworkMonitor?
+  - NetworkMonitorProvider.reset()
+  - NetworkMonitorProvider.redundantInstallCount: Int
+
+  # Composite
+  - NetworkMonitor.plus(other): NetworkMonitor   # operator+
+  - CompositeNetworkMonitor(monitors: List<NetworkMonitor>)
+
+  # Extensions — State Queries
   - NetworkMonitor.requireOnline()
   - NetworkMonitor.ensureOnline()
   - NetworkMonitor.withNetworkGuard(block): T
   - NetworkMonitor.awaitOnline(): NetworkInfo
-  - NetworkMonitor.onlyWhileOnline(): Flow<NetworkStatus>
-  - NetworkMonitor.retryOnReconnect(maxRetries, action): T
+  - NetworkMonitor.awaitConnectionType(type): NetworkInfo
   - NetworkMonitor.isConnectedVia(type): Boolean
+  - NetworkMonitor.ifOnline(block): T?
+  - NetworkMonitor.ifOffline(block): T?
+  - NetworkMonitor.currentQuality: NetworkQuality
+
+  # Extensions — Flow Operators
+  - NetworkMonitor.onlyWhileOnline(): Flow<NetworkStatus>
+  - NetworkMonitor.isOnlineDebounced(timeoutMs): Flow<Boolean>
+  - NetworkMonitor.debouncedNetworkStatus(timeoutMs): Flow<NetworkStatus>
+  - NetworkMonitor.networkQuality(): Flow<NetworkQuality>
+  - Flow<T>.withNetworkState(monitor): Flow<Pair<T, NetworkStatus>>
+  - Flow<T>.onlyWhileOnline(monitor): Flow<T>
+
+  # Extensions — Retry & Lifecycle
+  - NetworkMonitor.retryOnReconnect(maxRetries, timeoutMs, action): T
+  - NetworkMonitor.closeGracefully()
+  - NetworkMonitor.measureLatency(): Long
+  - NetworkMonitor.addCallback(scope, onOnline, onOffline): CallbackHandle
+  - NetworkMonitor.detectCaptivePortal(): CaptivePortalResult
+
+  # Extensions — Bandwidth
+  - NetworkMonitor.bandwidthSamples(): Flow<BandwidthSample>
+  - NetworkMonitor.currentBandwidth: BandwidthSample?
+  - NetworkMonitor.hasSufficientBandwidth(minKbps): Boolean
 
   # Testing
   - FakeNetworkMonitor(initialOnline, initialStatus)
+    - setOnline(online: Boolean)
+    - setNetworkStatus(status: NetworkStatus)
+    - simulateHandoff(from: NetworkType, to: NetworkType)
+    - simulateFlicker(info: NetworkInfo)
+    - resetState(online: Boolean)
+    - statusHistory: List<NetworkStatus>
+    - eventHistory: List<NetworkChangeEvent>
+    - updateCount: Int
+    - isClosed: Boolean
 
   # Types
-  - NetworkStatus (Available, Unavailable)
+  - NetworkStatus (Available, Unavailable, CaptivePortal)
   - NetworkInfo (type, isMetered, downstreamBandwidthKbps, upstreamBandwidthKbps)
-  - NetworkType (WiFi, Cellular, Ethernet, VPN, Bluetooth, Unknown)
-  - NetworkChangeEvent (Connected, Disconnected, TypeChanged, MeteredChanged)
-  - NetworkMonitorConfig (pollIntervalMs, validationUrl, validationTimeoutMs, validationStrategy)
+  - NetworkType (WiFi, Cellular, FiveG, Ethernet, VPN, Bluetooth, Unknown)
+  - NetworkChangeEvent (Connected, Disconnected, TypeChanged, MeteredChanged, CaptivePortalDetected, CaptivePortalResolved)
+  - NetworkQuality (Excellent, Good, Fair, Poor, Offline)
+  - NetworkConstraint (predicate system with allOf() combinator)
+  - NetworkMonitorConfig (pollIntervalMs, validationUrl, validationTimeoutMs, validationStrategy, backgroundPollIntervalMs, maxValidationBackoffMs, captivePortalDetection)
   - ValidationStrategy (NativeOnly, HttpOnly, NativeThenHttp)
+  - CaptivePortalResult (NoCaptivePortal, CaptivePortalDetected, DetectionFailed)
+  - BandwidthSample (downstreamKbps, upstreamKbps, timestampMs)
+  - CallbackHandle (fun interface with close())
+  - RetryPolicy (maxRetries, initialDelayMs, maxDelayMs, backoffMultiplier)
   - NetworkUnavailableException
 
   # Android-only
   - setApplicationContext(context: Context)  # fallback if ContentProvider disabled
+  - LifecycleNetworkObserver(monitor, onStatusChanged)  # start(scope)/stop()
+
+  # Compose module (cmp-network-monitor-compose)
+  - NetworkAwareContent(monitor, onlineContent, offlineContent, captivePortalContent)
+  - ConnectivityBanner(monitor, modifier)
+  - rememberNetworkMonitor(config): NetworkMonitor
+  - LocalNetworkMonitor: ProvidableCompositionLocal<NetworkMonitor?>
 ```
 
 ---
@@ -84,9 +148,19 @@ api:
 |  Check: used in commonMain.dependencies                      |
 |  Fix:   Auto-insert correct entries                          |
 |  Result: PASS / FIXED / BLOCKED                              |
-+------------------------------+-------------------------------+
-                               | PASS
-                               v
++-------------------------------+------------------------------+
+                                | PASS
+                                v
++--------------------------------------------------------------+
+|  GATE 1b: Compose Module (optional)                          |
+|  If consuming app uses Compose Multiplatform:                |
+|  Check: cmp-network-monitor-compose in libs.versions.toml    |
+|  Check: used in commonMain.dependencies                      |
+|  Fix:   Auto-insert correct entries                          |
+|  Result: PASS / FIXED / SKIPPED                              |
++-------------------------------+------------------------------+
+                                | PASS
+                                v
          SYNC COMPLETE (Gate 2 + Gate 3 not applicable)
 ```
 
@@ -119,6 +193,16 @@ cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor",
 implementation(libs.cmp.network.monitor)
 ```
 
+### Gate 1b: Compose Module (optional)
+```toml
+# libs.versions.toml [libraries] — only if app uses Compose
+cmp-network-monitor-compose = { module = "io.github.mobilebytelabs:cmp-network-monitor-compose", version.ref = "cmp-network-monitor" }
+```
+```kotlin
+// build.gradle.kts commonMain.dependencies — only if app uses Compose
+implementation(libs.cmp.network.monitor.compose)
+```
+
 ---
 
 ## Gate 2 + Gate 3: Not Applicable
@@ -136,9 +220,10 @@ After Gate 1 passes, sync is complete.
 ## --check (Dry Run)
 
 ```
-GATE 1  Gradle   [status]  cmp-network-monitor:1.0.0
-GATE 2  Supabase N/A
-GATE 3  Wiring   N/A
+GATE 1   Gradle     [status]  cmp-network-monitor:1.0.0
+GATE 1b  Compose    [status]  cmp-network-monitor-compose (optional)
+GATE 2   Supabase   N/A
+GATE 3   Wiring     N/A
 ```
 
 ---
@@ -149,9 +234,10 @@ GATE 3  Wiring   N/A
 +==================================================================+
 |  /sync-network-monitor — COMPLETE                                 |
 +==================================================================+
-|  GATE 1  Gradle     [OK]  cmp-network-monitor:1.0.0              |
-|  GATE 2  Supabase   N/A   no backend                             |
-|  GATE 3  Wiring     N/A   zero-config module                     |
+|  GATE 1   Gradle     [OK]  cmp-network-monitor:1.0.0             |
+|  GATE 1b  Compose    [OK]  cmp-network-monitor-compose (optional) |
+|  GATE 2   Supabase   N/A   no backend                            |
+|  GATE 3   Wiring     N/A   zero-config module                    |
 +------------------------------------------------------------------+
 |  Docs: docs/network-monitor/SETUP.md                             |
 +==================================================================+

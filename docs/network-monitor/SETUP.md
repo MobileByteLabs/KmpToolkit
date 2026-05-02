@@ -9,12 +9,17 @@ cmp-network-monitor = "1.0.0"
 
 [libraries]
 cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version.ref = "cmp-network-monitor" }
+
+# Optional: Compose extensions
+cmp-network-monitor-compose = { module = "io.github.mobilebytelabs:cmp-network-monitor-compose", version.ref = "cmp-network-monitor" }
 ```
 
 ```kotlin
 // build.gradle.kts (shared KMP module)
 commonMain.dependencies {
     implementation(libs.cmp.network.monitor)
+    // Optional: Compose extensions
+    implementation(libs.cmp.network.monitor.compose)
 }
 ```
 
@@ -34,7 +39,7 @@ class MyApp : Application() {
 }
 ```
 
-## 3. Usage
+## 3. Basic Usage
 
 ```kotlin
 // Create a monitor (use as singleton or scoped)
@@ -51,38 +56,209 @@ scope.launch {
     }
 }
 
-// Extension functions
-monitor.requireOnline()                    // throws if offline
-monitor.ensureOnline()                     // suspends until online
-val data = monitor.withNetworkGuard { ... } // wait + execute
-val info = monitor.awaitOnline()           // get NetworkInfo
-monitor.isConnectedVia(NetworkType.WiFi)   // check type
+// Rich network status
+monitor.networkStatus.collect { status ->
+    when (status) {
+        is NetworkStatus.Available -> {
+            println("Type: ${status.info.type}")
+            println("Metered: ${status.info.isMetered}")
+        }
+        is NetworkStatus.CaptivePortal -> println("Captive portal: ${status.redirectUrl}")
+        is NetworkStatus.Unavailable -> println("Offline")
+    }
+}
 
 // Cleanup (for scoped usage)
 monitor.close()
 ```
 
-## 4. Testing
+## 4. Extension Functions
+
+```kotlin
+// Fail-fast
+monitor.requireOnline()                        // throws NetworkUnavailableException
+
+// Suspend until online
+monitor.ensureOnline()
+
+// Guard a network operation
+val data = monitor.withNetworkGuard { api.fetchData() }
+
+// Conditional execution
+val result = monitor.ifOnline { info -> api.fetch() }  // returns null if offline
+monitor.ifOffline { showCachedData() }                   // returns null if online
+
+// Retry on reconnect
+val result = monitor.retryOnReconnect(maxRetries = 3) { api.upload(payload) }
+
+// Check type
+if (monitor.isConnectedVia(NetworkType.WiFi)) { downloadLargeFile() }
+
+// Network quality
+monitor.networkQuality().collect { quality ->
+    when (quality) {
+        NetworkQuality.Excellent -> loadHighResImages()
+        NetworkQuality.Good -> loadStandardImages()
+        NetworkQuality.Fair -> loadThumbnails()
+        NetworkQuality.Poor -> showTextOnly()
+        NetworkQuality.Offline -> showCachedContent()
+    }
+}
+
+// Combine with data Flow
+dataFlow.withNetworkState(monitor).collect { (data, status) ->
+    if (status.isOnline) showData(data) else showOfflineBanner(data)
+}
+
+// Debounced (filters WiFi<->Cellular handoff flicker)
+monitor.isOnlineDebounced(300L).collect { online -> ... }
+
+// Measure latency
+val latencyMs = monitor.measureLatency()
+
+// Callback-style API
+val handle = monitor.addCallback(scope,
+    onOnline = { info -> log("Online: ${info.type}") },
+    onOffline = { log("Offline") },
+)
+handle.close() // stop receiving callbacks
+```
+
+## 5. Captive Portal Detection
+
+```kotlin
+val monitor = createNetworkMonitor(NetworkMonitorConfig {
+    captivePortalDetection = true
+})
+
+monitor.networkStatus.collect { status ->
+    when (status) {
+        is NetworkStatus.CaptivePortal -> showLoginPrompt(status.redirectUrl)
+        is NetworkStatus.Available -> hideAllBanners()
+        is NetworkStatus.Unavailable -> showOfflineBanner()
+    }
+}
+```
+
+## 6. Composite Monitor
+
+```kotlin
+val wifiMonitor = createNetworkMonitor(config1)
+val cellularMonitor = createNetworkMonitor(config2)
+val combined = wifiMonitor + cellularMonitor
+
+// Reports online if either is online, picks best quality
+combined.isOnline.collect { ... }
+```
+
+## 7. DI Integration
+
+```kotlin
+// Koin
+val appModule = module {
+    single<NetworkMonitor> { provideNetworkMonitor(getOrNull()) }
+}
+
+// Hilt
+@Module @InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides @Singleton
+    fun provideMonitor(): NetworkMonitor = provideNetworkMonitor()
+}
+
+// Singleton Provider (manual)
+NetworkMonitorProvider.install()
+val monitor = NetworkMonitorProvider.get()
+```
+
+## 8. Android Lifecycle
+
+```kotlin
+class MyActivity : AppCompatActivity() {
+    private val observer = LifecycleNetworkObserver(monitor) { status ->
+        when (status) {
+            is NetworkStatus.Available -> hideOfflineBanner()
+            is NetworkStatus.Unavailable -> showOfflineBanner()
+            is NetworkStatus.CaptivePortal -> showCaptivePortalBanner()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        observer.start(lifecycleScope)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        observer.stop()
+    }
+}
+```
+
+## 9. Compose Multiplatform (cmp-network-monitor-compose)
+
+```kotlin
+// Provide monitor via CompositionLocal
+CompositionLocalProvider(LocalNetworkMonitor provides monitor) {
+    MyScreen()
+}
+
+// Use rememberNetworkMonitor
+val monitor = rememberNetworkMonitor()
+
+// NetworkAwareContent — auto-switches between online/offline UI
+NetworkAwareContent(
+    monitor = monitor,
+    onlineContent = { MainContent() },
+    offlineContent = { OfflinePlaceholder() },
+    captivePortalContent = { CaptivePortalBanner() },
+)
+
+// ConnectivityBanner — shows banner when offline
+ConnectivityBanner(monitor = monitor)
+```
+
+## 10. Testing
 
 ```kotlin
 import io.github.mobilebytelabs.kmptoolkit.networkmonitor.testing.FakeNetworkMonitor
 
 val fakeMonitor = FakeNetworkMonitor(initialOnline = true)
-fakeMonitor.setOnline(false)  // simulate offline
-fakeMonitor.setNetworkStatus(NetworkStatus.Available(
-    NetworkInfo(type = NetworkType.WiFi, isMetered = false)
-))
+
+// Simulate state changes
+fakeMonitor.setOnline(false)  // triggers Disconnected event
+fakeMonitor.setOnline(true)   // triggers Connected event
+
+// Simulate handoff
+fakeMonitor.simulateHandoff(from = NetworkType.WiFi, to = NetworkType.Cellular)
+
+// Simulate flicker
+fakeMonitor.simulateFlicker()
+
+// Assert on history
+assertEquals(3, fakeMonitor.updateCount)
+assertTrue(fakeMonitor.eventHistory.any { it is NetworkChangeEvent.Disconnected })
+
+// Reset between tests
+fakeMonitor.resetState(online = true)
+
+// Verify cleanup
+viewModel.onCleared()
+assertTrue(fakeMonitor.isClosed)
 ```
 
-## 5. Configuration (optional)
+## 11. Configuration (optional)
 
 ```kotlin
 val monitor = createNetworkMonitor(
-    NetworkMonitorConfig(
-        pollIntervalMs = 5_000L,                        // JVM/Linux/Windows only
-        validationUrl = "https://example.com/generate_204",
-        validationTimeoutMs = 3_000L,
-        validationStrategy = ValidationStrategy.NativeThenHttp,
-    )
+    NetworkMonitorConfig {
+        pollIntervalMs = 5_000L                        // JVM/Linux/Windows only
+        validationUrl = "https://example.com/generate_204"
+        validationTimeoutMs = 3_000L
+        validationStrategy = ValidationStrategy.NativeThenHttp
+        backgroundPollIntervalMs = 30_000L             // slow polling when idle
+        maxValidationBackoffMs = 60_000L               // max backoff on failure
+        captivePortalDetection = true                  // opt-in captive portal
+    }
 )
 ```

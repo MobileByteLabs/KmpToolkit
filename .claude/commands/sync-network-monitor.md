@@ -2,8 +2,8 @@
 
 Alias for `/lib-sync cmp-network-monitor`.
 
-Syncs `cmp-network-monitor` into the active consuming app — verify-gated Gradle check only
-(zero-config module: no Supabase, no DI, no nav wiring needed).
+Syncs `cmp-network-monitor` (+ optional `cmp-network-monitor-compose`) into the active
+consuming app — verify-gated Gradle check only (zero-config module: no Supabase, no DI, no nav wiring needed).
 
 ## Usage
 
