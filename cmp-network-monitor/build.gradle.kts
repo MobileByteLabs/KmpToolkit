@@ -60,10 +60,9 @@ kotlin {
     tvosSimulatorArm64()
 
     // ========================================================================
-    // watchOS Targets
+    // watchOS Targets (arm32 removed — deprecated by Kotlin, Apple requires 64-bit since watchOS 7)
     // ========================================================================
     watchosX64()
-    watchosArm32()
     watchosArm64()
     watchosSimulatorArm64()
     watchosDeviceArm64()
