@@ -25,7 +25,7 @@ Use `/sync-network-monitor` (or `/lib-sync cmp-network-monitor`) to automaticall
       v
 +-------------------------------------------------------------+
 |  GATE 1: Gradle Dependency                                   |
-|  Check: cmp-network-monitor:1.0.0 in libs.versions.toml     |
+|  Check: cmp-network-monitor:3.2.1 in libs.versions.toml     |
 |  Check: used in commonMain.dependencies                      |
 |  Fix:   Auto-insert correct entries                          |
 |  Result: PASS / FIXED / BLOCKED                              |
@@ -54,7 +54,7 @@ Use `/sync-network-monitor` (or `/lib-sync cmp-network-monitor`) to automaticall
 +==================================================================+
 |  /sync-network-monitor — COMPLETE                                 |
 +==================================================================+
-|  GATE 1   Gradle     [OK]  cmp-network-monitor:1.0.0             |
+|  GATE 1   Gradle     [OK]  cmp-network-monitor:3.2.1             |
 |  GATE 1b  Compose    [OK]  cmp-network-monitor-compose (optional) |
 |  GATE 2   Supabase   N/A   no backend                            |
 |  GATE 3   Wiring     N/A   zero-config module                    |

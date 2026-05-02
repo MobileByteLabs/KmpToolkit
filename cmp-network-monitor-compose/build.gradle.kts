@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.vanniktech.mavenPublish)
+    alias(libs.plugins.binaryCompatibilityValidator)
 }
 
 // ============================================================================
@@ -89,6 +90,8 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.app.cash.turbine)
         }
     }
 }

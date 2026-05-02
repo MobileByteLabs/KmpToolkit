@@ -18,7 +18,7 @@ Gate 1: Gradle dependency. Gate 2: N/A. Gate 3: N/A (zero-config module).
 ```yaml
 module:    cmp-network-monitor
 artifact:  io.github.mobilebytelabs:cmp-network-monitor
-version:   1.0.0
+version:   3.2.1
 package:   io.github.mobilebytelabs.kmptoolkit.networkmonitor
 supabase:  false
 di:        false   # factory function (provideNetworkMonitor), no Koin module
@@ -119,10 +119,11 @@ api:
   - LifecycleNetworkObserver(monitor, onStatusChanged)  # start(scope)/stop()
 
   # Compose module (cmp-network-monitor-compose)
-  - NetworkAwareContent(monitor, onlineContent, offlineContent, captivePortalContent)
-  - ConnectivityBanner(monitor, modifier)
+  - NetworkAwareContent(monitor, offlineContent, captivePortalContent, onlineContent)
+  - ConnectivityBanner(modifier, monitor, message, backgroundColor, contentColor)
   - rememberNetworkMonitor(config): NetworkMonitor
-  - LocalNetworkMonitor: ProvidableCompositionLocal<NetworkMonitor?>
+  - rememberScopedNetworkMonitor(config): NetworkMonitor
+  - LocalNetworkMonitor: ProvidableCompositionLocal<NetworkMonitor>
 ```
 
 ---
@@ -144,7 +145,7 @@ api:
         v
 +--------------------------------------------------------------+
 |  GATE 1: Gradle Dependency                                   |
-|  Check: cmp-network-monitor:1.0.0 in libs.versions.toml     |
+|  Check: cmp-network-monitor:3.2.1 in libs.versions.toml     |
 |  Check: used in commonMain.dependencies                      |
 |  Fix:   Auto-insert correct entries                          |
 |  Result: PASS / FIXED / BLOCKED                              |
@@ -172,7 +173,7 @@ api:
 ```
 1. Glob: gradle/libs.versions.toml
    -> search "cmp-network-monitor"
-   -> if found: verify version = 1.0.0
+   -> if found: verify version = 3.2.1
    -> if missing or wrong: mark for fix
 
 2. Glob: **/build.gradle.kts (KMP shared module)
@@ -183,7 +184,7 @@ api:
 ### Fix
 ```toml
 # libs.versions.toml [versions]
-cmp-network-monitor = "1.0.0"
+cmp-network-monitor = "3.2.1"
 
 # libs.versions.toml [libraries]
 cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version.ref = "cmp-network-monitor" }
@@ -220,7 +221,7 @@ After Gate 1 passes, sync is complete.
 ## --check (Dry Run)
 
 ```
-GATE 1   Gradle     [status]  cmp-network-monitor:1.0.0
+GATE 1   Gradle     [status]  cmp-network-monitor:3.2.1
 GATE 1b  Compose    [status]  cmp-network-monitor-compose (optional)
 GATE 2   Supabase   N/A
 GATE 3   Wiring     N/A
@@ -234,7 +235,7 @@ GATE 3   Wiring     N/A
 +==================================================================+
 |  /sync-network-monitor — COMPLETE                                 |
 +==================================================================+
-|  GATE 1   Gradle     [OK]  cmp-network-monitor:1.0.0             |
+|  GATE 1   Gradle     [OK]  cmp-network-monitor:3.2.1             |
 |  GATE 1b  Compose    [OK]  cmp-network-monitor-compose (optional) |
 |  GATE 2   Supabase   N/A   no backend                            |
 |  GATE 3   Wiring     N/A   zero-config module                    |
@@ -247,6 +248,6 @@ GATE 3   Wiring     N/A
 
 ## How to Evolve This File
 
-1. **Version bump** -> update `version: 1.0.0` above
+1. **Version bump** -> update `version: 3.2.1` above
 2. **New API method** -> update `api:` section
 3. **If DI added** -> add Gate 3 wiring steps

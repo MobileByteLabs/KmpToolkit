@@ -45,6 +45,7 @@ kotlin {
 
             // CMP Network Monitor library
             implementation(project(":cmp-network-monitor"))
+            implementation(project(":cmp-network-monitor-compose"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

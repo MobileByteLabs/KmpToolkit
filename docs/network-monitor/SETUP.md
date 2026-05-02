@@ -5,7 +5,7 @@
 ```toml
 # gradle/libs.versions.toml
 [versions]
-cmp-network-monitor = "1.0.0"
+cmp-network-monitor = "3.2.1"
 
 [libraries]
 cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version.ref = "cmp-network-monitor" }
@@ -197,6 +197,8 @@ class MyActivity : AppCompatActivity() {
 
 ## 9. Compose Multiplatform (cmp-network-monitor-compose)
 
+**Platform support**: Android, iOS, macOS, JVM, JS, WasmJS. tvOS, watchOS, Linux, Windows, and WasmWASI are not supported by Compose Multiplatform — use the core `cmp-network-monitor` module directly on those platforms.
+
 ```kotlin
 // Provide monitor via CompositionLocal
 CompositionLocalProvider(LocalNetworkMonitor provides monitor) {
@@ -211,7 +213,7 @@ NetworkAwareContent(
     monitor = monitor,
     onlineContent = { MainContent() },
     offlineContent = { OfflinePlaceholder() },
-    captivePortalContent = { CaptivePortalBanner() },
+    captivePortalContent = { portal -> CaptivePortalBanner(portal.redirectUrl) },
 )
 
 // ConnectivityBanner — shows banner when offline

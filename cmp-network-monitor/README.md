@@ -41,7 +41,7 @@ Reactive network connectivity monitoring for **Kotlin Multiplatform** — StateF
 
 ```toml
 [versions]
-cmp-network-monitor = "1.0.0"
+cmp-network-monitor = "3.2.1"
 
 [libraries]
 cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version.ref = "cmp-network-monitor" }

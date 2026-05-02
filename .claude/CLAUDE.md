@@ -1,6 +1,6 @@
 # KmpToolkit — Claude Context
 
-This file provides module context for the `/lib-sync` and `/sync-product-tickets` skills.
+This file provides module context for `/lib-sync`, `/sync-product-tickets`, and `/sync-network-monitor` skills.
 
 ## Rules (always active in this repo)
 
@@ -116,3 +116,69 @@ ticketDetailDestination(onBackClick = { navController.popBackStack() })
 | `featureWishlistDestination` | `productTicketsDestination` |
 | `com.mobilebytelabs.usertickets` | `com.mobilebytelabs.producttickets` |
 | `/sync-user-tickets` | `/sync-product-tickets` |
+
+---
+
+## cmp-network-monitor
+
+### Module Identity
+
+```yaml
+artifact:       io.github.mobilebytelabs:cmp-network-monitor
+version:        3.2.1
+package:        io.github.mobilebytelabs.kmptoolkit.networkmonitor
+supabase:       false
+di:             false   # factory function (provideNetworkMonitor), no Koin module
+nav:            false
+config:         none    # zero-config — Android auto-init via ContentProvider
+targets:        21 (all KMP targets)
+```
+
+### Key APIs
+
+| API | Description |
+|-----|-------------|
+| `createNetworkMonitor(config?)` | Create a platform-specific monitor |
+| `provideNetworkMonitor(config?)` | DI factory function |
+| `NetworkMonitorProvider.install()` | Singleton lifecycle manager |
+| `isOnline: StateFlow<Boolean>` | Hot-shared connectivity state |
+| `networkStatus: StateFlow<NetworkStatus>` | Rich status (Available/Unavailable/CaptivePortal) |
+| `networkChanges: SharedFlow<NetworkChangeEvent>` | Discrete transition events |
+| `networkQuality(): Flow<NetworkQuality>` | Quality signal (Excellent/Good/Fair/Poor/Offline) |
+| `requireOnline()` / `ensureOnline()` | Fail-fast / suspend-until-online |
+| `ifOnline { }` / `ifOffline { }` | Conditional execution |
+| `retryOnReconnect(max) { }` | Retry on network reconnect |
+| `FakeNetworkMonitor()` | Test double with state/event history |
+
+### Compose Module (cmp-network-monitor-compose)
+
+```yaml
+artifact:       io.github.mobilebytelabs:cmp-network-monitor-compose
+package:        io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose
+targets:        9 (Android, iOS, macOS, JVM, JS, WasmJS — Compose platforms only)
+```
+
+| API | Description |
+|-----|-------------|
+| `NetworkAwareContent(monitor, offlineContent, captivePortalContent, onlineContent)` | Auto UI switching |
+| `ConnectivityBanner(modifier, monitor, message, backgroundColor, contentColor)` | Animated offline banner |
+| `rememberNetworkMonitor(config)` | Singleton lifecycle |
+| `rememberScopedNetworkMonitor(config)` | Per-composition lifecycle |
+| `collectIsOnlineAsState()` | Boolean state |
+| `collectNetworkStatusAsState()` | NetworkStatus state |
+| `collectNetworkQualityAsState()` | NetworkQuality state |
+| `LocalNetworkMonitor` | CompositionLocal provider |
+
+### Sync Commands
+
+```bash
+/sync-network-monitor              # Gate 1 Gradle only (zero-config)
+/lib-sync cmp-network-monitor      # Same, from framework
+/sync-network-monitor --check      # Dry run
+```
+
+### Docs
+
+- [README](docs/network-monitor/README.md) — Module overview
+- [SETUP](docs/network-monitor/SETUP.md) — Manual integration guide
+- [CLAUDE_AI_SETUP](docs/network-monitor/CLAUDE_AI_SETUP.md) — AI-assisted setup

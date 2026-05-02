@@ -32,7 +32,7 @@ All notable changes to `cmp-network-monitor` will be documented in this file.
 - `NetworkStatus` sealed class now has 3 variants: `Available`, `Unavailable`, `CaptivePortal`.
 - Linux, MinGW, and JVM monitors now use adaptive polling instead of fixed intervals.
 
-## [1.0.0] — 2026-05-01
+## [3.2.1] — 2026-05-01
 
 ### Added
 - Initial release with 21 KMP target support.

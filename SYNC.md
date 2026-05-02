@@ -10,10 +10,10 @@
 
 ```yaml
 module:     cmp-product-tickets
-version:    3.0.0
-artifact:   io.github.mobilebytelabs:kmptoolkit-product-tickets
+version:    3.2.1
+artifact:   io.github.mobilebytelabs:cmp-product-tickets
 package:    com.mobilebytelabs.producttickets
-updated:    2026-04-22
+updated:    2026-05-02
 breaking_changes_from: "2.x — product_type removed, user_tickets→product_tickets, full rename"
 ```
 
@@ -22,10 +22,10 @@ breaking_changes_from: "2.x — product_type removed, user_tickets→product_tic
 ```toml
 [versions]
 # Dedicated key (independent upgrade, no shared-ref collision)
-kmptoolkit-product-tickets = "3.0.0"
+cmp-product-tickets = "3.2.1"
 
 [libraries]
-kmptoolkit-product-tickets = { module = "io.github.mobilebytelabs:kmptoolkit-product-tickets", version.ref = "kmptoolkit-product-tickets" }
+cmp-product-tickets = { module = "io.github.mobilebytelabs:cmp-product-tickets", version.ref = "cmp-product-tickets" }
 ```
 
 **Version resolution rule**: A project may use a shared ref (e.g., `version.ref = "kmptoolkit"`).
@@ -35,7 +35,7 @@ kmptoolkit-product-tickets = { module = "io.github.mobilebytelabs:kmptoolkit-pro
 
 ```kotlin
 commonMain.dependencies {
-    implementation(libs.kmptoolkit.product.tickets)
+    implementation(libs.cmp.product.tickets)
 }
 ```
 
@@ -90,6 +90,92 @@ ticketDetailDestination(onBackClick = { navController.popBackStack() })
 /lib-sync cmp-product-tickets          # full 5-gate sync
 /sync-product-tickets                  # same (library alias)
 /sync-product-tickets --check          # dry-run — show status without writes
+```
+
+---
+
+---
+
+## Module: cmp-network-monitor
+
+```yaml
+module:     cmp-network-monitor
+version:    3.2.1
+artifact:   io.github.mobilebytelabs:cmp-network-monitor
+package:    io.github.mobilebytelabs.kmptoolkit.networkmonitor
+updated:    2026-05-02
+supabase:   false
+di:         false
+nav:        false
+config:     none   # zero-config — Android auto-init via ContentProvider
+```
+
+### Consumer Gradle (`libs.versions.toml`)
+
+```toml
+[versions]
+cmp-network-monitor = "3.2.1"
+
+[libraries]
+cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version.ref = "cmp-network-monitor" }
+```
+
+### Consumer Dependency (`build.gradle.kts`)
+
+```kotlin
+commonMain.dependencies {
+    implementation(libs.cmp.network.monitor)
+}
+```
+
+### Sync Command
+
+```bash
+/lib-sync cmp-network-monitor          # Gate 1 only (zero-config)
+/sync-network-monitor                  # same (library alias)
+/sync-network-monitor --check          # dry-run
+```
+
+---
+
+## Module: cmp-network-monitor-compose
+
+```yaml
+module:     cmp-network-monitor-compose
+version:    3.2.1
+artifact:   io.github.mobilebytelabs:cmp-network-monitor-compose
+package:    io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose
+updated:    2026-05-02
+requires:   cmp-network-monitor
+supabase:   false
+di:         false
+nav:        false
+config:     none   # optional module — detected when Compose Multiplatform is in project
+```
+
+### Consumer Gradle (`libs.versions.toml`)
+
+```toml
+[versions]
+cmp-network-monitor-compose = "3.2.1"
+
+[libraries]
+cmp-network-monitor-compose = { module = "io.github.mobilebytelabs:cmp-network-monitor-compose", version.ref = "cmp-network-monitor-compose" }
+```
+
+### Consumer Dependency (`build.gradle.kts`)
+
+```kotlin
+commonMain.dependencies {
+    implementation(libs.cmp.network.monitor)
+    implementation(libs.cmp.network.monitor.compose) // optional
+}
+```
+
+### Sync Command
+
+```bash
+/sync-network-monitor   # Gate 1b auto-detects Compose and adds compose module
 ```
 
 ---

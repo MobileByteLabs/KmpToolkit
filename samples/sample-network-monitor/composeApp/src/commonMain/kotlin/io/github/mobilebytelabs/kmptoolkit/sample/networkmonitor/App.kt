@@ -26,9 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -42,16 +40,18 @@ import androidx.compose.ui.unit.sp
 import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkChangeEvent
 import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkStatus
 import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkType
-import io.github.mobilebytelabs.kmptoolkit.networkmonitor.createNetworkMonitor
+import io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.ConnectivityBanner
+import io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.collectIsOnlineAsState
+import io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.collectNetworkStatusAsState
+import io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.rememberScopedNetworkMonitor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App() {
-    val monitor = remember { createNetworkMonitor() }
-    DisposableEffect(monitor) { onDispose { monitor.close() } }
+    val monitor = rememberScopedNetworkMonitor()
 
-    val isOnline by monitor.isOnline.collectAsState()
-    val networkStatus by monitor.networkStatus.collectAsState()
+    val isOnline by monitor.collectIsOnlineAsState()
+    val networkStatus by monitor.collectNetworkStatusAsState()
     val events = remember { mutableStateListOf<String>() }
 
     LaunchedEffect(monitor) {
@@ -61,6 +61,8 @@ fun App() {
                 is NetworkChangeEvent.Disconnected -> "Disconnected"
                 is NetworkChangeEvent.TypeChanged -> "Type: ${event.from} -> ${event.to}"
                 is NetworkChangeEvent.MeteredChanged -> "Metered: ${event.isMetered}"
+                is NetworkChangeEvent.CaptivePortalDetected -> "Captive portal: ${event.redirectUrl}"
+                is NetworkChangeEvent.CaptivePortalResolved -> "Captive portal resolved"
             }
             events.add(0, text)
             if (events.size > 50) events.removeLast()
@@ -83,48 +85,62 @@ fun App() {
                     )
                 },
             ) { padding ->
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(padding),
                 ) {
-                    // Status card
-                    item {
-                        StatusCard(isOnline = isOnline, status = networkStatus)
-                    }
+                    // Connectivity banner from compose module
+                    ConnectivityBanner(monitor = monitor)
 
-                    // Info card
-                    item {
-                        if (networkStatus is NetworkStatus.Available) {
-                            NetworkInfoCard(
-                                status = networkStatus as NetworkStatus.Available,
-                            )
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // Status card
+                        item {
+                            StatusCard(isOnline = isOnline, status = networkStatus)
                         }
-                    }
 
-                    // Events header
-                    item {
-                        Text(
-                            text = "Events",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
+                        // Info card
+                        item {
+                            when (val status = networkStatus) {
+                                is NetworkStatus.Available -> {
+                                    NetworkInfoCard(status = status)
+                                }
 
-                    if (events.isEmpty()) {
+                                is NetworkStatus.CaptivePortal -> {
+                                    CaptivePortalCard(redirectUrl = status.redirectUrl)
+                                }
+
+                                is NetworkStatus.Unavailable -> { /* handled by ConnectivityBanner */ }
+                            }
+                        }
+
+                        // Events header
                         item {
                             Text(
-                                text = "No events yet. Toggle WiFi/airplane mode to see events.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "Events",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(top = 8.dp),
                             )
                         }
-                    }
 
-                    items(events) { event ->
-                        EventItem(event)
+                        if (events.isEmpty()) {
+                            item {
+                                Text(
+                                    text = "No events yet. Toggle WiFi/airplane mode to see events.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        items(events) { event ->
+                            EventItem(event)
+                        }
                     }
                 }
             }
@@ -167,7 +183,8 @@ private fun StatusCard(isOnline: Boolean, status: NetworkStatus) {
                 Text(
                     text = when (status) {
                         is NetworkStatus.Available -> "Connected via ${status.info.type}"
-                        NetworkStatus.Unavailable -> "No network connection"
+                        is NetworkStatus.CaptivePortal -> "Captive portal detected"
+                        is NetworkStatus.Unavailable -> "No network connection"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -243,5 +260,34 @@ private fun EventItem(event: String) {
             modifier = Modifier.padding(12.dp),
             style = MaterialTheme.typography.bodySmall,
         )
+    }
+}
+
+@Composable
+private fun CaptivePortalCard(redirectUrl: String?) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFF9800).copy(alpha = 0.12f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Captive Portal Detected",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFF9800),
+            )
+            Text(
+                text = redirectUrl ?: "Sign in required to access the internet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
