@@ -19,7 +19,10 @@ import android.net.Uri
 internal class NetworkMonitorInitProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
-        context?.applicationContext?.let { appContext = it }
+        context?.applicationContext?.let {
+            appContext = it
+            applicationContextHolder = it
+        }
         return true
     }
 
@@ -48,4 +51,5 @@ internal var appContext: Context? = null
  */
 fun setApplicationContext(context: Context) {
     appContext = context.applicationContext
+    applicationContextHolder = context.applicationContext
 }

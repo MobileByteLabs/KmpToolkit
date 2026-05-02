@@ -9,4 +9,10 @@ sealed class NetworkChangeEvent {
     data object Disconnected : NetworkChangeEvent()
     data class TypeChanged(val from: NetworkType, val to: NetworkType) : NetworkChangeEvent()
     data class MeteredChanged(val isMetered: Boolean) : NetworkChangeEvent()
+
+    /** Captive portal detected — connected but behind login/paywall. */
+    data class CaptivePortalDetected(val redirectUrl: String? = null) : NetworkChangeEvent()
+
+    /** Captive portal resolved — now has full internet access. */
+    data object CaptivePortalResolved : NetworkChangeEvent()
 }

@@ -44,7 +44,7 @@ internal class JsNetworkMonitor(private val config: NetworkMonitorConfig) : Netw
     override val networkChanges: SharedFlow<NetworkChangeEvent> = _networkChanges.asSharedFlow()
 
     private val onlineHandler: (Event) -> Unit = {
-        val info = NetworkInfo(type = NetworkType.Unknown)
+        val info = detectNetworkInfo()
         when (config.validationStrategy) {
             ValidationStrategy.NativeOnly -> updateOnline(info)
 
@@ -121,14 +121,55 @@ internal class JsNetworkMonitor(private val config: NetworkMonitorConfig) : Netw
         }
     }
 
+    private var closed = false
+
     override fun close() {
-        scope.cancel()
-        window.removeEventListener("online", onlineHandler)
-        window.removeEventListener("offline", offlineHandler)
+        if (!closed) {
+            closed = true
+            scope.cancel()
+            window.removeEventListener("online", onlineHandler)
+            window.removeEventListener("offline", offlineHandler)
+        }
+    }
+
+    /**
+     * Detect network info using the Network Information API when available.
+     * Falls back to [NetworkType.Unknown] if `navigator.connection` is not supported.
+     */
+    private fun detectNetworkInfo(): NetworkInfo {
+        try {
+            val connection = js("navigator.connection || navigator.mozConnection || navigator.webkitConnection")
+            if (connection != null && connection != undefined) {
+                val effectiveType = connection.effectiveType as? String
+                val downlink = (connection.downlink as? Number)?.toDouble() ?: -1.0
+
+                val type = when (effectiveType) {
+                    "4g" -> NetworkType.WiFi
+
+                    // 4g effective = likely WiFi or fast cellular
+                    "3g" -> NetworkType.Cellular
+
+                    "2g", "slow-2g" -> NetworkType.Cellular
+
+                    else -> NetworkType.Unknown
+                }
+
+                val downstreamKbps = if (downlink > 0) (downlink * 1000).toInt() else -1
+
+                return NetworkInfo(
+                    type = type,
+                    isMetered = connection.saveData as? Boolean ?: false,
+                    downstreamBandwidthKbps = downstreamKbps,
+                )
+            }
+        } catch (_: Throwable) {
+            // Network Information API not available
+        }
+        return NetworkInfo(type = NetworkType.Unknown)
     }
 
     private fun currentJsStatus(): NetworkStatus = if (window.navigator.onLine) {
-        NetworkStatus.Available(NetworkInfo(type = NetworkType.Unknown))
+        NetworkStatus.Available(detectNetworkInfo())
     } else {
         NetworkStatus.Unavailable
     }

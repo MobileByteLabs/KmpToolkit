@@ -39,16 +39,40 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
     private val _networkChanges = MutableSharedFlow<NetworkChangeEvent>(extraBufferCapacity = 64)
     override val networkChanges: SharedFlow<NetworkChangeEvent> = _networkChanges.asSharedFlow()
 
+    private val adaptivePolling = AdaptivePollingState(
+        baseIntervalMs = config.pollIntervalMs,
+        maxIntervalMs = config.backgroundPollIntervalMs,
+    )
+
+    private val validationBackoff = ValidationBackoffState(
+        maxDelayMs = config.maxValidationBackoffMs,
+    )
+
     init {
-        // Seed initial state synchronously
+        // Seed from disk cache for fast cold-start, then update with live check
+        val cached = loadCachedNetworkState()
+        if (cached != null && cached.wasOnline &&
+            (currentTimeMillis() - cached.timestampMs) < CachedNetworkState.MAX_AGE_MS
+        ) {
+            updateState(cached.toNetworkInfo())
+        }
+
+        // Seed initial state synchronously (overrides cache if different)
         updateState(checkNetwork())
 
-        // Start polling loop
+        // Start adaptive polling loop
         scope.launch {
             while (isActive) {
-                delay(config.pollIntervalMs)
+                delay(adaptivePolling.intervalMs)
                 val info = checkNetwork()
-                updateState(info)
+                val changed = updateState(info)
+                if (changed) {
+                    adaptivePolling.reportChange()
+                    // Persist to disk cache on state change
+                    saveCachedNetworkState(CachedNetworkState.from(_networkStatus.value) ?: continue)
+                } else {
+                    adaptivePolling.reportStable()
+                }
             }
         }
     }
@@ -60,15 +84,15 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
 
             when (config.validationStrategy) {
                 ValidationStrategy.NativeOnly -> {
-                    if (hasInterface) defaultNetworkInfo() else null
+                    if (hasInterface) detectNetworkInfo() else null
                 }
 
                 ValidationStrategy.HttpOnly -> {
-                    if (httpHeadCheck()) defaultNetworkInfo() else null
+                    if (httpHeadCheck()) detectNetworkInfo() else null
                 }
 
                 ValidationStrategy.NativeThenHttp -> {
-                    if (hasInterface && httpHeadCheck()) defaultNetworkInfo() else null
+                    if (hasInterface && httpHeadCheck()) detectNetworkInfo() else null
                 }
             }
         } catch (_: Exception) {
@@ -84,33 +108,71 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
         false
     }
 
-    private fun httpHeadCheck(): Boolean = try {
-        val connection = URI(config.validationUrl).toURL().openConnection() as HttpURLConnection
-        connection.requestMethod = "HEAD"
-        connection.connectTimeout = config.validationTimeoutMs.toInt()
-        connection.readTimeout = config.validationTimeoutMs.toInt()
-        connection.instanceFollowRedirects = false
-        connection.useCaches = false
-        try {
-            val code = connection.responseCode
-            code in 200..399
-        } finally {
-            connection.disconnect()
+    private fun httpHeadCheck(): Boolean {
+        if (validationBackoff.shouldBackoff) {
+            // Backoff active — skip this cycle but decrement
+            validationBackoff.reportSuccess() // gradually recover
+            return _isOnline.value // maintain current state
         }
-    } catch (_: Exception) {
-        false
+
+        return try {
+            val connection = URI(config.validationUrl).toURL().openConnection() as HttpURLConnection
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = config.validationTimeoutMs.toInt()
+            connection.readTimeout = config.validationTimeoutMs.toInt()
+            connection.instanceFollowRedirects = false
+            connection.useCaches = false
+            try {
+                val code = connection.responseCode
+                val success = code in 200..399
+                if (success) validationBackoff.reportSuccess() else validationBackoff.reportFailure()
+                success
+            } finally {
+                connection.disconnect()
+            }
+        } catch (_: Exception) {
+            validationBackoff.reportFailure()
+            false
+        }
     }
 
-    private fun defaultNetworkInfo(): NetworkInfo {
-        // JVM can't easily distinguish WiFi/Cellular/Ethernet at the Java level
-        // Use Ethernet as the most common JVM network type
-        return NetworkInfo(
-            type = NetworkType.Ethernet,
-            isMetered = false,
-        )
+    private fun detectNetworkInfo(): NetworkInfo {
+        try {
+            val activeInterfaces = NetworkInterface.getNetworkInterfaces()?.toList()
+                ?.filter { it.isUp && !it.isLoopback && it.inetAddresses.hasMoreElements() }
+                ?: return NetworkInfo(type = NetworkType.Ethernet, isMetered = false)
+
+            for (iface in activeInterfaces) {
+                val name = iface.name.lowercase()
+                val type = when {
+                    name.startsWith("wl") || name.startsWith("wlan") || name.contains("wi-fi") ||
+                        name.contains("wifi") -> NetworkType.WiFi
+
+                    name.startsWith("ww") || name.startsWith("ppp") || name.startsWith("rmnet") ->
+                        NetworkType.Cellular
+
+                    name.startsWith("tun") || name.startsWith("tap") -> NetworkType.VPN
+
+                    name.startsWith("eth") || name.startsWith("en") || name.startsWith("em") ->
+                        NetworkType.Ethernet
+
+                    else -> null
+                }
+                if (type != null) {
+                    return NetworkInfo(
+                        type = type,
+                        isMetered = type == NetworkType.Cellular,
+                    )
+                }
+            }
+        } catch (_: Exception) {
+            // Fall through to default
+        }
+        return NetworkInfo(type = NetworkType.Ethernet, isMetered = false)
     }
 
-    private fun updateState(newInfo: NetworkInfo?) {
+    /** @return true if state changed. */
+    private fun updateState(newInfo: NetworkInfo?): Boolean {
         val newStatus = if (newInfo != null) {
             NetworkStatus.Available(newInfo)
         } else {
@@ -118,7 +180,7 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
         }
 
         val oldStatus = _networkStatus.value
-        if (newStatus == oldStatus) return
+        if (newStatus == oldStatus) return false
 
         _networkStatus.value = newStatus
         _isOnline.value = newInfo != null
@@ -145,9 +207,15 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
                 }
             }
         }
+        return true
     }
 
+    private var closed = false
+
     override fun close() {
-        scope.cancel()
+        if (!closed) {
+            closed = true
+            scope.cancel()
+        }
     }
 }

@@ -10,12 +10,17 @@ Reactive network connectivity monitoring for **Kotlin Multiplatform** — StateF
 
 - **StateFlow-first API** — hot-shared `isOnline`, `networkStatus`, and `networkChanges` flows
 - **Rich network info** — connection type (WiFi/Cellular/Ethernet/VPN/Bluetooth), metered status, bandwidth
-- **Discrete change events** — Connected, Disconnected, TypeChanged, MeteredChanged
+- **Discrete change events** — Connected, Disconnected, TypeChanged, MeteredChanged, CaptivePortalDetected
+- **Captive portal detection** — opt-in HTTP redirect detection for hotel WiFi, airport networks
 - **Configurable validation** — NativeOnly, HttpOnly, or NativeThenHttp (catches captive portals)
+- **Adaptive polling** — polling-based monitors grow intervals during stable periods, reset on change
+- **Bandwidth sampling** — `bandwidthSamples()` Flow, `currentBandwidth`, quality signals (Excellent/Good/Fair/Poor)
+- **Composite monitors** — combine monitors via `monitor1 + monitor2`, reports online if ANY is online
+- **Cold-start cache** — persists last-known state to disk for instant startup
 - **21 KMP targets** across 11 platforms — Android, iOS, macOS, tvOS, watchOS, JVM, JS, WasmJS, WasmWASI, Linux, Windows
 - **Zero dependencies** beyond kotlinx-coroutines — no DI, no Compose required
-- **Test-friendly** — `FakeNetworkMonitor` published in main artifact for consumer tests
-- **7 extension functions** — `requireOnline()`, `ensureOnline()`, `withNetworkGuard{}`, `awaitOnline()`, `onlyWhileOnline()`, `retryOnReconnect{}`, `isConnectedVia()`
+- **Test-friendly** — `FakeNetworkMonitor` published in main artifact with status/event history tracking
+- **15+ extension functions** — `requireOnline()`, `ensureOnline()`, `ifOnline{}`, `ifOffline{}`, `measureLatency()`, `addCallback()`, `retryOnReconnect{}`, and more
 
 ## Platform Implementations
 
@@ -235,10 +240,124 @@ monitor.close()
 
 | Type | Values |
 |------|--------|
-| `NetworkType` | WiFi, Cellular, Ethernet, VPN, Bluetooth, Unknown |
-| `NetworkStatus` | Available(info), Unavailable |
-| `NetworkChangeEvent` | Connected(info), Disconnected, TypeChanged(from, to), MeteredChanged(isMetered) |
+| `NetworkType` | WiFi, Cellular, FiveG, Ethernet, VPN, Bluetooth, Unknown |
+| `NetworkStatus` | Available(info), Unavailable, CaptivePortal(info, redirectUrl) |
+| `NetworkChangeEvent` | Connected, Disconnected, TypeChanged, MeteredChanged, CaptivePortalDetected, CaptivePortalResolved |
+| `NetworkQuality` | Excellent, Good, Fair, Poor, Offline |
 | `ValidationStrategy` | NativeOnly, HttpOnly, NativeThenHttp |
+
+## Advanced Usage
+
+### Captive Portal Detection
+
+```kotlin
+val monitor = createNetworkMonitor(NetworkMonitorConfig {
+    captivePortalDetection = true
+})
+
+monitor.networkStatus.collect { status ->
+    when (status) {
+        is NetworkStatus.CaptivePortal -> showCaptivePortalBanner(status.redirectUrl)
+        is NetworkStatus.Available -> hideAllBanners()
+        is NetworkStatus.Unavailable -> showOfflineBanner()
+    }
+}
+```
+
+### Network Quality Signal
+
+```kotlin
+monitor.networkQuality().collect { quality ->
+    when (quality) {
+        NetworkQuality.Excellent -> loadHighResImages()
+        NetworkQuality.Good -> loadStandardImages()
+        NetworkQuality.Fair -> loadThumbnails()
+        NetworkQuality.Poor -> showTextOnly()
+        NetworkQuality.Offline -> showCachedContent()
+    }
+}
+```
+
+### Combine Data Flow with Network State
+
+```kotlin
+dataFlow.withNetworkState(monitor).collect { (data, status) ->
+    if (status.isOnline) showData(data) else showOfflineBanner(data)
+}
+```
+
+### Conditional Execution
+
+```kotlin
+val data = monitor.ifOnline { info ->
+    if (info.type == NetworkType.WiFi) api.fetchFullData() else api.fetchLiteData()
+}
+
+monitor.ifOffline {
+    showCachedData()
+}
+```
+
+### Callback-style API
+
+```kotlin
+val handle = monitor.addCallback(
+    scope = viewModelScope,
+    onOnline = { info -> updateUI(info) },
+    onOffline = { showOfflineBanner() },
+)
+// Later:
+handle.close()
+```
+
+### Composite Monitor
+
+```kotlin
+val wifiMonitor = createNetworkMonitor(NetworkMonitorConfig { ... })
+val cellularMonitor = createNetworkMonitor(NetworkMonitorConfig { ... })
+val combined = wifiMonitor + cellularMonitor
+combined.isOnline.collect { ... } // true if either is online
+```
+
+### DI Integration
+
+```kotlin
+// Koin
+val appModule = module {
+    single<NetworkMonitor> { provideNetworkMonitor(getOrNull()) }
+}
+
+// Hilt
+@Module @InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides @Singleton
+    fun provideMonitor(): NetworkMonitor = provideNetworkMonitor()
+}
+```
+
+### Android Lifecycle
+
+```kotlin
+class MyActivity : AppCompatActivity() {
+    private val observer = LifecycleNetworkObserver(monitor) { status ->
+        when (status) {
+            is NetworkStatus.Available -> hideOfflineBanner()
+            is NetworkStatus.Unavailable -> showOfflineBanner()
+            is NetworkStatus.CaptivePortal -> showCaptivePortalBanner()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        observer.start(lifecycleScope)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        observer.stop()
+    }
+}
+```
 
 ## License
 

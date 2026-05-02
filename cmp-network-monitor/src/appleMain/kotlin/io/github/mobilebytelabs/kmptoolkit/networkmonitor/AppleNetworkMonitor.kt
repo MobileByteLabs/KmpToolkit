@@ -1,6 +1,8 @@
 package io.github.mobilebytelabs.kmptoolkit.networkmonitor
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.IntVar
+import kotlinx.cinterop.UIntVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.allocPointerTo
 import kotlinx.cinterop.convert
@@ -40,13 +42,25 @@ import platform.Network.nw_path_status_satisfied
 import platform.Network.nw_path_uses_interface_type
 import platform.darwin.dispatch_queue_create
 import platform.posix.AF_INET
+import platform.posix.EINPROGRESS
+import platform.posix.F_GETFL
+import platform.posix.F_SETFL
 import platform.posix.IPPROTO_TCP
+import platform.posix.O_NONBLOCK
+import platform.posix.POLLOUT
 import platform.posix.SOCK_STREAM
+import platform.posix.SOL_SOCKET
+import platform.posix.SO_ERROR
 import platform.posix.addrinfo
 import platform.posix.close
 import platform.posix.connect
+import platform.posix.errno
+import platform.posix.fcntl
 import platform.posix.freeaddrinfo
 import platform.posix.getaddrinfo
+import platform.posix.getsockopt
+import platform.posix.poll
+import platform.posix.pollfd
 import platform.posix.socket
 
 /**
@@ -127,9 +141,12 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
     }
 
     /**
-     * Validates connectivity by opening a TCP socket to the validation URL's host.
-     * Uses POSIX sockets which are available on all Apple platforms.
+     * Validates connectivity by opening a non-blocking TCP socket to the validation URL's host.
+     * Uses POSIX sockets with `fcntl(O_NONBLOCK)` + `select()` to enforce
+     * [NetworkMonitorConfig.validationTimeoutMs] as a connect deadline.
+     * Without this, blocking `connect()` can hang ~75s on unreachable hosts.
      */
+    @Suppress("ReturnCount")
     private fun tcpReachabilityCheck(): Boolean = memScoped {
         val host = config.validationUrl
             .removePrefix("https://").removePrefix("http://")
@@ -153,13 +170,46 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
             )
             if (sock < 0) return false
 
-            val connected = connect(
-                sock,
-                addrInfo.pointed.ai_addr,
-                addrInfo.pointed.ai_addrlen,
-            ) == 0
-            close(sock)
-            connected
+            try {
+                // Set socket to non-blocking mode
+                val flags = fcntl(sock, F_GETFL, 0)
+                if (fcntl(sock, F_SETFL, flags or O_NONBLOCK) < 0) {
+                    return false
+                }
+
+                val connectResult = connect(
+                    sock,
+                    addrInfo.pointed.ai_addr,
+                    addrInfo.pointed.ai_addrlen,
+                )
+
+                if (connectResult == 0) return true // immediate connect (rare)
+
+                if (errno != EINPROGRESS) return false
+
+                // Wait for connect with timeout using poll()
+                val pfd = alloc<pollfd>()
+                pfd.fd = sock
+                pfd.events = POLLOUT.convert()
+
+                val pollResult = poll(pfd.ptr, 1u, config.validationTimeoutMs.toInt())
+                if (pollResult <= 0) return false // timeout or error
+
+                // Check if connect succeeded via getsockopt(SO_ERROR)
+                val optVal = alloc<IntVar>()
+                val optLen = alloc<UIntVar>()
+                optLen.value = sizeOf<IntVar>().convert()
+                getsockopt(
+                    sock,
+                    SOL_SOCKET,
+                    SO_ERROR,
+                    optVal.ptr,
+                    optLen.ptr,
+                )
+                optVal.value == 0
+            } finally {
+                close(sock)
+            }
         } finally {
             freeaddrinfo(addrInfo)
         }

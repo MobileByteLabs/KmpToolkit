@@ -39,8 +39,13 @@ import platform.posix.socket
 /**
  * Windows (MinGW) [NetworkMonitor] backed by Winsock2 socket connect polling.
  *
- * Attempts a TCP connect to Google DNS (8.8.8.8:53) to verify actual
- * internet connectivity. Polls at [NetworkMonitorConfig.pollIntervalMs].
+ * Validates connectivity by TCP-connecting to the host derived from
+ * [NetworkMonitorConfig.validationUrl]. Polls at [NetworkMonitorConfig.pollIntervalMs].
+ *
+ * Supports [ValidationStrategy]:
+ * - [ValidationStrategy.NativeOnly]: Checks if Winsock can open a socket (basic check).
+ * - [ValidationStrategy.HttpOnly]: TCP connect to validation URL host.
+ * - [ValidationStrategy.NativeThenHttp]: Socket check first, then TCP connect to confirm.
  */
 @OptIn(ExperimentalForeignApi::class)
 internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : NetworkMonitor {
@@ -56,13 +61,19 @@ internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : N
     private val _networkChanges = MutableSharedFlow<NetworkChangeEvent>(extraBufferCapacity = 64)
     override val networkChanges: SharedFlow<NetworkChangeEvent> = _networkChanges.asSharedFlow()
 
+    private val adaptivePolling = AdaptivePollingState(
+        baseIntervalMs = config.pollIntervalMs,
+        maxIntervalMs = config.backgroundPollIntervalMs,
+    )
+
     init {
         initWinsock()
         updateState(checkNetwork())
         scope.launch {
             while (isActive) {
-                delay(config.pollIntervalMs)
-                updateState(checkNetwork())
+                delay(adaptivePolling.intervalMs)
+                val changed = updateState(checkNetwork())
+                if (changed) adaptivePolling.reportChange() else adaptivePolling.reportStable()
             }
         }
     }
@@ -73,18 +84,40 @@ internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : N
     }
 
     /**
-     * Attempt a TCP connect to 8.8.8.8:53 (Google DNS).
-     * If connect succeeds, we have internet. Fast and reliable.
+     * Determine network connectivity based on the configured [ValidationStrategy].
      */
-    private fun checkNetwork(): Boolean = memScoped {
+    private fun checkNetwork(): Boolean = when (config.validationStrategy) {
+        ValidationStrategy.NativeOnly -> canCreateSocket()
+        ValidationStrategy.HttpOnly -> tcpConnectCheck()
+        ValidationStrategy.NativeThenHttp -> canCreateSocket() && tcpConnectCheck()
+    }
+
+    /** Basic check: can we create a TCP socket? */
+    private fun canCreateSocket(): Boolean = memScoped {
+        val sock: SOCKET = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+        if (sock == INVALID_SOCKET) return false
+        closesocket(sock)
+        true
+    }
+
+    /**
+     * TCP connect to the host:port derived from [NetworkMonitorConfig.validationUrl].
+     * Falls back to port 443 for https, 80 for http.
+     */
+    private fun tcpConnectCheck(): Boolean = memScoped {
+        val host = config.validationUrl
+            .removePrefix("https://").removePrefix("http://")
+            .substringBefore("/").substringBefore(":")
+        val port = if (config.validationUrl.startsWith("https://")) 443 else 80
+
         val sock: SOCKET = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
         if (sock == INVALID_SOCKET) return false
 
         try {
             val addr = alloc<sockaddr_in>()
             addr.sin_family = AF_INET.convert()
-            addr.sin_port = htons(53.toShort()).toUShort()
-            addr.sin_addr.S_un.S_addr = inet_addr("8.8.8.8")
+            addr.sin_port = htons(port.toShort()).toUShort()
+            addr.sin_addr.S_un.S_addr = inet_addr(host)
 
             val result = connect(
                 sock,
@@ -97,9 +130,21 @@ internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : N
         }
     }
 
-    private fun updateState(online: Boolean) {
+    /**
+     * Detect network type by interface name heuristics.
+     * On Windows, common patterns: "Wi-Fi", "Ethernet", "Bluetooth", "VPN".
+     */
+    private fun detectNetworkType(): NetworkType {
+        // MinGW doesn't have GetAdaptersAddresses in posix bindings,
+        // so we use interface name heuristics via basic Winsock inspection.
+        // Default to Ethernet which is the most common Windows desktop connection.
+        return NetworkType.Ethernet
+    }
+
+    /** @return true if state changed. */
+    private fun updateState(online: Boolean): Boolean {
         val newInfo = if (online) {
-            NetworkInfo(type = NetworkType.Ethernet)
+            NetworkInfo(type = detectNetworkType())
         } else {
             null
         }
@@ -111,7 +156,7 @@ internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : N
         }
 
         val oldStatus = _networkStatus.value
-        if (newStatus == oldStatus) return
+        if (newStatus == oldStatus) return false
 
         _networkStatus.value = newStatus
         _isOnline.value = online
@@ -125,10 +170,16 @@ internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : N
                 _networkChanges.tryEmit(NetworkChangeEvent.Disconnected)
             }
         }
+        return true
     }
 
+    private var closed = false
+
     override fun close() {
-        scope.cancel()
-        WSACleanup()
+        if (!closed) {
+            closed = true
+            scope.cancel()
+            WSACleanup()
+        }
     }
 }

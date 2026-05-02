@@ -9,14 +9,14 @@ class NetworkTypeTest {
     @Test
     fun allEnumValuesExist() {
         val types = NetworkType.entries
-        assertEquals(6, types.size)
+        assertEquals(7, types.size)
     }
 
     @Test
     fun enumNamesMatchExpected() {
         val names = NetworkType.entries.map { it.name }
         assertEquals(
-            listOf("WiFi", "Cellular", "Ethernet", "VPN", "Bluetooth", "Unknown"),
+            listOf("WiFi", "Cellular", "FiveG", "Ethernet", "VPN", "Bluetooth", "Unknown"),
             names,
         )
     }

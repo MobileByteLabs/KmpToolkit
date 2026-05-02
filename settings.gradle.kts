@@ -26,6 +26,7 @@ include(":cmp-bubble") // Floating UI, Bubbles, Notifications
 include(":cmp-open-url") // Open URL — cross-platform URL/scheme handler (browser, email, maps, phone, SMS)
 include(":cmp-deep-link") // Deep Link — unified deep link handling across all KMP targets
 include(":cmp-network-monitor") // Network Monitor — reactive connectivity monitoring across all KMP targets
+include(":cmp-network-monitor-compose") // Network Monitor Compose — Compose Multiplatform UI extensions
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")

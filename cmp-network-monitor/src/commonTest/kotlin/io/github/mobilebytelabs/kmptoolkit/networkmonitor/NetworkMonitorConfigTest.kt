@@ -12,6 +12,20 @@ class NetworkMonitorConfigTest {
         assertEquals("https://clients3.google.com/generate_204", config.validationUrl)
         assertEquals(5_000L, config.validationTimeoutMs)
         assertEquals(ValidationStrategy.NativeThenHttp, config.validationStrategy)
+        assertEquals(30_000L, config.backgroundPollIntervalMs)
+        assertEquals(60_000L, config.maxValidationBackoffMs)
+    }
+
+    @Test
+    fun builderDsl() {
+        val config = NetworkMonitorConfig {
+            pollIntervalMs = 10_000L
+            validationStrategy = ValidationStrategy.NativeOnly
+            backgroundPollIntervalMs = 60_000L
+        }
+        assertEquals(10_000L, config.pollIntervalMs)
+        assertEquals(ValidationStrategy.NativeOnly, config.validationStrategy)
+        assertEquals(60_000L, config.backgroundPollIntervalMs)
     }
 
     @Test

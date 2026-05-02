@@ -4,6 +4,7 @@ import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkChangeEvent
 import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkInfo
 import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitor
 import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkStatus
+import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkType
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -51,11 +52,19 @@ class FakeNetworkMonitor(
         _isOnline.value = online
         if (online && !wasOnline) {
             val info = (_networkStatus.value as? NetworkStatus.Available)?.info ?: NetworkInfo()
-            _networkStatus.value = NetworkStatus.Available(info)
-            _networkChanges.tryEmit(NetworkChangeEvent.Connected(info))
+            val status = NetworkStatus.Available(info)
+            _networkStatus.value = status
+            val event = NetworkChangeEvent.Connected(info)
+            _networkChanges.tryEmit(event)
+            trackUpdate(status)
+            trackEvent(event)
         } else if (!online && wasOnline) {
-            _networkStatus.value = NetworkStatus.Unavailable
-            _networkChanges.tryEmit(NetworkChangeEvent.Disconnected)
+            val status = NetworkStatus.Unavailable
+            _networkStatus.value = status
+            val event = NetworkChangeEvent.Disconnected
+            _networkChanges.tryEmit(event)
+            trackUpdate(status)
+            trackEvent(event)
         }
     }
 
@@ -64,27 +73,32 @@ class FakeNetworkMonitor(
         val oldStatus = _networkStatus.value
         _networkStatus.value = status
         _isOnline.value = status.isOnline
+        trackUpdate(status)
 
         // Emit change events
         when {
             status is NetworkStatus.Available && oldStatus is NetworkStatus.Unavailable -> {
-                _networkChanges.tryEmit(NetworkChangeEvent.Connected(status.info))
+                val event = NetworkChangeEvent.Connected(status.info)
+                _networkChanges.tryEmit(event)
+                trackEvent(event)
             }
 
             status is NetworkStatus.Unavailable && oldStatus is NetworkStatus.Available -> {
-                _networkChanges.tryEmit(NetworkChangeEvent.Disconnected)
+                val event = NetworkChangeEvent.Disconnected
+                _networkChanges.tryEmit(event)
+                trackEvent(event)
             }
 
             status is NetworkStatus.Available && oldStatus is NetworkStatus.Available -> {
                 if (status.info.type != oldStatus.info.type) {
-                    _networkChanges.tryEmit(
-                        NetworkChangeEvent.TypeChanged(oldStatus.info.type, status.info.type),
-                    )
+                    val event = NetworkChangeEvent.TypeChanged(oldStatus.info.type, status.info.type)
+                    _networkChanges.tryEmit(event)
+                    trackEvent(event)
                 }
                 if (status.info.isMetered != oldStatus.info.isMetered) {
-                    _networkChanges.tryEmit(
-                        NetworkChangeEvent.MeteredChanged(status.info.isMetered),
-                    )
+                    val event = NetworkChangeEvent.MeteredChanged(status.info.isMetered)
+                    _networkChanges.tryEmit(event)
+                    trackEvent(event)
                 }
             }
         }
@@ -96,4 +110,62 @@ class FakeNetworkMonitor(
 
     /** Check if [close] was called. Useful for verifying cleanup in tests. */
     val isClosed: Boolean get() = closed
+
+    /** History of all status changes for assertion. */
+    private val _statusHistory = mutableListOf(initialStatus)
+
+    /** Get the complete history of [NetworkStatus] changes. */
+    val statusHistory: List<NetworkStatus> get() = _statusHistory.toList()
+
+    /** History of all change events emitted. */
+    private val _eventHistory = mutableListOf<NetworkChangeEvent>()
+
+    /** Get the complete history of [NetworkChangeEvent]s. */
+    val eventHistory: List<NetworkChangeEvent> get() = _eventHistory.toList()
+
+    /** Number of times [setOnline] or [setNetworkStatus] was called. */
+    var updateCount: Int = 0
+        private set
+
+    /** Simulate a rapid WiFi ↔ Cellular handoff sequence. */
+    fun simulateHandoff(from: NetworkType, to: NetworkType) {
+        setNetworkStatus(NetworkStatus.Unavailable)
+        setNetworkStatus(
+            NetworkStatus.Available(NetworkInfo(type = to, isMetered = to == NetworkType.Cellular)),
+        )
+    }
+
+    /** Simulate going offline briefly then back online with the given [info]. */
+    fun simulateFlicker(info: NetworkInfo = NetworkInfo()) {
+        setOnline(false)
+        setOnline(true)
+        setNetworkStatus(NetworkStatus.Available(info))
+    }
+
+    /** Reset all state to initial values. Useful between test cases. */
+    fun resetState(online: Boolean = true) {
+        closed = false
+        _statusHistory.clear()
+        _eventHistory.clear()
+        updateCount = 0
+        val status = if (online) {
+            NetworkStatus.Available(NetworkInfo())
+        } else {
+            NetworkStatus.Unavailable
+        }
+        _isOnline.value = online
+        _networkStatus.value = status
+        _statusHistory.add(status)
+    }
+
+    // Track history on updates
+    private fun trackUpdate(status: NetworkStatus) {
+        _statusHistory.add(status)
+        updateCount++
+    }
+
+    // Override to track events
+    private fun trackEvent(event: NetworkChangeEvent) {
+        _eventHistory.add(event)
+    }
 }

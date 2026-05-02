@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlin.js.ExperimentalWasmJsInterop
 
 /**
@@ -40,13 +41,29 @@ private external fun jsRegisterOffline(fn: () -> Unit): JsEventHandler
 @JsFun("(h) => globalThis.removeEventListener('offline', h)")
 private external fun jsUnregisterOffline(h: JsEventHandler)
 
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun(
+    """(url, timeoutMs, onSuccess, onFailure) => {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal })
+            .then(() => { clearTimeout(timer); onSuccess(); })
+            .catch(() => { clearTimeout(timer); onFailure(); });
+    } catch(e) { onFailure(); }
+}""",
+)
+private external fun jsFetchHead(url: JsString, timeoutMs: JsNumber, onSuccess: () -> Unit, onFailure: () -> Unit)
+
 /**
  * WasmJS [NetworkMonitor] backed by `navigator.onLine` + online/offline events.
  *
- * Uses WasmJS-specific `@OptIn(ExperimentalWasmJsInterop::class)
-@JsFun` interop for browser API access.
- * HTTP validation is not supported on WasmJS due to limited browser API interop;
- * [ValidationStrategy] settings are acknowledged but NativeOnly behavior is used.
+ * Uses WasmJS-specific `@JsFun` interop for browser API access.
+ *
+ * Supports [ValidationStrategy]:
+ * - [ValidationStrategy.NativeOnly]: Uses only navigator.onLine (default).
+ * - [ValidationStrategy.HttpOnly]: Validates with fetch() HEAD before reporting online.
+ * - [ValidationStrategy.NativeThenHttp]: Reports online immediately, then validates with fetch().
  */
 internal class WasmJsNetworkMonitor(private val config: NetworkMonitorConfig) : NetworkMonitor {
 
@@ -62,16 +79,57 @@ internal class WasmJsNetworkMonitor(private val config: NetworkMonitorConfig) : 
     override val networkChanges: SharedFlow<NetworkChangeEvent> = _networkChanges.asSharedFlow()
 
     private val onlineJsHandler: JsEventHandler = jsRegisterOnline {
-        val oldStatus = _networkStatus.value
         val info = NetworkInfo(type = NetworkType.Unknown)
+        handleNativeOnline(info)
+    }
+
+    private val offlineJsHandler: JsEventHandler = jsRegisterOffline {
+        updateOffline()
+    }
+
+    init {
+        // Apply initial HTTP validation if strategy requires it
+        if (jsIsOnline() && config.validationStrategy != ValidationStrategy.NativeOnly) {
+            scope.launch {
+                fetchHeadCheck { success ->
+                    if (!success) updateOffline()
+                }
+            }
+        }
+    }
+
+    private fun handleNativeOnline(info: NetworkInfo) {
+        when (config.validationStrategy) {
+            ValidationStrategy.NativeOnly -> updateOnline(info)
+
+            ValidationStrategy.HttpOnly -> {
+                fetchHeadCheck { success ->
+                    if (success) updateOnline(info) else updateOffline()
+                }
+            }
+
+            ValidationStrategy.NativeThenHttp -> {
+                updateOnline(info) // optimistic
+                fetchHeadCheck { success ->
+                    if (!success) updateOffline()
+                }
+            }
+        }
+    }
+
+    private fun updateOnline(info: NetworkInfo) {
+        val oldStatus = _networkStatus.value
+        val newStatus = NetworkStatus.Available(info)
+        if (newStatus == oldStatus) return
+
         _isOnline.value = true
-        _networkStatus.value = NetworkStatus.Available(info)
+        _networkStatus.value = newStatus
         if (oldStatus is NetworkStatus.Unavailable) {
             _networkChanges.tryEmit(NetworkChangeEvent.Connected(info))
         }
     }
 
-    private val offlineJsHandler: JsEventHandler = jsRegisterOffline {
+    private fun updateOffline() {
         val wasOnline = _isOnline.value
         _isOnline.value = false
         _networkStatus.value = NetworkStatus.Unavailable
@@ -80,10 +138,25 @@ internal class WasmJsNetworkMonitor(private val config: NetworkMonitorConfig) : 
         }
     }
 
+    @OptIn(ExperimentalWasmJsInterop::class)
+    private fun fetchHeadCheck(callback: (Boolean) -> Unit) {
+        jsFetchHead(
+            config.validationUrl.toJsString(),
+            config.validationTimeoutMs.toInt().toJsNumber(),
+            onSuccess = { callback(true) },
+            onFailure = { callback(false) },
+        )
+    }
+
+    private var closed = false
+
     override fun close() {
-        scope.cancel()
-        jsUnregisterOnline(onlineJsHandler)
-        jsUnregisterOffline(offlineJsHandler)
+        if (!closed) {
+            closed = true
+            scope.cancel()
+            jsUnregisterOnline(onlineJsHandler)
+            jsUnregisterOffline(offlineJsHandler)
+        }
     }
 
     private fun currentStatus(): NetworkStatus = if (jsIsOnline()) {
