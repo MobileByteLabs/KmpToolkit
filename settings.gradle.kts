@@ -25,9 +25,16 @@ include(":cmp-remote-config") // Remote Config
 include(":cmp-bubble") // Floating UI, Bubbles, Notifications
 include(":cmp-open-url") // Open URL — cross-platform URL/scheme handler (browser, email, maps, phone, SMS)
 include(":cmp-deep-link") // Deep Link — unified deep link handling across all KMP targets
+include(":cmp-network-monitor") // Network Monitor — reactive connectivity monitoring across all KMP targets
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")
+include(":samples:sample-clipboard:androidApp")
 include(":samples:sample-in-app-update:composeApp")
+include(":samples:sample-in-app-update:androidApp")
 include(":samples:sample-open-url:composeApp")
+include(":samples:sample-open-url:androidApp")
 include(":samples:sample-deep-link:composeApp")
+include(":samples:sample-deep-link:androidApp")
+include(":samples:sample-network-monitor:composeApp")
+include(":samples:sample-network-monitor:androidApp")
