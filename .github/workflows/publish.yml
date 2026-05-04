@@ -3,7 +3,12 @@
 # Triggers:
 #   - Schedule: every Monday 00:00 UTC
 #   - Schedule: 1st of every month 00:00 UTC
-#   - Manual dispatch: workflow_dispatch (optional specific module)
+#   - Manual dispatch: workflow_dispatch (optional specific module, optional version override)
+#
+# Version source of truth: gradle.properties → kmptoolkit.version
+#   The committed value of `kmptoolkit.version` is what gets published. Bumping
+#   the version is a code review concern, not a registry-derivation concern.
+#   Maven Central is consulted only as a sanity check (fail if Maven is ahead).
 
 name: Publish
 
@@ -17,18 +22,28 @@ on:
         description: 'Specific module to publish (leave empty for all cmp-* modules)'
         required: false
         type: string
+      version:
+        description: 'Override version (leave empty to use kmptoolkit.version from gradle.properties)'
+        required: false
+        type: string
 
 permissions:
   contents: write   # required by publish-kmp-library.yml (release creation, tag push)
 
 jobs:
   publish:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.0.12
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.0.13
     with:
       module-pattern: 'cmp-'
       module: ${{ inputs.module || '' }}
       group-id: 'io.github.mobilebytelabs'
+      # artifact-id is used only for the Maven Central sanity check — pick any
+      # cmp-* module that's actively published. cmp-bubble is currently at
+      # 3.2.2 on Maven Central (matches the toolkit's release line).
       artifact-id: 'cmp-bubble'
+      version: ${{ inputs.version || '' }}
+      gradle-properties-key: 'kmptoolkit.version'
+      verify-against-maven: true
       java-version: '21'
       java-distribution: 'zulu'
       sonatype-host: 'CENTRAL_PORTAL'
