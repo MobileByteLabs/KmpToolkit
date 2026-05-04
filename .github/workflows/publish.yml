@@ -28,22 +28,31 @@ on:
         type: string
 
 permissions:
-  contents: write   # required by publish-kmp-library.yml (release creation, tag push)
+  contents: write          # release creation, tag push, branch push for bump PR
+  pull-requests: write     # bump-after-release opens a PR
 
 jobs:
   publish:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.0.13
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.3.0
     with:
       module-pattern: 'cmp-'
       module: ${{ inputs.module || '' }}
       group-id: 'io.github.mobilebytelabs'
       # artifact-id is used only for the Maven Central sanity check — pick any
-      # cmp-* module that's actively published. cmp-bubble is currently at
-      # 3.2.2 on Maven Central (matches the toolkit's release line).
+      # cmp-* module that's actively published. cmp-bubble was at 3.2.2 before
+      # the toolkit-wide 3.2.3 release; both tracks now align at 3.2.3+.
       artifact-id: 'cmp-bubble'
       version: ${{ inputs.version || '' }}
       gradle-properties-key: 'kmptoolkit.version'
       verify-against-maven: true
+      # ── Auto-bump for next cycle ──────────────────────────────────────────
+      # After a successful publish + GH release, mbl-actionhub delegates to
+      # mbl-actionhub-bump-version to open a PR bumping kmptoolkit.version
+      # to the next patch (3.2.3 → 3.2.4). Auto-merge is best-effort.
+      # If you want a minor/major release for the next cycle, override via
+      # workflow_dispatch input, or close the auto-PR and bump manually.
+      bump-after-release: true
+      next-bump-type: 'patch'
       java-version: '21'
       java-distribution: 'zulu'
       sonatype-host: 'CENTRAL_PORTAL'
