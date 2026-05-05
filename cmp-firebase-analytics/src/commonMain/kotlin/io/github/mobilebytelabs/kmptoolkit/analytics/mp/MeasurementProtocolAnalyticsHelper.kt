@@ -36,6 +36,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.concurrent.Volatile
 
 private const val TAG = "MpAnalytics"
 private const val MAX_EVENTS_PER_REQUEST = 25

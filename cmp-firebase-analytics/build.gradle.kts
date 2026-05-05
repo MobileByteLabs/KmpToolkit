@@ -70,9 +70,10 @@ kotlin {
         nodejs()
     }
 
-    wasmWasi {
-        nodejs()
-    }
+    // wasmWasi intentionally NOT declared:
+    //   Ktor (JetBrains' own HTTP client), Kermit, and multiplatform-settings
+    //   do not publish wasmWasi variants. Without HTTP/log/KV there is no
+    //   transport for analytics. Re-add when the ecosystem catches up.
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -82,7 +83,7 @@ kotlin {
     //
     //   commonMain (no GitLive — interface + types + Stub/NoOp/Test + DI factory)
     //       │
-    //       ├── firebaseMain    — GitLive Firebase Analytics ships here (11 targets)
+    //       ├── firebaseMain      — GitLive Firebase Analytics ships here (11 targets)
     //       │     ├── androidMain
     //       │     ├── jvmMain
     //       │     ├── iosMain     (iosX64 / iosArm64 / iosSimulatorArm64)
@@ -90,14 +91,16 @@ kotlin {
     //       │     ├── tvosMain    (tvosX64 / tvosArm64 / tvosSimulatorArm64)
     //       │     └── jsMain      (browser + node)
     //       │
-    //       └── nonFirebaseMain  — NoOp fallback (10 targets — GitLive unavailable)
+    //       └── nonFirebaseMain   — Measurement Protocol HTTP (9 targets)
     //             ├── watchosMain (watchosX64 / watchosArm64 / watchosSimulatorArm64 / watchosDeviceArm64)
     //             ├── linuxMain   (linuxX64 / linuxArm64)
     //             ├── mingwMain   (mingwX64)
-    //             ├── wasmJsMain
-    //             └── wasmWasiMain
+    //             └── wasmJsMain
     //
-    // GitLive Firebase Analytics 2.x target matrix verified at:
+    // wasmWasi target intentionally omitted — Ktor / Kermit / multiplatform-settings
+    // do not publish wasmWasi variants. 20/21 targets supported.
+    //
+    // GitLive Firebase Analytics 2.4.x target matrix verified at:
     //   https://github.com/GitLiveApp/firebase-kotlin-sdk/blob/master/firebase-analytics/build.gradle.kts
     sourceSets {
         commonMain.dependencies {
@@ -123,7 +126,7 @@ kotlin {
                 api(libs.gitlive.firebase.analytics)
             }
         }
-        // ── Non-Firebase tier — 10 targets where GitLive does NOT ship ──────
+        // ── Non-Firebase tier — 9 targets where GitLive does NOT ship ───────
         // Get Firebase Measurement Protocol via HTTP. Same Firebase property,
         // same BigQuery dataset, just no native SDK features.
         val nonFirebaseMain by creating {
@@ -143,14 +146,18 @@ kotlin {
         linuxMain.get().dependsOn(nonFirebaseMain)
         mingwMain.get().dependsOn(nonFirebaseMain)
         wasmJsMain.get().dependsOn(nonFirebaseMain)
-        wasmWasiMain.get().dependsOn(nonFirebaseMain)
 
         // ── Per-platform Ktor HTTP engine ──────────────────────────────────
         // commonMain only declares the client-core API; each platform binds
         // a concrete engine. Used by MeasurementProtocolAnalyticsHelper on
         // nonFirebaseMain platforms; firebaseMain platforms also have the
         // engine available so apps can opt to use MP everywhere.
-        androidMain.dependencies { implementation(libs.ktor.client.cio) }
+        androidMain.dependencies {
+            // GitLive's firebase-analytics-android pulls in com.google.firebase:firebase-analytics
+            // and firebase-common WITHOUT versions — the BOM supplies them.
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.ktor.client.cio)
+        }
         jvmMain.dependencies { implementation(libs.ktor.client.cio) }
         iosMain.dependencies { implementation(libs.ktor.client.darwin) }
         macosMain.dependencies { implementation(libs.ktor.client.darwin) }
@@ -160,8 +167,6 @@ kotlin {
         wasmJsMain.dependencies { implementation(libs.ktor.client.js) }
         linuxMain.dependencies { implementation(libs.ktor.client.curl) }
         mingwMain.dependencies { implementation(libs.ktor.client.winhttp) }
-        // wasmWasiMain: Ktor has no engine yet — MeasurementProtocolAnalyticsHelper
-        // gracefully no-ops on wasmWasi (best-effort in-memory queue, never sends)
     }
 }
 
