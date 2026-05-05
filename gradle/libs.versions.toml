@@ -27,7 +27,7 @@ kotlinx-datetime = "0.6.2"
 navigation = "2.9.2"
 
 # GitLive Firebase Kotlin SDK — Android, iOS, JS, JVM only
-gitliveFirebase = "2.3.0"
+gitliveFirebase = "2.4.0"
 # Firebase Android BOM — GitLive's android sourceset omits versions; the BOM resolves them
 firebaseBom = "33.7.0"
 
