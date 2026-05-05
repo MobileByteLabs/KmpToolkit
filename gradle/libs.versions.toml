@@ -26,6 +26,9 @@ kotlinx-serialization = "1.8.1"
 kotlinx-datetime = "0.6.2"
 navigation = "2.9.2"
 
+# GitLive Firebase Kotlin SDK — Android, iOS, JS, JVM only
+gitliveFirebase = "2.3.0"
+
 # AndroidX
 androidx-activityCompose = "1.12.2"
 androidx-lifecycle = "2.9.6"
@@ -69,10 +72,19 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
+ktor-client-curl = { module = "io.ktor:ktor-client-curl", version.ref = "ktor" }
+ktor-client-winhttp = { module = "io.ktor:ktor-client-winhttp", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 # Koin
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+
+# GitLive Firebase Kotlin SDK
+gitlive-firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "gitliveFirebase" }
+gitlive-firebase-common = { module = "dev.gitlive:firebase-common", version.ref = "gitliveFirebase" }
+gitlive-firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "gitliveFirebase" }
 
 # Kermit
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
