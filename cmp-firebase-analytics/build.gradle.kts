@@ -150,7 +150,12 @@ kotlin {
         // a concrete engine. Used by MeasurementProtocolAnalyticsHelper on
         // nonFirebaseMain platforms; firebaseMain platforms also have the
         // engine available so apps can opt to use MP everywhere.
-        androidMain.dependencies { implementation(libs.ktor.client.cio) }
+        androidMain.dependencies {
+            // GitLive's firebase-analytics-android pulls in com.google.firebase:firebase-analytics
+            // and firebase-common WITHOUT versions — the BOM supplies them.
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.ktor.client.cio)
+        }
         jvmMain.dependencies { implementation(libs.ktor.client.cio) }
         iosMain.dependencies { implementation(libs.ktor.client.darwin) }
         macosMain.dependencies { implementation(libs.ktor.client.darwin) }
