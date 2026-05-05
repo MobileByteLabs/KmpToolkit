@@ -27,6 +27,8 @@ include(":cmp-open-url") // Open URL — cross-platform URL/scheme handler (brow
 include(":cmp-deep-link") // Deep Link — unified deep link handling across all KMP targets
 include(":cmp-network-monitor") // Network Monitor — reactive connectivity monitoring across all KMP targets
 include(":cmp-network-monitor-compose") // Network Monitor Compose — Compose Multiplatform UI extensions
+// Firebase Analytics — 21/21 KMP targets (GitLive on 11, Measurement Protocol HTTP on 10)
+include(":cmp-firebase-analytics")
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")
