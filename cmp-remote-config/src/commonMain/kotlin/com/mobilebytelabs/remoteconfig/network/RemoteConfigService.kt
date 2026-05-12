@@ -15,11 +15,7 @@ import kotlinx.serialization.json.put
 private const val TAG = "RemoteConfigService"
 private const val TABLE = "product_remote_config"
 
-class RemoteConfigService(
-    private val supabaseUrl: String,
-    private val supabaseKey: String,
-    private val productType: String,
-) {
+class RemoteConfigService(private val supabaseUrl: String, private val supabaseKey: String) {
     private val client: SupabaseClient by lazy {
         createSupabaseClient(supabaseUrl = supabaseUrl, supabaseKey = supabaseKey) {
             defaultSerializer = KotlinXSerializer(
@@ -38,7 +34,6 @@ class RemoteConfigService(
         client.postgrest[TABLE]
             .select {
                 filter {
-                    eq("product_type", productType)
                     eq("is_enabled", true)
                 }
                 order("priority", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
@@ -54,7 +49,6 @@ class RemoteConfigService(
             function = "get_device_impressions",
             parameters = buildJsonObject {
                 put("p_device_id", deviceId)
-                put("p_product_type", productType)
             },
         ).decodeList<DeviceImpression>()
     } catch (e: Exception) {
@@ -69,7 +63,6 @@ class RemoteConfigService(
                 parameters = buildJsonObject {
                     put("p_config_id", configId)
                     put("p_device_id", deviceId)
-                    put("p_product_type", productType)
                 },
             )
         } catch (e: Exception) {
@@ -84,7 +77,6 @@ class RemoteConfigService(
                 parameters = buildJsonObject {
                     put("p_config_id", configId)
                     put("p_device_id", deviceId)
-                    put("p_product_type", productType)
                 },
             )
         } catch (e: Exception) {

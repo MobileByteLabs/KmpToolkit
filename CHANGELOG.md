@@ -9,6 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking — cmp-remote-config (next release: 4.0.0)
+- **Removed dependency on `cmp-product-tickets`.** `cmp-remote-config` is now standalone.
+  No transitive Maven pull, no shared config object, no cross-module imports.
+- **Public API reduced to a single Koin DSL extension**: `fun Module.remoteConfig(block)`.
+  Drops the previous public `val remoteConfigModule` + `object RemoteConfigConfig`.
+- **`RemoteConfigConfig` (public mutable singleton with `ifEmpty { ProductTicketsConfig.x }` fallbacks) deleted.**
+  Replaced by an internal `RemoteConfigSettings` data class populated via the DSL builder.
+- **Dropped `productType` parameter.** Per-project Supabase model (mirrors cmp-product-tickets v3.0.0 — each
+  consumer app has its own Supabase project, so the `product_type` filter column is meaningless on the client).
+  Removed from: `RemoteConfigService` ctor, `getActiveConfigs()` filter, `get_device_impressions` /
+  `record_config_impression` / `dismiss_config` RPC parameters (`p_product_type`), `RemoteConfig` data class
+  (`@SerialName("product_type")` field), `RemoteConfigBuilder` DSL, `RemoteConfigSettings`.
+  - Server follow-up: the `product_remote_config.product_type` column and `p_product_type` RPC arguments can be
+    dropped in a separate migration; until then they remain ignored (`ignoreUnknownKeys = true` on the JSON deserializer).
+- **`ActionType` changed from `enum class` to `@JvmInline value class`.** Built-in constants
+  (NONE/URL/DEEPLINK/STORE/DISMISS) preserved as companion vals; consumer apps can extend with their own:
+  `object RemoteActions { val OPEN_DOWNLOADS = ActionType("open_downloads") }`. New built-in: `PREMIUM`.
+  `ActionType.from(value)` removed — construct directly: `ActionType("my_type")`.
+- **New extensible action dispatcher.** Register handlers in the DSL via
+  `action("type") { value, ctx -> … }`. Handlers fire when `RemoteConfigHost` is called without an
+  explicit `onAction` parameter; the explicit `onAction` escape hatch is preserved.
+
+#### Migration
+```kotlin
+// Before
+ProductTicketsConfig.init(supabaseUrl, supabaseAnonKey, boardType = "your_app")
+startKoin { modules(productTicketsModule, remoteConfigModule) }
+
+// After (one block inside any existing Koin module)
+val networkModule = module {
+    remoteConfig {
+        supabaseUrl = "https://YOUR_PROJECT.supabase.co"
+        supabaseKey = "YOUR_ANON_KEY"
+        action(ActionType.PREMIUM) { _, _ -> AppNavigator.navigateTo("paywall") }
+        action("open_downloads")    { v, _ -> AppNavigator.navigateTo("downloads/${v.orEmpty()}") }
+    }
+    // … your other bindings …
+}
+startKoin { modules(networkModule, /* other modules */) }   // remoteConfigModule no longer exists
+```
+
+
 ### Added
 - **New Module: kmp-open-url** (`io.github.mobilebytelabs:kmp-open-url:3.2.1`)
   - Cross-platform URL opening for all 14 KMP targets

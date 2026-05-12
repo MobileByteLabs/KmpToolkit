@@ -4,8 +4,8 @@ Server-driven UI system for Kotlin Multiplatform — powered by Supabase.
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/kmptoolkit-remote-config.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/kmptoolkit-remote-config)
 
-> **Prerequisite**: `cmp-product-tickets` must be configured first. `cmp-remote-config` reuses
-> `ProductTicketsConfig` credentials (Supabase URL + anon key + board type).
+> **Standalone module** — no dependency on other kmp-toolkit modules. Per-project Supabase
+> model: bring your own `supabaseUrl` + `anonKey`; no `productType` filter required.
 
 ---
 
@@ -57,12 +57,12 @@ scheduling, platform targeting, and action routing.
 ## Module Identity
 
 ```yaml
-artifact:       io.github.mobilebytelabs:kmptoolkit-remote-config:3.1.0
+artifact:       io.github.mobilebytelabs:kmptoolkit-remote-config:4.0.0   # next release — see CHANGELOG
 package:        com.mobilebytelabs.remoteconfig
-supabase_table: product_remote_config
-di_module:      remoteConfigModule
+supabase_table: product_remote_config   # per-project, NO product_type column
+install:        Module.remoteConfig { … }  # Koin DSL extension
 ui_composable:  RemoteConfigHost(onAction)
-depends_on:     cmp-product-tickets (ProductTicketsConfig credentials)
+depends_on:     —   # standalone, no kmp-toolkit cross-module dependencies
 ```
 
 ---
@@ -70,18 +70,25 @@ depends_on:     cmp-product-tickets (ProductTicketsConfig credentials)
 ## Quick Start
 
 ```kotlin
-// 1. Prerequisites — cmp-product-tickets already configured:
-ProductTicketsConfig.init(supabaseUrl, supabaseAnonKey, boardType = "your_app")
+// 1. Install inside any existing Koin module
+import com.mobilebytelabs.remoteconfig.remoteConfig
 
-// 2. Add remoteConfigModule to Koin
-startKoin {
-    modules(
-        productTicketsModule,
-        remoteConfigModule,   // add this
-    )
+val networkModule = module {
+    remoteConfig {
+        supabaseUrl = "https://YOUR_PROJECT.supabase.co"
+        supabaseKey = "YOUR_ANON_KEY"
+
+        // Optional — app-specific action handlers (custom action_type strings):
+        action(ActionType.PREMIUM)     { _, _ -> navigator.navigateTo("paywall") }
+        action("open_downloads")       { v, _ -> navigator.navigateTo("downloads/${v.orEmpty()}") }
+    }
+
+    // … your other bindings …
 }
 
-// 3. Add RemoteConfigHost to root composable
+// 2. Add RemoteConfigHost to root composable.
+//    Pass onAction for explicit per-screen control, or omit to route through
+//    handlers registered above via the action(...) DSL.
 @Composable
 fun App() {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -93,6 +100,7 @@ fun App() {
                     ActionType.URL      -> openUrl(actionValue)
                     ActionType.DEEPLINK -> navController.navigate(actionValue ?: return@RemoteConfigHost)
                     ActionType.STORE    -> openStore()
+                    ActionType.PREMIUM  -> navController.navigate("paywall")
                     else -> {}
                 }
             },
@@ -100,6 +108,27 @@ fun App() {
     }
 }
 ```
+
+## Custom Action Types
+
+`ActionType` is an open value-class — extend with your own typed constants:
+
+```kotlin
+object RemoteActions {
+    val OPEN_DOWNLOADS = ActionType("open_downloads")
+    val CLEAR_CACHE    = ActionType("clear_cache")
+    val OPEN_PAYWALL   = ActionType("open_paywall")
+}
+
+remoteConfig {
+    supabaseUrl = "…"; supabaseKey = "…"
+    action(RemoteActions.OPEN_DOWNLOADS) { v, _ -> navigator.navigateTo("downloads/${v.orEmpty()}") }
+    action(RemoteActions.CLEAR_CACHE)    { _, _ -> cacheManager.clearAll() }
+}
+```
+
+`ActionType("open_downloads") == RemoteActions.OPEN_DOWNLOADS` — value class equality is
+structural, so types round-trip exactly through Supabase JSON.
 
 ---
 
