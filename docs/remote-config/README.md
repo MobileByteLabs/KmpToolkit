@@ -48,7 +48,7 @@ scheduling, platform targeting, and action routing.
 - **Scheduling**: `start_at` + `end_at` for time-boxed campaigns
 - **Platform targeting**: `platform = "android" | "ios" | "all"`
 - **Version targeting**: `min_app_version` + `max_app_version`
-- **Action routing**: URL, deep link, store, dismiss
+- **Action routing**: extensible `ActionType` value class (built-in URL/DEEPLINK/STORE/DISMISS/PREMIUM, plus consumer-defined types)
 - **Dynamic UI**: `content_json` for server-rendered composables
 - **RLS-secured**: device impressions tracked server-side
 
@@ -139,6 +139,19 @@ structural, so types round-trip exactly through Supabase JSON.
 **RPCs**: `get_device_impressions`, `record_config_impression`, `dismiss_config`
 
 See [SETUP.md](SETUP.md) for full SQL.
+
+---
+
+## Migrating from 3.x
+
+| 3.x | 4.0.0 |
+|---|---|
+| `ProductTicketsConfig.init(...)` prerequisite | None — `cmp-remote-config` is standalone |
+| `RemoteConfigConfig.supabaseUrl = ...` (mutable singleton) | DSL: `remoteConfig { supabaseUrl = ... }` |
+| `modules(remoteConfigModule)` in `startKoin { }` | DSL block inside any existing module — no separate registration |
+| `boardType` / `productType` parameter | Removed — per-project Supabase model |
+| `ActionType` enum + `ActionType.from(value)` | `@JvmInline value class ActionType(val value)` — construct directly, extend with `object MyActions { val FOO = ActionType("foo") }` |
+| `ActionType.NONE / URL / DEEPLINK / STORE / DISMISS` | All preserved + new `ActionType.PREMIUM` |
 
 ---
 
