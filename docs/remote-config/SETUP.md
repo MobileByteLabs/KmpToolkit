@@ -225,6 +225,147 @@ END; $$;
 
 ---
 
+
+---
+
+## `content_json` — Server-Driven Dynamic UI
+
+When `content_json` is set on a config row, `RemoteConfigHost` **bypasses** the
+static templates (Dialog/Banner/FullScreen/BottomSheet using `title` +
+`description` + `action_text`) and renders the JSON tree instead. Use this when
+the predefined layouts don't fit — e.g. multi-CTA cards, custom icons,
+rich-text bodies, badges.
+
+`content_json` is optional. If `null`, the static `title`/`description`/
+`action_text` columns are used as before.
+
+### Top-level shape
+
+```json
+{
+  "root": {
+    "type": "column",
+    "padding": 24,
+    "spacing": 16,
+    "children": [
+      { "type": "text", "content": "Welcome back!", "style": "headline" },
+      { "type": "text", "content": "We've shipped a few updates worth checking out." },
+      {
+        "type": "button",
+        "text": "What's new",
+        "style": "primary",
+        "action": { "type": "url", "value": "https://example.com/changelog" }
+      }
+    ]
+  }
+}
+```
+
+The outermost object must have a single `root` key whose value is a UiNode.
+
+### Node types
+
+| `type` | Fields | Notes |
+|---|---|---|
+| `column` | `children: UiNode[]`, `padding: Int=0`, `spacing: Int=0`, `alignment: "start"|"center"|"end"`, `background: String?` | Vertical layout |
+| `row` | `children: UiNode[]`, `padding: Int=0`, `spacing: Int=0`, `alignment: "start"|"center"|"end"` | Horizontal layout |
+| `box` | `children: UiNode[]`, `padding: Int=0`, `width: Int?`, `height: Int?`, `alignment: "center"|…`, `background: String?` | Z-stack / aligned container |
+| `card` | `children: UiNode[]`, `padding: Int=16`, `cornerRadius: Int=12`, `elevation: Int=2`, `background: String?` | Elevated surface |
+| `text` | `content: String` (required), `style: "headline"|"title"|"body"|"caption"|"label"=body`, `color: String?` (hex), `align: "start"|"center"|"end"`, `fontWeight: String?` (`"bold"`, `"semibold"`, …), `maxLines: Int?` | Body text |
+| `button` | `text: String` (required), `style: "primary"|"outlined"|"text"=primary`, `action: { type, value }?`, `color: String?` (hex) | CTA — `action.type` flows to your registered `action(...)` handler / `RemoteConfigHost(onAction)` |
+| `image` | `url: String` (required), `width: Int?`, `height: Int?`, `cornerRadius: Int=0`, `fit: "crop"|…="crop"` | Remote image |
+| `spacer` | `height: Int=0`, `width: Int=0` | Empty space |
+| `divider` | `color: String?` (hex), `thickness: Int=1` | Horizontal rule |
+| `badge` | `text: String` (required), `color: String?` (hex), `backgroundColor: String?` (hex) | Small label chip |
+| `icon` | `emoji: String` (required), `size: Int=24` | Emoji as icon |
+
+Numeric fields are **density-independent pixels (dp)** — interpret as `.dp` in
+Compose. Color strings are hex (`"#RRGGBB"` or `"#AARRGGBB"`). Unknown fields are
+silently ignored (`ignoreUnknownKeys = true`); unknown `type` values log a Kermit
+warning and the node is skipped.
+
+### Actions inside `content_json`
+
+Inside a `button`, the `action` object follows the same `ActionType` rules as
+the top-level `action_type` column:
+
+```json
+{
+  "type": "button",
+  "text": "Upgrade",
+  "action": { "type": "premium", "value": "monthly" }
+}
+```
+
+- The string `"premium"` maps to `ActionType.PREMIUM`.
+- `RemoteConfigHost` routes the action through your DSL-registered handler
+  (`action(ActionType.PREMIUM) { _, _ -> … }`) when called without an explicit
+  `onAction` lambda, or to your explicit `onAction` lambda otherwise.
+- `value` is passed through as the second argument to the handler.
+- The special type `"dismiss"` (`ActionType.DISMISS`) is handled internally —
+  no handler needed.
+
+### `display_type` interaction
+
+`content_json` is rendered inside the same chrome that the `display_type`
+column specifies:
+
+| `display_type` | What wraps `content_json` |
+|---|---|
+| `dialog` | Centered `Dialog` with rounded `Surface` (24.dp padding) |
+| `fullscreen` | Edge-to-edge scrollable `Surface` on the background color |
+| `bottom_sheet` | Bottom-aligned `Surface` with rounded top corners |
+| `banner` | Inline `DynamicUiRenderer` (no `Dialog`) — use when embedding in a sticky bar |
+
+### Worked example — promo card
+
+```json
+{
+  "root": {
+    "type": "card",
+    "padding": 20,
+    "cornerRadius": 16,
+    "children": [
+      {
+        "type": "row",
+        "spacing": 12,
+        "alignment": "center",
+        "children": [
+          { "type": "icon", "emoji": "🎉", "size": 32 },
+          {
+            "type": "column",
+            "spacing": 4,
+            "children": [
+              { "type": "text", "content": "Pro Plan — 30% off", "style": "title", "fontWeight": "bold" },
+              { "type": "text", "content": "Only for the next 7 days.", "style": "caption" }
+            ]
+          },
+          { "type": "badge", "text": "NEW", "backgroundColor": "#FF5722", "color": "#FFFFFF" }
+        ]
+      },
+      { "type": "spacer", "height": 16 },
+      {
+        "type": "button",
+        "text": "Upgrade now",
+        "style": "primary",
+        "action": { "type": "premium", "value": "monthly" }
+      }
+    ]
+  }
+}
+```
+
+Stored as:
+```sql
+INSERT INTO product_remote_config
+    (title, display_type, content_json)
+VALUES
+    ('Pro Plan promo', 'dialog', '<the JSON above>');
+```
+
+The `title` column is still required by the schema but is ignored when
+`content_json` is set — the JSON tree owns the entire body.
+
 ## Step 5 — Insert Your First Config
 
 ```sql

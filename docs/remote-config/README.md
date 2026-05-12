@@ -49,7 +49,7 @@ scheduling, platform targeting, and action routing.
 - **Platform targeting**: `platform = "android" | "ios" | "all"`
 - **Version targeting**: `min_app_version` + `max_app_version`
 - **Action routing**: extensible `ActionType` value class (built-in URL/DEEPLINK/STORE/DISMISS/PREMIUM, plus consumer-defined types)
-- **Dynamic UI**: `content_json` for server-rendered composables
+- **Dynamic UI**: `content_json` for server-rendered composables — 11 node types (Column, Row, Box, Card, Text, Button, Image, Spacer, Divider, Badge, Icon). See [SETUP.md#content_json](SETUP.md#content_json--server-driven-dynamic-ui)
 - **RLS-secured**: device impressions tracked server-side
 
 ---
