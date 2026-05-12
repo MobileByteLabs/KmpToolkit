@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mobilebytelabs.remoteconfig.dispatch.ActionDispatcher
 import com.mobilebytelabs.remoteconfig.dynamic.DynamicUiRenderer
 import com.mobilebytelabs.remoteconfig.dynamic.model.UiAction
 import com.mobilebytelabs.remoteconfig.dynamic.parser.UiNodeParser
@@ -23,10 +24,18 @@ import com.mobilebytelabs.remoteconfig.model.DisplayType
 import com.mobilebytelabs.remoteconfig.model.RemoteConfig
 import org.koin.compose.viewmodel.koinViewModel
 
+/**
+ * Render the active remote-config CTA.
+ *
+ * Action routing:
+ * - Pass [onAction] for explicit per-screen control (escape hatch).
+ * - Omit [onAction] and use the `action(...)` DSL inside `remoteConfig { … }` —
+ *   actions dispatch to your registered handlers via [ActionDispatcher].
+ */
 @Composable
 fun RemoteConfigHost(
     viewModel: RemoteConfigViewModel = koinViewModel(),
-    onAction: (actionType: ActionType, actionValue: String?) -> Unit = { _, _ -> },
+    onAction: ((actionType: ActionType, actionValue: String?) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val config = state.activeConfig ?: return
@@ -35,16 +44,24 @@ fun RemoteConfigHost(
         viewModel.onConfigShown(config.id)
     }
 
+    val handle: (ActionType, String?) -> Unit = { type, value ->
+        if (onAction != null) {
+            onAction(type, value)
+        } else {
+            ActionDispatcher.dispatch(type, value)
+        }
+    }
+
     // Route: dynamic (content_json) or static (templates)
     if (config.contentJson != null) {
         DynamicConfigRenderer(
             config = config,
             onAction = { uiAction ->
-                val actionType = ActionType.from(uiAction.type)
+                val actionType = ActionType(uiAction.type)
                 if (actionType == ActionType.DISMISS) {
                     viewModel.onConfigDismissed(config.id)
                 } else {
-                    onAction(actionType, uiAction.value)
+                    handle(actionType, uiAction.value)
                     viewModel.onActionClicked(config.id)
                 }
             },
@@ -53,7 +70,7 @@ fun RemoteConfigHost(
     } else {
         StaticConfigRenderer(
             config = config,
-            onAction = onAction,
+            onAction = handle,
             viewModel = viewModel,
         )
     }
@@ -135,12 +152,12 @@ private fun StaticConfigRenderer(
     viewModel: RemoteConfigViewModel,
 ) {
     val handlePrimaryAction: () -> Unit = {
-        onAction(ActionType.from(config.actionType), config.actionValue)
+        onAction(ActionType(config.actionType), config.actionValue)
         viewModel.onActionClicked(config.id)
     }
 
     val handleSecondaryAction: () -> Unit = {
-        val type = ActionType.from(config.secondaryActionType)
+        val type = ActionType(config.secondaryActionType)
         if (type == ActionType.DISMISS) {
             viewModel.onConfigDismissed(config.id)
         } else {

@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RemoteConfig(
     val id: String = "",
-    @SerialName("product_type") val productType: String = "",
     val platform: String = "all",
     @SerialName("min_app_version") val minAppVersion: String? = null,
     @SerialName("max_app_version") val maxAppVersion: String? = null,
@@ -53,15 +52,29 @@ data class DeviceImpression(
     val dismissed: Boolean = false,
 )
 
-enum class ActionType(val value: String) {
-    NONE("none"),
-    URL("url"),
-    DEEPLINK("deeplink"),
-    STORE("store"),
-    DISMISS("dismiss"),
-    ;
-
+/**
+ * Open value-class action_type. Built-in constants live on the companion;
+ * consumers extend with their own typed constants (recommended pattern):
+ *
+ * ```
+ * object RemoteActions {
+ *     val OPEN_DOWNLOADS = ActionType("open_downloads")
+ *     val CLEAR_CACHE    = ActionType("clear_cache")
+ * }
+ * ```
+ *
+ * Semantics are convention — the library does NOT auto-handle any built-in.
+ * Consumer wires them up via `action(...)` DSL inside `remoteConfig { … }`,
+ * or via the `RemoteConfigHost(onAction = …)` escape hatch.
+ */
+@kotlin.jvm.JvmInline
+value class ActionType(val value: String) {
     companion object {
-        fun from(value: String): ActionType = entries.find { it.value == value } ?: NONE
+        val NONE = ActionType("none")
+        val URL = ActionType("url")
+        val DEEPLINK = ActionType("deeplink")
+        val STORE = ActionType("store")
+        val DISMISS = ActionType("dismiss")
+        val PREMIUM = ActionType("premium")
     }
 }
