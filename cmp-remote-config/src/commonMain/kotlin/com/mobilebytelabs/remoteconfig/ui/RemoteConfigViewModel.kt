@@ -29,10 +29,6 @@ class RemoteConfigViewModel(
 
     private val deviceId: String by lazy { deviceIdProvider.getDeviceId() }
 
-    init {
-        fetchAndEvaluate()
-    }
-
     fun fetchAndEvaluate() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
