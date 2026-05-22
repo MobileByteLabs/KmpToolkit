@@ -121,7 +121,6 @@ public actual class PdfGenerator public actual constructor() {
                     }
                 }
 
-                @kotlin.experimental.ExperimentalObjCName
                 @kotlinx.cinterop.ObjCSignatureOverride
                 override fun webView(webView: WKWebView, didFailNavigation: WKNavigation?, withError: NSError) {
                     pdfReady.completeExceptionally(
@@ -129,7 +128,6 @@ public actual class PdfGenerator public actual constructor() {
                     )
                 }
 
-                @kotlin.experimental.ExperimentalObjCName
                 @kotlinx.cinterop.ObjCSignatureOverride
                 override fun webView(
                     webView: WKWebView,

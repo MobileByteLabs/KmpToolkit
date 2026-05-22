@@ -72,12 +72,11 @@ fun SamplePdfGeneratorApp(generator: PdfGenerator) {
             },
         ) { padding ->
             Column(
-                modifier =
-                    Modifier
-                        .padding(padding)
-                        .padding(16.dp)
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .padding(padding)
+                    .padding(16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text("Status: $lastResult", style = MaterialTheme.typography.bodySmall)

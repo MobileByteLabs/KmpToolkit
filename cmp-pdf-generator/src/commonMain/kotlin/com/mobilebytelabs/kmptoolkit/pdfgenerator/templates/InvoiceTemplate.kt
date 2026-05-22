@@ -13,6 +13,7 @@ import com.mobilebytelabs.kmptoolkit.pdfgenerator.HtmlTemplateGenerator
 import com.mobilebytelabs.kmptoolkit.pdfgenerator.PdfBranding
 import kotlinx.datetime.LocalDate
 import kotlinx.html.BODY
+import kotlinx.html.FlowContent
 import kotlinx.html.div
 import kotlinx.html.h1
 import kotlinx.html.h2
@@ -195,12 +196,12 @@ public class InvoiceTemplate(branding: PdfBranding, public val invoice: InvoiceD
     }
 }
 
-private fun kotlinx.html.FlowContent.renderParty(party: PartyInfo) {
-    kotlinx.html.div {
-        kotlinx.html.p { +party.name }
-        party.addressLines.forEach { line -> kotlinx.html.p { +line } }
-        party.email?.let { kotlinx.html.p { +it } }
-        party.phone?.let { kotlinx.html.p { +it } }
-        party.taxId?.let { kotlinx.html.p { +"Tax ID: $it" } }
+private fun FlowContent.renderParty(party: PartyInfo) {
+    div {
+        p { +party.name }
+        party.addressLines.forEach { line -> p { +line } }
+        party.email?.let { p { +it } }
+        party.phone?.let { p { +it } }
+        party.taxId?.let { p { +"Tax ID: $it" } }
     }
 }
