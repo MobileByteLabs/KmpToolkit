@@ -5,6 +5,10 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.InvoiceData
+import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.InvoiceLineItem
+import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.InvoiceTemplate
+import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.PartyInfo
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
@@ -24,35 +28,24 @@ class JvmGoldenSnapshotTest {
     fun deterministicInvoiceProducesStableMagicAndKeywords() = runTest {
         val gen = PdfGenerator()
         val branding = PdfBranding.default()
-        val template =
-            com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.InvoiceTemplate(
-                branding = branding,
-                invoice =
-                    com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.InvoiceData(
-                        invoiceNumber = "GOLDEN-001",
-                        invoiceDate = LocalDate(2026, 1, 1),
-                        billFrom =
-                            com.mobilebytelabs.kmptoolkit.pdfgenerator.templates
-                                .PartyInfo("Sender Co"),
-                        billTo =
-                            com.mobilebytelabs.kmptoolkit.pdfgenerator.templates
-                                .PartyInfo("Receiver Co"),
-                        lineItems =
-                            listOf(
-                                com.mobilebytelabs.kmptoolkit.pdfgenerator.templates
-                                    .InvoiceLineItem("Item A", "1", "$10", "$10"),
-                            ),
-                        subtotal = "$10",
-                        total = "$10",
-                    ),
-            )
+        val template = InvoiceTemplate(
+            branding = branding,
+            invoice = InvoiceData(
+                invoiceNumber = "GOLDEN-001",
+                invoiceDate = LocalDate(2026, 1, 1),
+                billFrom = PartyInfo("Sender Co"),
+                billTo = PartyInfo("Receiver Co"),
+                lineItems = listOf(InvoiceLineItem("Item A", "1", "$10", "$10")),
+                subtotal = "$10",
+                total = "$10",
+            ),
+        )
         val html = template.generateHtml()
-        val result =
-            gen.generateFromHtml(
-                html = html,
-                output = PdfOutput.ByteArrayOutput,
-                options = PdfGeneratorOptions(deterministic = true, fixedDate = LocalDate(2026, 1, 1)),
-            )
+        val result = gen.generateFromHtml(
+            html = html,
+            output = PdfOutput.ByteArrayOutput,
+            options = PdfGeneratorOptions(deterministic = true, fixedDate = LocalDate(2026, 1, 1)),
+        )
         assertIs<PdfResult.Success>(result)
         val bytes = result.bytes!!
         // PDF magic

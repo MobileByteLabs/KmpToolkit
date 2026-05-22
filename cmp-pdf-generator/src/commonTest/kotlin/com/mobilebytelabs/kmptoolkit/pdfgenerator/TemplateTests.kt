@@ -68,16 +68,14 @@ class TemplateTests {
 
     @Test
     fun reportTemplateRendersNestedSections() = runTest {
-        val data =
-            ReportData(
-                title = "Q1 Report",
-                date = LocalDate(2026, 1, 1),
-                sections =
-                    listOf(
-                        ReportSection("Intro", "Body", subsections = listOf(ReportSection("Sub", "Inner"))),
-                        ReportSection("Conclusion", "End"),
-                    ),
-            )
+        val data = ReportData(
+            title = "Q1 Report",
+            date = LocalDate(2026, 1, 1),
+            sections = listOf(
+                ReportSection("Intro", "Body", subsections = listOf(ReportSection("Sub", "Inner"))),
+                ReportSection("Conclusion", "End"),
+            ),
+        )
         val html = ReportTemplate(PdfBranding.default(), data).generateHtml()
         assertTrue(html.contains("Q1 Report"))
         assertTrue(html.contains("1. Intro"))
@@ -87,19 +85,17 @@ class TemplateTests {
 
     @Test
     fun statementTemplateRendersTransactionTable() = runTest {
-        val data =
-            StatementData(
-                accountHolder = party,
-                accountNumber = "ACC-1",
-                periodStart = LocalDate(2026, 1, 1),
-                periodEnd = LocalDate(2026, 1, 31),
-                openingBalance = "$100",
-                closingBalance = "$150",
-                transactions =
-                    listOf(
-                        StatementTransaction(LocalDate(2026, 1, 5), "Deposit", credit = "$50", balance = "$150"),
-                    ),
-            )
+        val data = StatementData(
+            accountHolder = party,
+            accountNumber = "ACC-1",
+            periodStart = LocalDate(2026, 1, 1),
+            periodEnd = LocalDate(2026, 1, 31),
+            openingBalance = "$100",
+            closingBalance = "$150",
+            transactions = listOf(
+                StatementTransaction(LocalDate(2026, 1, 5), "Deposit", credit = "$50", balance = "$150"),
+            ),
+        )
         val html = StatementTemplate(PdfBranding.default(), data).generateHtml()
         assertTrue(html.contains("ACC-1"))
         assertTrue(html.contains("Deposit"))

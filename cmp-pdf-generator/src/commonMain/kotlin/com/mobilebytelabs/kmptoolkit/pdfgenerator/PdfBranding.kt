@@ -140,11 +140,7 @@ public data class PdfBranding(
         public fun mifosDefault(logo: PdfLogo = PdfLogo.None): PdfBranding = PdfBranding(
             logo = logo,
             poweredByText = "Powered by Mifos",
-            theme =
-                PdfTheme(
-                    accentColorHex = "#33618D",
-                    headerColorHex = "#1976d2",
-                ),
+            theme = PdfTheme(accentColorHex = "#33618D", headerColorHex = "#1976d2"),
         )
     }
 }

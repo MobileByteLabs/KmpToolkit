@@ -123,31 +123,28 @@ private suspend fun runInvoiceDemo(gen: PdfGenerator): String {
 }
 
 private suspend fun runReceiptDemo(gen: PdfGenerator): String {
-    val receipt =
-        ReceiptData(
-            merchantName = "Sample Co",
-            merchantAddress = "123 Sample Street, Sampleville",
-            receiptNumber = "RCP-2026-0042",
-            date = LocalDate(2026, 5, 22),
-            items =
-                listOf(
-                    ReceiptLineItem("Coffee", "$4.50"),
-                    ReceiptLineItem("Bagel", "$3.50"),
-                    ReceiptLineItem("Donation", "$1.00"),
-                ),
-            subtotal = "$9.00",
-            tax = "$0.90",
-            total = "$9.90",
-            paymentMethod = "Card ****1234",
-            footer = "Thank you!",
-        )
+    val receipt = ReceiptData(
+        merchantName = "Sample Co",
+        merchantAddress = "123 Sample Street, Sampleville",
+        receiptNumber = "RCP-2026-0042",
+        date = LocalDate(2026, 5, 22),
+        items = listOf(
+            ReceiptLineItem("Coffee", "$4.50"),
+            ReceiptLineItem("Bagel", "$3.50"),
+            ReceiptLineItem("Donation", "$1.00"),
+        ),
+        subtotal = "$9.00",
+        tax = "$0.90",
+        total = "$9.90",
+        paymentMethod = "Card ****1234",
+        footer = "Thank you!",
+    )
     val html = ReceiptTemplate(PdfBranding.default(), receipt).generateHtml()
-    val result =
-        gen.generateFromHtml(
-            html = html,
-            output = PdfOutput.Save,
-            pageConfig = PageConfig(size = PageSize.A4),
-        )
+    val result = gen.generateFromHtml(
+        html = html,
+        output = PdfOutput.Save,
+        pageConfig = PageConfig(size = PageSize.A4),
+    )
     return when (result) {
         is PdfResult.Success -> "Receipt saved · ${result.byteCount} bytes"
         is PdfResult.Failure -> "Receipt failed: ${result.error.message}"
