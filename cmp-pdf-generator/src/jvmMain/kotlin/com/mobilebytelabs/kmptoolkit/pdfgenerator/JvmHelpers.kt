@@ -104,7 +104,7 @@ internal class JvmNativePdfRenderer(
                     var cellX = x
                     row.cells.forEach { cell ->
                         val cellW = colWidth * cell.colSpan
-                        cs.addRect(cellX, y - 14, cellW, 14)
+                        cs.addRect(cellX, y - 14f, cellW, 14f)
                         cs.stroke()
                         cs.beginText()
                         cs.setFont(font, 8f)
