@@ -43,6 +43,39 @@ internal class JsPdfLibRenderer(
         return uint8ArrayToByteArray(u8 as Uint8Array)
     }
 
+    private fun textOptions(x: Double, y: Double, size: Double, theFont: dynamic): dynamic {
+        val o = js("{}")
+        o.x = x
+        o.y = y
+        o.size = size
+        o.font = theFont
+        return o
+    }
+
+    private fun rectOptions(x: Double, y: Double, w: Double, h: Double): dynamic {
+        val o = js("{}")
+        o.x = x
+        o.y = y
+        o.width = w
+        o.height = h
+        o.borderWidth = 1
+        return o
+    }
+
+    private fun lineOptions(x: Double, y: Double, maxWidth: Double): dynamic {
+        val start = js("{}")
+        start.x = x
+        start.y = y
+        val end = js("{}")
+        end.x = x + maxWidth
+        end.y = y
+        val o = js("{}")
+        o.start = start
+        o.end = end
+        o.thickness = 1
+        return o
+    }
+
     @Suppress("UNUSED_PARAMETER")
     private fun renderElement(
         page: PDFPageJs,
@@ -58,58 +91,25 @@ internal class JsPdfLibRenderer(
             is PdfElement.Text -> {
                 val size = el.style.size.toDouble()
                 val theFont = if (el.style.bold) boldFont else font
-                page.drawText(
-                    el.content.take(2000),
-                    js("{}").also {
-                        it.x = x
-                        it.y = y - size
-                        it.size = size
-                        it.font = theFont
-                    },
-                )
+                page.drawText(el.content.take(2000), textOptions(x, y - size, size, theFont))
                 y -= size * 1.4
             }
 
             is PdfElement.Heading -> {
-                val size =
-                    when (el.level) {
-                        1 -> 16.0
-                        2 -> 13.0
-                        3 -> 11.0
-                        else -> 10.0
-                    }
-                page.drawText(
-                    el.content.take(2000),
-                    js("{}").also {
-                        it.x = x
-                        it.y = y - size
-                        it.size = size
-                        it.font = boldFont
-                    },
-                )
+                val size = when (el.level) {
+                    1 -> 16.0
+                    2 -> 13.0
+                    3 -> 11.0
+                    else -> 10.0
+                }
+                page.drawText(el.content.take(2000), textOptions(x, y - size, size, boldFont))
                 y -= size * 1.6
             }
 
-            is PdfElement.Spacer -> {
-                y -= el.mm * 2.834
-            }
+            is PdfElement.Spacer -> y -= el.mm * 2.834
 
             PdfElement.Divider -> {
-                page.drawLine(
-                    js("{}").also {
-                        it.start =
-                            js("{}").also { s ->
-                                s.x = x
-                                s.y = y
-                            }
-                        it.end =
-                            js("{}").also { e ->
-                                e.x = x + maxWidth
-                                e.y = y
-                            }
-                        it.thickness = 1
-                    },
-                )
+                page.drawLine(lineOptions(x, y, maxWidth))
                 y -= 6.0
             }
 
@@ -122,24 +122,8 @@ internal class JsPdfLibRenderer(
                     var cellX = x
                     row.cells.forEach { cell ->
                         val cellW = colW * cell.colSpan
-                        page.drawRectangle(
-                            js("{}").also {
-                                it.x = cellX
-                                it.y = y - 14
-                                it.width = cellW
-                                it.height = 14
-                                it.borderWidth = 1
-                            },
-                        )
-                        page.drawText(
-                            cell.content.take(60),
-                            js("{}").also {
-                                it.x = cellX + 2
-                                it.y = y - 10
-                                it.size = 8
-                                it.font = font
-                            },
-                        )
+                        page.drawRectangle(rectOptions(cellX, y - 14, cellW, 14.0))
+                        page.drawText(cell.content.take(60), textOptions(cellX + 2, y - 10, 8.0, font))
                         cellX += cellW
                     }
                     y -= 16.0

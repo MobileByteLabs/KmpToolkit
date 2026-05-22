@@ -8,7 +8,6 @@
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -21,15 +20,16 @@ plugins {
 // ============================================================================
 // Cross-platform PDF generation library. HTML / Markdown / DSL input modes;
 // File / ByteArray / URI / Share / Print / Save output destinations.
-// Targets: Android, iOS (14+), macOS (11+), JVM, JS, wasmJs.
-// (tvOS / watchOS / Linux / mingw / wasmWasi excluded — `kotlinx-html` and
-// `org.intellij.markdown` don't publish artifacts for those platforms.)
+// Targets: Android, iOS (14+), macOS (11+), JVM, JS.
+// (wasmJs / tvOS / watchOS / Linux / mingw / wasmWasi excluded — upstream
+// library coverage incomplete; wasmJs needs explicit kotlinx-browser dep
+// which is deferred to v0.2.)
 // Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-pdf-generator/
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
 
-@OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
     applyDefaultHierarchyTemplate()
 
@@ -61,11 +61,6 @@ kotlin {
                 useKarma { useChromeHeadless() }
             }
         }
-        nodejs()
-    }
-
-    wasmJs {
-        browser()
         nodejs()
     }
 
@@ -103,10 +98,6 @@ kotlin {
         }
 
         jsMain.dependencies {
-            implementation(npm("pdf-lib", "1.17.1"))
-        }
-
-        wasmJsMain.dependencies {
             implementation(npm("pdf-lib", "1.17.1"))
         }
     }
