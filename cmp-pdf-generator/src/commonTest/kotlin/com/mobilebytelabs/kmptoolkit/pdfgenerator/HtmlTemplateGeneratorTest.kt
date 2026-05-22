@@ -45,15 +45,18 @@ class HtmlTemplateGeneratorTest {
     @Test
     fun noLogoNoFooterWithBrandingNone() = runTest {
         val html = TestTemplate(PdfBranding.none()).generateHtml()
-        assertFalse(html.contains("<img"), "PdfBranding.none should not emit logo img")
-        assertFalse(html.contains("powered-by"), "PdfBranding.none should not emit footer")
+        assertFalse(html.contains("<img"), "PdfBranding.none should not emit any <img tag")
+        assertFalse(
+            html.contains("<div class=\"powered-by"),
+            "PdfBranding.none should not emit the footer div",
+        )
     }
 
     @Test
     fun footerEmittedWhenPoweredByPresent() = runTest {
         val html = TestTemplate(PdfBranding.default()).generateHtml()
-        assertTrue(html.contains("powered-by"))
-        assertTrue(html.contains("KmpToolkit"))
+        assertTrue(html.contains("<div class=\"powered-by"), "Default branding should emit footer div")
+        assertTrue(html.contains("KmpToolkit"), "Default 'powered by' text should be present")
     }
 
     @Test
