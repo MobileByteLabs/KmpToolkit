@@ -34,10 +34,9 @@ class PdfErrorTest {
     }
 
     @Test
-    fun unsupportedPlatformMessageContainsPlatformName() {
-        val err = PdfError.UnsupportedPlatform("tvOS")
-        assertTrue(err.message!!.contains("tvOS"))
-        assertTrue(err.message!!.contains("pdf-tier3-tvOS"))
+    fun unsupportedFeatureMessageContainsFeatureName() {
+        val err = PdfError.UnsupportedFeature("custom-fonts-on-wasmJs")
+        assertTrue(err.message!!.contains("custom-fonts-on-wasmJs"))
     }
 
     @Test

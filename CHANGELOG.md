@@ -22,7 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Error model:** sealed `PdfError` hierarchy + cancellation + `Flow<PdfProgressEvent>` progress.
 - **Platform tiers:**
   - Tier-1 (functional): Android, iOS (14+), macOS (11+), JVM, JS, wasmJs
-  - Tier-3 (throws `PdfError.UnsupportedPlatform`): tvOS, watchOS, Linux, mingwX64, wasmWasi
+  - Not targeted (per Kotlin Multiplatform target tiers + upstream library coverage):
+    tvOS, watchOS, Linux native, mingwX64, wasmWasi — kotlinx-html and
+    org.intellij.markdown don't publish artifacts for those.
 - **Marker:** all public symbols `@ExperimentalPdfGeneratorApi` until v1.0.
 - **PLAN:** `plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-pdf-generator/` (epic, 12 sub-plans, 266 tasks).
 - **NOTE:** initial commit lays down the full source structure across 22 source sets.

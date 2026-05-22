@@ -15,19 +15,20 @@ Cross-platform PDF generation library for Kotlin Multiplatform.
 
 ## Platform support
 
-| Platform | Tier | HTML route | DSL route | Notes |
-|----------|:----:|------------|-----------|-------|
-| Android | 1 | WebView + PrintManager | `android.graphics.pdf.PdfDocument` | Min SDK from kmp-toolkit policy |
-| JVM (Desktop) | 1 | OpenHTMLToPDF | Apache PDFBox direct | ~10MB transitive |
-| iOS | 1 | `WKWebView.createPDF` | `PDFKit` | iOS 14+ |
-| macOS | 1 | `WKWebView.createPDF` | `PDFKit` | macOS 11+ |
-| JS (Browser+Node) | 1 | iframe + `window.print()` | `pdf-lib` (npm) | Browser: needs user gesture for print |
-| wasmJs | 1 | iframe + `window.print()` | `pdf-lib` (npm) | Browser only practical |
-| tvOS | 3 | throws | throws | `PdfError.UnsupportedPlatform("tvOS")` |
-| watchOS | 3 | throws | throws | `PdfError.UnsupportedPlatform("watchOS")` |
-| Linux | 3 | throws | throws | `libharu` cinterop deferred to v2 |
-| mingwX64 | 3 | throws | throws | Same |
-| wasmWasi | 3 | throws | throws | No DOM, no printer |
+| Platform | HTML route | DSL route | Notes |
+|----------|------------|-----------|-------|
+| Android | WebView + PrintManager | `android.graphics.pdf.PdfDocument` | Min SDK from kmp-toolkit policy |
+| JVM (Desktop) | OpenHTMLToPDF | Apache PDFBox direct | ~10MB transitive |
+| iOS | `WKWebView.createPDF` | `PDFKit` | iOS 14+ |
+| macOS | `WKWebView.createPDF` | `PDFKit` | macOS 11+ |
+| JS (Browser+Node) | iframe + `window.print()` | `pdf-lib` (npm) | Browser: needs user gesture for print |
+| wasmJs (Browser+Node) | iframe + `window.print()` | `pdf-lib` (npm) | Browser only practical |
+
+> **Not targeted:** tvOS, watchOS, Linux native, mingwX64, wasmWasi.
+> Per the [Kotlin Multiplatform target tiers](https://kotlinlang.org/docs/native-target-support.html),
+> these are Tier-2 / Tier-3 native targets. `kotlinx-html` and `org.intellij.markdown` —
+> our HTML compiler + Markdown adapter dependencies — don't publish artifacts there.
+> Adding them later requires upstream library coverage first.
 
 ## Install
 

@@ -34,15 +34,16 @@ val result = generator.generate(doc, PdfOutput.Share)
 
 ## Platform support
 
-| Platform | Tier | Engine |
-|----------|:----:|--------|
-| Android | 1 | WebView + PrintManager / native PdfDocument |
-| iOS 14+ | 1 | WKWebView.createPDF / PDFKit |
-| macOS 11+ | 1 | WKWebView.createPDF / PDFKit |
-| JVM | 1 | OpenHTMLToPDF / Apache PDFBox |
-| JS (browser+Node) | 1 | iframe+print / pdf-lib |
-| wasmJs | 1 | iframe+print / pdf-lib |
-| tvOS, watchOS, Linux, mingw, wasmWasi | 3 | throws `PdfError.UnsupportedPlatform` |
+| Platform | Engine |
+|----------|--------|
+| Android | WebView + PrintManager / native PdfDocument |
+| iOS 14+ | WKWebView.createPDF / PDFKit |
+| macOS 11+ | WKWebView.createPDF / PDFKit |
+| JVM | OpenHTMLToPDF / Apache PDFBox |
+| JS (browser+Node) | iframe+print / pdf-lib |
+| wasmJs (browser+Node) | iframe+print / pdf-lib |
+
+> Not targeted: tvOS, watchOS, Linux native, mingwX64, wasmWasi — upstream library coverage is incomplete on those.
 
 ## Links
 

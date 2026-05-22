@@ -13,8 +13,14 @@ plugins {
 kotlin {
     androidLibrary {
         namespace = "io.github.mobilebytelabs.kmptoolkit.sample.pdfgenerator.shared"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        compileSdk =
+            libs.versions.android.compileSdk
+                .get()
+                .toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
     }
 
     listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
@@ -26,6 +32,7 @@ kotlin {
 
     jvm()
     js { browser() }
+
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs { browser() }
 

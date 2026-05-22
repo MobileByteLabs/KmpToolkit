@@ -19,7 +19,6 @@ import kotlinx.coroutines.CancellationException
  * when (val r = generator.generate(doc, output)) {
  *     is PdfResult.Success -> publish(r.bytes)
  *     is PdfResult.Failure -> when (val e = r.error) {
- *         is PdfError.UnsupportedPlatform -> showFallback(e.platform)
  *         is PdfError.PermissionDenied -> requestPermission()
  *         else -> showError(e.message)
  *     }
@@ -51,12 +50,6 @@ public sealed class PdfError(
 
     /** Input failed validation (negative margin, empty doc, malformed HTML, …). */
     public class InvalidInput(public val reason: String) : PdfError("Invalid input: $reason")
-
-    /** Tier-3 platform — PDF generation is not implemented at all. */
-    public class UnsupportedPlatform(public val platform: String) : PdfError(
-        "PDF generation is not supported on $platform in cmp-pdf-generator v0.x. " +
-            "Track or upvote: https://github.com/MobileByteLabs/KmpToolkit/issues?q=label:pdf-tier3-$platform",
-    )
 }
 
 /**

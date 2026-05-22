@@ -101,7 +101,9 @@ public sealed class PdfResult {
  *  - [generate] — generic v0.1 entry. Takes a [PdfDocument] (DSL or HTML-via-template), routes
  *    to the requested [PdfOutput].
  *
- * Tier-3 platforms throw [PdfError.UnsupportedPlatform] on any call.
+ * The module declares the targets supported by `kotlinx-html` + Kotlin/Native Tier-1:
+ * Android, iOS (3 archs), macOS (2 archs), JVM, JS, wasmJs. Adding more targets
+ * requires verifying upstream library compatibility first.
  */
 @ExperimentalPdfGeneratorApi
 public expect class PdfGenerator() {

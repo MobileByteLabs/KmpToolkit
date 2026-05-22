@@ -21,8 +21,9 @@ plugins {
 // ============================================================================
 // Cross-platform PDF generation library. HTML / Markdown / DSL input modes;
 // File / ByteArray / URI / Share / Print / Save output destinations.
-// Tier-1: Android, iOS (14+), macOS (11+), JVM, JS, wasmJs.
-// Tier-3 (throws): tvOS, watchOS, Linux, mingwX64, wasmWasi.
+// Targets: Android, iOS (14+), macOS (11+), JVM, JS, wasmJs.
+// (tvOS / watchOS / Linux / mingw / wasmWasi excluded — `kotlinx-html` and
+// `org.intellij.markdown` don't publish artifacts for those platforms.)
 // Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-pdf-generator/
 // ============================================================================
 group = "io.github.mobilebytelabs"
@@ -36,8 +37,14 @@ kotlin {
 
     androidLibrary {
         namespace = "io.github.mobilebytelabs.kmptoolkit.pdfgenerator"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        compileSdk =
+            libs.versions.android.compileSdk
+                .get()
+                .toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
         androidResources.enable = true
     }
 
@@ -47,21 +54,6 @@ kotlin {
 
     macosX64()
     macosArm64()
-
-    tvosX64()
-    tvosArm64()
-    tvosSimulatorArm64()
-
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    watchosSimulatorArm64()
-    watchosDeviceArm64()
-
-    linuxX64()
-    linuxArm64()
-
-    mingwX64()
 
     js {
         browser {
@@ -74,10 +66,6 @@ kotlin {
 
     wasmJs {
         browser()
-        nodejs()
-    }
-
-    wasmWasi {
         nodejs()
     }
 
@@ -138,7 +126,10 @@ mavenPublishing {
 
     pom {
         name = "KMP PDF Generator"
-        description = "Cross-platform PDF generation library for Kotlin Multiplatform — HTML, Markdown, and DSL input; File / ByteArray / URI / Share / Print / Save output. Tier-1 on Android, iOS, macOS, JVM, JS, wasmJs."
+        description =
+            "Cross-platform PDF generation library for Kotlin Multiplatform — " +
+                "HTML, Markdown, and DSL input; File / ByteArray / URI / Share / Print / Save output. " +
+                "Supports Android, iOS, macOS, JVM, JS, wasmJs."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

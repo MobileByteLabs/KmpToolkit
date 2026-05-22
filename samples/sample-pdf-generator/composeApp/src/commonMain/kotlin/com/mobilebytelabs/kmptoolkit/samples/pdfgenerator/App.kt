@@ -199,7 +199,10 @@ private suspend fun runDslDemo(gen: PdfGenerator): String {
     }
     val result = gen.generate(doc, PdfOutput.ByteArrayOutput)
     return when (result) {
-        is PdfResult.Success -> "DSL bytes: ${result.byteCount} (magic ok: ${result.bytes?.startsWith(byteArrayOf(0x25, 0x50, 0x44, 0x46))})"
+        is PdfResult.Success -> {
+            val magicOk = result.bytes?.startsWith(byteArrayOf(0x25, 0x50, 0x44, 0x46))
+            "DSL bytes: ${result.byteCount} (magic ok: $magicOk)"
+        }
         is PdfResult.Failure -> "DSL failed: ${result.error.message}"
     }
 }
