@@ -25,14 +25,21 @@ public sealed class PdfProgressEvent {
      * A page was rendered. [total] is null when the renderer can't predict total pages
      * (HTML-based engines pre-pagination).
      */
-    public data class PageRendered(public val pageNum: Int, public val total: Int?) : PdfProgressEvent()
+    public data class PageRendered(
+        public val pageNum: Int,
+        public val total: Int?,
+    ) : PdfProgressEvent()
 
     /** Last pass before producing output bytes (metadata, ToC, signature). */
     public object Finalizing : PdfProgressEvent()
 
     /** Successful completion. [byteCount] is the size of the final PDF. */
-    public data class Complete(public val byteCount: Int) : PdfProgressEvent()
+    public data class Complete(
+        public val byteCount: Int,
+    ) : PdfProgressEvent()
 
     /** Render failed. The error is also returned by the generator call as [PdfResult.Failure]. */
-    public data class Failed(public val error: PdfError) : PdfProgressEvent()
+    public data class Failed(
+        public val error: PdfError,
+    ) : PdfProgressEvent()
 }

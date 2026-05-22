@@ -65,8 +65,10 @@ public data class InvoiceData(
  * line item table, totals, and optional notes / terms.
  */
 @ExperimentalPdfGeneratorApi
-public class InvoiceTemplate(branding: PdfBranding, public val invoice: InvoiceData) :
-    HtmlTemplateGenerator(branding) {
+public class InvoiceTemplate(
+    branding: PdfBranding,
+    public val invoice: InvoiceData,
+) : HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = "Invoice ${invoice.invoiceNumber}"
 
     override fun getAdditionalStyles(): String =
@@ -193,14 +195,14 @@ public class InvoiceTemplate(branding: PdfBranding, public val invoice: InvoiceD
             }
         }
     }
+}
 
-    private fun BODY.renderParty(p: PartyInfo) {
-        div {
-            p { +p.name }
-            p.addressLines.forEach { line -> p { +line } }
-            p.email?.let { p { +it } }
-            p.phone?.let { p { +it } }
-            p.taxId?.let { p { +"Tax ID: $it" } }
-        }
+private fun kotlinx.html.FlowContent.renderParty(party: PartyInfo) {
+    kotlinx.html.div {
+        kotlinx.html.p { +party.name }
+        party.addressLines.forEach { line -> kotlinx.html.p { +line } }
+        party.email?.let { kotlinx.html.p { +it } }
+        party.phone?.let { kotlinx.html.p { +it } }
+        party.taxId?.let { kotlinx.html.p { +"Tax ID: $it" } }
     }
 }

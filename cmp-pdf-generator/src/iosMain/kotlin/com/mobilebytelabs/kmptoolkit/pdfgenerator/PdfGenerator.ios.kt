@@ -52,7 +52,11 @@ public actual class PdfGenerator public actual constructor() {
         presentingRootViewController = vc
     }
 
-    public actual suspend fun generateAndSharePdf(htmlContent: String, fileName: String, pageConfig: PageConfig) {
+    public actual suspend fun generateAndSharePdf(
+        htmlContent: String,
+        fileName: String,
+        pageConfig: PageConfig,
+    ) {
         val data = renderHtmlToData(htmlContent.injectPageConfigCss(pageConfig))
         presentShareSheet(data, fileName)
     }
@@ -107,7 +111,10 @@ public actual class PdfGenerator public actual constructor() {
 
         val navDelegate =
             object : NSObject(), WKNavigationDelegateProtocol {
-                override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
+                override fun webView(
+                    webView: WKWebView,
+                    didFinishNavigation: WKNavigation?,
+                ) {
                     val pdfConfig = WKPDFConfiguration()
                     webView.createPDFWithConfiguration(pdfConfig) { data: NSData?, error: NSError? ->
                         when {
@@ -137,7 +144,13 @@ public actual class PdfGenerator public actual constructor() {
                     }
                 }
 
-                override fun webView(webView: WKWebView, didFailNavigation: WKNavigation?, withError: NSError) {
+                @kotlin.experimental.ExperimentalObjCName
+                @kotlinx.cinterop.ObjCSignatureOverride
+                override fun webView(
+                    webView: WKWebView,
+                    didFailNavigation: WKNavigation?,
+                    withError: NSError,
+                ) {
                     pdfReady.completeExceptionally(
                         PdfError.EngineFailure(
                             IllegalStateException("WKWebView navigation failed: ${withError.localizedDescription}"),
@@ -145,6 +158,8 @@ public actual class PdfGenerator public actual constructor() {
                     )
                 }
 
+                @kotlin.experimental.ExperimentalObjCName
+                @kotlinx.cinterop.ObjCSignatureOverride
                 override fun webView(
                     webView: WKWebView,
                     didFailProvisionalNavigation: WKNavigation?,
@@ -164,52 +179,63 @@ public actual class PdfGenerator public actual constructor() {
         return pdfReady.await()
     }
 
-    private fun dispatchOutput(data: NSData, output: PdfOutput, fileName: String): PdfResult = when (output) {
-        is PdfOutput.File -> {
-            val url = NSURL.fileURLWithPath(output.path)
-            data.writeToURL(url, true)
-            PdfResult.Success(byteCount = data.length.toInt())
+    private fun dispatchOutput(
+        data: NSData,
+        output: PdfOutput,
+        fileName: String,
+    ): PdfResult =
+        when (output) {
+            is PdfOutput.File -> {
+                val url = NSURL.fileURLWithPath(output.path)
+                data.writeToURL(url, true)
+                PdfResult.Success(byteCount = data.length.toInt())
+            }
+
+            PdfOutput.ByteArrayOutput -> {
+                PdfResult.Success(bytes = data.toByteArray(), byteCount = data.length.toInt())
+            }
+
+            is PdfOutput.Uri -> {
+                val url = writeToTemp(data, fileName)
+                output.callback(url.absoluteString ?: "")
+                PdfResult.Success(uri = url.absoluteString, byteCount = data.length.toInt())
+            }
+
+            PdfOutput.Share -> {
+                presentShareSheet(data, fileName)
+                PdfResult.Success(byteCount = data.length.toInt())
+            }
+
+            PdfOutput.Print -> {
+                val printer = UIPrintInteractionController.sharedPrintController()
+                printer.printingItem = data
+                printer.presentAnimated(true, completionHandler = null)
+                PdfResult.Success(byteCount = data.length.toInt())
+            }
+
+            PdfOutput.Save -> {
+                val url = writeToTemp(data, fileName)
+                val picker = UIDocumentPickerViewController(forExportingURLs = listOf(url))
+                picker.modalPresentationStyle = UIModalPresentationFormSheet
+                rootViewController()?.presentViewController(picker, animated = true, completion = null)
+                PdfResult.Success(uri = url.absoluteString, byteCount = data.length.toInt())
+            }
         }
 
-        PdfOutput.ByteArrayOutput -> {
-            PdfResult.Success(bytes = data.toByteArray(), byteCount = data.length.toInt())
-        }
-
-        is PdfOutput.Uri -> {
-            val url = writeToTemp(data, fileName)
-            output.callback(url.absoluteString ?: "")
-            PdfResult.Success(uri = url.absoluteString, byteCount = data.length.toInt())
-        }
-
-        PdfOutput.Share -> {
-            presentShareSheet(data, fileName)
-            PdfResult.Success(byteCount = data.length.toInt())
-        }
-
-        PdfOutput.Print -> {
-            val printer = UIPrintInteractionController.sharedPrintController()
-            printer.printingItem = data
-            printer.presentAnimated(true, completionHandler = null)
-            PdfResult.Success(byteCount = data.length.toInt())
-        }
-
-        PdfOutput.Save -> {
-            val url = writeToTemp(data, fileName)
-            val picker = UIDocumentPickerViewController(forExportingURLs = listOf(url))
-            picker.modalPresentationStyle = UIModalPresentationFormSheet
-            rootViewController()?.presentViewController(picker, animated = true, completion = null)
-            PdfResult.Success(uri = url.absoluteString, byteCount = data.length.toInt())
-        }
-    }
-
-    private fun writeToTemp(data: NSData, fileName: String): NSURL {
+    private fun writeToTemp(
+        data: NSData,
+        fileName: String,
+    ): NSURL {
         val tmpPath = NSTemporaryDirectory() + fileName
         val url = NSURL.fileURLWithPath(tmpPath)
         data.writeToURL(url, true)
         return url
     }
 
-    private fun presentShareSheet(data: NSData, fileName: String) {
+    private fun presentShareSheet(
+        data: NSData,
+        fileName: String,
+    ) {
         val url = writeToTemp(data, fileName)
         val vc = UIActivityViewController(activityItems = listOf(url), applicationActivities = null)
         rootViewController()?.presentViewController(vc, animated = true, completion = null)

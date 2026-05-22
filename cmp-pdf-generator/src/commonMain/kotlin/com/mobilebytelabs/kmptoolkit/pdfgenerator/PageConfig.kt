@@ -13,7 +13,10 @@ package com.mobilebytelabs.kmptoolkit.pdfgenerator
  * Standard page sizes in millimeters.
  */
 @ExperimentalPdfGeneratorApi
-public enum class PageSize(public val widthMm: Int, public val heightMm: Int) {
+public enum class PageSize(
+    public val widthMm: Int,
+    public val heightMm: Int,
+) {
     A3(297, 420),
     A4(210, 297),
     A5(148, 210),
@@ -28,7 +31,10 @@ public enum class PageSize(public val widthMm: Int, public val heightMm: Int) {
  * Custom page size (mm). Use when none of the standard [PageSize] values fit.
  */
 @ExperimentalPdfGeneratorApi
-public data class CustomPageSize(public val widthMm: Int, public val heightMm: Int) {
+public data class CustomPageSize(
+    public val widthMm: Int,
+    public val heightMm: Int,
+) {
     init {
         require(widthMm > 0) { "widthMm must be > 0" }
         require(heightMm > 0) { "heightMm must be > 0" }

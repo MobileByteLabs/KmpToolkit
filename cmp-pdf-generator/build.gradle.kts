@@ -119,7 +119,7 @@ mavenPublishing {
     coordinates(
         groupId = group.toString(),
         artifactId = "kmp-pdf-generator",
-        version = version.toString()
+        version = version.toString(),
     )
 
     signAllPublications()

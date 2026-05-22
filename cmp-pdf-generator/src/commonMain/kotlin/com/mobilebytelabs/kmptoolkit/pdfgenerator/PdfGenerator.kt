@@ -41,13 +41,17 @@ public data class PdfGeneratorOptions(
 @ExperimentalPdfGeneratorApi
 public sealed class PdfOutput {
     /** Write to a specific filesystem path. */
-    public data class File(public val path: String) : PdfOutput()
+    public data class File(
+        public val path: String,
+    ) : PdfOutput()
 
     /** Return bytes in-memory via [PdfResult.Success.bytes]. */
     public object ByteArrayOutput : PdfOutput()
 
     /** Write to platform-appropriate storage and pass a content URI to [callback]. */
-    public data class Uri(public val callback: (String) -> Unit) : PdfOutput()
+    public data class Uri(
+        public val callback: (String) -> Unit,
+    ) : PdfOutput()
 
     /** Launch native share intent (Android `ACTION_SEND`, iOS `UIActivityViewController`, …). */
     public object Share : PdfOutput()
@@ -89,7 +93,9 @@ public sealed class PdfResult {
         }
     }
 
-    public data class Failure(public val error: PdfError) : PdfResult()
+    public data class Failure(
+        public val error: PdfError,
+    ) : PdfResult()
 }
 
 /**
@@ -110,7 +116,11 @@ public expect class PdfGenerator() {
     /**
      * mifos-x back-compat — HTML in, share/print/save out. Behavior is platform-defined.
      */
-    public suspend fun generateAndSharePdf(htmlContent: String, fileName: String, pageConfig: PageConfig)
+    public suspend fun generateAndSharePdf(
+        htmlContent: String,
+        fileName: String,
+        pageConfig: PageConfig,
+    )
 
     /**
      * Render a [PdfDocument] to the chosen [output].

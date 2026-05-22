@@ -9,10 +9,10 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.pdf.PdfDocument as NativePdfDocument
 import android.util.Base64
-import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.io.ByteArrayOutputStream
+import android.graphics.pdf.PdfDocument as NativePdfDocument
 
 /**
  * DSL → Android-native `PdfDocument`. Used when the document has no `Html` elements and is
@@ -66,7 +66,13 @@ internal class AndroidNativePdfRenderer(
         return out.toByteArray()
     }
 
-    private fun renderElement(canvas: Canvas, el: PdfElement, x: Float, yIn: Float, maxWidth: Float): Float {
+    private fun renderElement(
+        canvas: Canvas,
+        el: PdfElement,
+        x: Float,
+        yIn: Float,
+        maxWidth: Float,
+    ): Float {
         var y = yIn
         when (el) {
             is PdfElement.Text -> {

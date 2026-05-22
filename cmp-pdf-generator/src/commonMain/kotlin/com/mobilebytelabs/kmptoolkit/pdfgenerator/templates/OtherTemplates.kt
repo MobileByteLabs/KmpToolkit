@@ -48,7 +48,10 @@ public data class ReportData(
 )
 
 @ExperimentalPdfGeneratorApi
-public class ReportTemplate(branding: PdfBranding, public val report: ReportData) : HtmlTemplateGenerator(branding) {
+public class ReportTemplate(
+    branding: PdfBranding,
+    public val report: ReportData,
+) : HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = report.title
 
     override fun BODY.generateBody() {
@@ -67,7 +70,11 @@ public class ReportTemplate(branding: PdfBranding, public val report: ReportData
         }
     }
 
-    private fun BODY.renderSection(section: ReportSection, level: Int, index: String) {
+    private fun BODY.renderSection(
+        section: ReportSection,
+        level: Int,
+        index: String,
+    ) {
         when (level) {
             2 -> h2 { +"$index ${section.heading}" }
             else -> h3 { +"$index ${section.heading}" }
@@ -84,7 +91,10 @@ public class ReportTemplate(branding: PdfBranding, public val report: ReportData
 // =========================================================================================
 
 @ExperimentalPdfGeneratorApi
-public data class ReceiptLineItem(public val description: String, public val amount: String)
+public data class ReceiptLineItem(
+    public val description: String,
+    public val amount: String,
+)
 
 @ExperimentalPdfGeneratorApi
 public data class ReceiptData(
@@ -101,8 +111,10 @@ public data class ReceiptData(
 )
 
 @ExperimentalPdfGeneratorApi
-public class ReceiptTemplate(branding: PdfBranding, public val receipt: ReceiptData) :
-    HtmlTemplateGenerator(branding) {
+public class ReceiptTemplate(
+    branding: PdfBranding,
+    public val receipt: ReceiptData,
+) : HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = "Receipt ${receipt.receiptNumber}"
 
     override fun getAdditionalStyles(): String =
@@ -194,8 +206,10 @@ public data class StatementData(
 )
 
 @ExperimentalPdfGeneratorApi
-public class StatementTemplate(branding: PdfBranding, public val statement: StatementData) :
-    HtmlTemplateGenerator(branding) {
+public class StatementTemplate(
+    branding: PdfBranding,
+    public val statement: StatementData,
+) : HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = "Account Statement"
 
     override fun BODY.generateBody() {
@@ -271,7 +285,10 @@ public data class LetterData(
 )
 
 @ExperimentalPdfGeneratorApi
-public class LetterTemplate(branding: PdfBranding, public val letter: LetterData) : HtmlTemplateGenerator(branding) {
+public class LetterTemplate(
+    branding: PdfBranding,
+    public val letter: LetterData,
+) : HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = letter.subject ?: "Letter"
 
     override fun BODY.generateBody() {

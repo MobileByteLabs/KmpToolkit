@@ -8,6 +8,9 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import kotlinx.html.BODY
+import kotlinx.html.div
+import kotlinx.html.unsafe
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.HtmlGenerator
 import org.intellij.markdown.parser.MarkdownParser
@@ -34,7 +37,10 @@ public object MarkdownPdfAdapter {
      * @param markdown Source Markdown.
      * @param branding Branding bundle (for header/footer chrome).
      */
-    public suspend fun markdownToHtml(markdown: String, branding: PdfBranding): String {
+    public suspend fun markdownToHtml(
+        markdown: String,
+        branding: PdfBranding,
+    ): String {
         val flavour = GFMFlavourDescriptor()
         val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(markdown)
         val inner = HtmlGenerator(markdown, parsedTree, flavour).generateHtml()
@@ -46,8 +52,10 @@ public object MarkdownPdfAdapter {
  * `HtmlTemplateGenerator` that wraps a Markdown-compiled HTML fragment in the standard chrome.
  */
 @ExperimentalPdfGeneratorApi
-private class MarkdownTemplate(branding: PdfBranding, private val innerHtml: String) :
-    HtmlTemplateGenerator(branding) {
+private class MarkdownTemplate(
+    branding: PdfBranding,
+    private val innerHtml: String,
+) : HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = "Markdown document"
 
     override fun getAdditionalStyles(): String =
@@ -68,17 +76,18 @@ private class MarkdownTemplate(branding: PdfBranding, private val innerHtml: Str
         li { margin-bottom: 4px; }
         """.trimIndent()
 
-    override fun kotlinx.html.BODY.generateBody() {
-        // The compiled HTML already contains a `<body>` from HtmlGenerator — strip it and inject raw.
-        kotlinx.html.div {
+    override fun BODY.generateBody() {
+        // The compiled HTML already contains a `<body>` from HtmlGenerator — strip + inject raw.
+        div {
             attributes["class"] = "container markdown-body"
-            kotlinx.html.unsafe {
+            unsafe {
                 +stripBodyTags(innerHtml)
             }
         }
     }
 
-    private fun stripBodyTags(html: String): String = html
-        .replace(Regex("^<body[^>]*>", RegexOption.IGNORE_CASE), "")
-        .replace(Regex("</body>\$", RegexOption.IGNORE_CASE), "")
+    private fun stripBodyTags(html: String): String =
+        html
+            .replace(Regex("^<body[^>]*>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("</body>\$", RegexOption.IGNORE_CASE), "")
 }

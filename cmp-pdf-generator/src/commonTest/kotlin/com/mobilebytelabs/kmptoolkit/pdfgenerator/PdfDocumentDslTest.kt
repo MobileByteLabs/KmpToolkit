@@ -5,13 +5,13 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.test.runTest
 
 class PdfDocumentDslTest {
     @Test
@@ -107,44 +107,46 @@ class PdfDocumentDslTest {
     }
 
     @Test
-    fun htmlCompilerProducesXhtml() = runTest {
-        val doc =
-            pdf {
-                branding(PdfBranding.none())
-                page {
-                    heading(1, "Title")
-                    text("Body")
+    fun htmlCompilerProducesXhtml() =
+        runTest {
+            val doc =
+                pdf {
+                    branding(PdfBranding.none())
+                    page {
+                        heading(1, "Title")
+                        text("Body")
+                    }
                 }
-            }
-        val html = doc.toHtml()
-        assertTrue(html.startsWith("<!DOCTYPE html"))
-        assertTrue(html.contains("<title>"))
-        assertTrue(html.contains("Title"))
-        assertTrue(html.contains("Body"))
-    }
+            val html = doc.toHtml()
+            assertTrue(html.startsWith("<!DOCTYPE html"))
+            assertTrue(html.contains("<title>"))
+            assertTrue(html.contains("Title"))
+            assertTrue(html.contains("Body"))
+        }
 
     @Test
-    fun mixedElementsRoundTripHtml() = runTest {
-        val doc =
-            pdf {
-                branding(PdfBranding.none())
-                page {
-                    heading(2, "Section")
-                    text("Para 1")
-                    divider()
-                    table {
-                        header { cell("Col A") }
-                        row { cell("Cell A") }
+    fun mixedElementsRoundTripHtml() =
+        runTest {
+            val doc =
+                pdf {
+                    branding(PdfBranding.none())
+                    page {
+                        heading(2, "Section")
+                        text("Para 1")
+                        divider()
+                        table {
+                            header { cell("Col A") }
+                            row { cell("Cell A") }
+                        }
+                        spacer(10)
+                        pageBreak()
+                        text("After break")
                     }
-                    spacer(10)
-                    pageBreak()
-                    text("After break")
                 }
-            }
-        val html = doc.toHtml()
-        assertTrue(html.contains("<hr"))
-        assertTrue(html.contains("page-break-before"))
-        assertTrue(html.contains("<h2>"))
-        assertTrue(html.contains("Cell A"))
-    }
+            val html = doc.toHtml()
+            assertTrue(html.contains("<hr"))
+            assertTrue(html.contains("page-break-before"))
+            assertTrue(html.contains("<h2>"))
+            assertTrue(html.contains("Cell A"))
+        }
 }
