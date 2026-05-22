@@ -20,10 +20,10 @@ import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.ReportTemplate
 import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.StatementData
 import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.StatementTemplate
 import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.StatementTransaction
-import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class TemplateTests {
     private val party = PartyInfo("Acme", listOf("123 Main"), email = "x@acme.io")

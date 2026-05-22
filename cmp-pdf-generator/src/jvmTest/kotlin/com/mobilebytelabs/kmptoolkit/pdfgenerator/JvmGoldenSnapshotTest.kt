@@ -5,12 +5,12 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDate
 
 /**
  * Snapshot test in deterministic mode. We assert byte-stable metadata, not full byte equality

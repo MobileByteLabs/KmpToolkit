@@ -5,10 +5,10 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlinx.coroutines.test.runTest
 
 /**
  * JS smoke test — runs via pdf-lib DSL route. Headless Node mode.

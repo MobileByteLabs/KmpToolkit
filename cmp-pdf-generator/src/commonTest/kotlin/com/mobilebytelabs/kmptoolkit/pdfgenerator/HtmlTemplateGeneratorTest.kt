@@ -5,13 +5,13 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
-import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.html.BODY
 import kotlinx.html.h1
 import kotlinx.html.p
+import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class HtmlTemplateGeneratorTest {
     private class TestTemplate(branding: PdfBranding) : HtmlTemplateGenerator(branding) {

@@ -11,7 +11,6 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
-import kotlin.io.encoding.Base64
 import kotlinx.html.BODY
 import kotlinx.html.FlowContent
 import kotlinx.html.div
@@ -31,6 +30,7 @@ import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.tr
 import kotlinx.html.unsafe
+import kotlin.io.encoding.Base64
 
 /**
  * Compile a [PdfDocument] DSL tree to an XHTML string ready to feed an HTML-to-PDF engine.
