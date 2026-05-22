@@ -36,18 +36,20 @@ class JvmPdfSmokeTest {
         assertIs<PdfResult.Success>(result)
         val bytes = result.bytes
         assertTrue(bytes != null && bytes.size > 100, "Expected non-trivial PDF byte stream")
-        assertTrue(bytes!!.size >= 4 && bytes[0] == '%'.code.toByte() && bytes[1] == 'P'.code.toByte() && bytes[2] == 'D'.code.toByte() && bytes[3] == 'F'.code.toByte(),
-            "Expected '%PDF' magic prefix")
+        assertPdfMagic(bytes!!)
     }
 
     @Test
     fun htmlPathProducesValidPdfMagic() = runTest {
         val gen = PdfGenerator()
+        val doctype = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" " +
+            "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
         val html = """
-            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+            $doctype
             <html xmlns="http://www.w3.org/1999/xhtml">
             <head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><title>T</title>
-            <style>body { font-family: Helvetica, Arial, sans-serif; } /* PAGE_CONFIG_PLACEHOLDER */</style></head>
+            <style>body { font-family: Helvetica, Arial, sans-serif; }
+            /* PAGE_CONFIG_PLACEHOLDER */</style></head>
             <body><h1>Smoke</h1><p>Hello</p></body></html>
         """.trimIndent()
         val result = gen.generateFromHtml(html, PdfOutput.ByteArrayOutput, PageConfig())
@@ -61,7 +63,16 @@ class JvmPdfSmokeTest {
     fun deterministicModeFlagDoesNotThrow() = runTest {
         val gen = PdfGenerator()
         val doc = pdf { page { text("Det") } }
-        val result = gen.generate(doc, PdfOutput.ByteArrayOutput, PdfGeneratorOptions(deterministic = true))
+        val opts = PdfGeneratorOptions(deterministic = true)
+        val result = gen.generate(doc, PdfOutput.ByteArrayOutput, opts)
         assertIs<PdfResult.Success>(result)
+    }
+
+    private fun assertPdfMagic(bytes: ByteArray) {
+        require(bytes.size >= 4) { "PDF must have at least 4 bytes" }
+        assertTrue(bytes[0] == '%'.code.toByte(), "byte 0 should be '%'")
+        assertTrue(bytes[1] == 'P'.code.toByte(), "byte 1 should be 'P'")
+        assertTrue(bytes[2] == 'D'.code.toByte(), "byte 2 should be 'D'")
+        assertTrue(bytes[3] == 'F'.code.toByte(), "byte 3 should be 'F'")
     }
 }

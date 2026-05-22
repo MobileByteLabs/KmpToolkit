@@ -55,9 +55,18 @@ private class MarkdownTemplate(
     override fun getTitle(): String = "Markdown document"
 
     override fun getAdditionalStyles(): String = """
-        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; font-family: 'Roboto Mono', 'Courier New', monospace; font-size: 7pt; }
-        code { background: #f5f5f5; padding: 1px 4px; border-radius: 3px; font-family: 'Roboto Mono', 'Courier New', monospace; }
-        blockquote { border-left: 4px solid ${branding.theme.accentColorHex}; margin: 10px 0; padding-left: 12px; color: #555; }
+        pre {
+            background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto;
+            font-family: 'Roboto Mono', 'Courier New', monospace; font-size: 7pt;
+        }
+        code {
+            background: #f5f5f5; padding: 1px 4px; border-radius: 3px;
+            font-family: 'Roboto Mono', 'Courier New', monospace;
+        }
+        blockquote {
+            border-left: 4px solid ${branding.theme.accentColorHex};
+            margin: 10px 0; padding-left: 12px; color: #555;
+        }
         ul, ol { margin: 8px 0 8px 20px; }
         li { margin-bottom: 4px; }
     """.trimIndent()

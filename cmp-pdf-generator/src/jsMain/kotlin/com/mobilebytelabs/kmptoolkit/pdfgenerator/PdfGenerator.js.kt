@@ -37,7 +37,11 @@ public actual class PdfGenerator public actual constructor() {
         printViaIframe(htmlContent.injectPageConfigCss(pageConfig))
     }
 
-    public actual suspend fun generate(document: PdfDocument, output: PdfOutput, options: PdfGeneratorOptions): PdfResult {
+    public actual suspend fun generate(
+        document: PdfDocument,
+        output: PdfOutput,
+        options: PdfGeneratorOptions,
+    ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             when (output) {
@@ -84,7 +88,8 @@ public actual class PdfGenerator public actual constructor() {
                     PdfResult.Success(uri = url)
                 }
                 else -> throw PdfError.UnsupportedFeature(
-                    "JS generateFromHtml only supports Print/Share/Save/Uri. For ByteArray/File output use the DSL route via generate(PdfDocument, ...).",
+                    "JS generateFromHtml only supports Print/Share/Save/Uri. " +
+                        "For ByteArray/File output use the DSL route via generate(PdfDocument, ...).",
                 )
             }
         } catch (e: Throwable) {
@@ -118,7 +123,9 @@ public actual class PdfGenerator public actual constructor() {
                 triggerBytesDownload(bytes, fileName)
                 PdfResult.Success(byteCount = bytes.size)
             }
-            PdfOutput.Print -> throw PdfError.UnsupportedFeature("Print of DSL bytes not supported on JS — pass HTML via generateAndSharePdf for print")
+            PdfOutput.Print -> throw PdfError.UnsupportedFeature(
+                "Print of DSL bytes not supported on JS — pass HTML via generateAndSharePdf",
+            )
         }
     }
 
@@ -182,15 +189,7 @@ public actual class PdfGenerator public actual constructor() {
 @ExperimentalPdfGeneratorApi
 public fun createPdfGenerator(): PdfGenerator = PdfGenerator()
 
-@ExperimentalPdfGeneratorApi
-internal fun String.injectPageConfigCss(pageConfig: PageConfig): String {
-    val orientation = if (pageConfig.orientation == Orientation.LANDSCAPE) "landscape" else "portrait"
-    val sizeKw = when (pageConfig.size) {
-        PageSize.A4 -> "A4"; PageSize.LETTER -> "letter"; PageSize.LEGAL -> "legal"; else -> "A4"
-    }
-    val css = "@page { size: $sizeKw $orientation; margin: ${pageConfig.margins.top}mm ${pageConfig.margins.right}mm ${pageConfig.margins.bottom}mm ${pageConfig.margins.left}mm; }"
-    return replace("/* PAGE_CONFIG_PLACEHOLDER */", css)
-}
+// injectPageConfigCss moved to commonMain (PageConfigCssInjection.kt)
 
 @ExperimentalPdfGeneratorApi
 internal fun byteArrayToUint8Array(bytes: ByteArray): Uint8Array {

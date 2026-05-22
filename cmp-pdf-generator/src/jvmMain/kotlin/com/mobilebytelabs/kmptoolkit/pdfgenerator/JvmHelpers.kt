@@ -15,21 +15,7 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts
 import java.io.ByteArrayOutputStream
 
 @ExperimentalPdfGeneratorApi
-
 public fun createPdfGenerator(): PdfGenerator = PdfGenerator()
-
-@ExperimentalPdfGeneratorApi
-internal fun String.injectPageConfigCss(pageConfig: PageConfig): String {
-    val orientation = if (pageConfig.orientation == Orientation.LANDSCAPE) "landscape" else "portrait"
-    val sizeKw = when (pageConfig.size) {
-        PageSize.A4 -> "A4"
-        PageSize.LETTER -> "letter"
-        PageSize.LEGAL -> "legal"
-        else -> "A4"
-    }
-    val pageCss = "@page { size: $sizeKw $orientation; margin: ${pageConfig.margins.top}mm ${pageConfig.margins.right}mm ${pageConfig.margins.bottom}mm ${pageConfig.margins.left}mm; }"
-    return replace("/* PAGE_CONFIG_PLACEHOLDER */", pageCss)
-}
 
 /**
  * Apache PDFBox direct renderer for the DSL route. v0.1 produces a structured PDF with

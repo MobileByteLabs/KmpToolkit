@@ -104,7 +104,9 @@ public actual class PdfGenerator public actual constructor() {
                 webView.createPDFWithConfiguration(WKPDFConfiguration()) { data: NSData?, error: NSError? ->
                     when {
                         error != null -> pdfReady.completeExceptionally(
-                            PdfError.EngineFailure(IllegalStateException("WKWebView.createPDF: ${error.localizedDescription}")),
+                            PdfError.EngineFailure(
+                                IllegalStateException("WKWebView.createPDF: ${error.localizedDescription}"),
+                            ),
                         )
                         data == null -> pdfReady.completeExceptionally(
                             PdfError.EngineFailure(IllegalStateException("WKWebView.createPDF returned null")),
@@ -120,7 +122,11 @@ public actual class PdfGenerator public actual constructor() {
                 )
             }
 
-            override fun webView(webView: WKWebView, didFailProvisionalNavigation: WKNavigation?, withError: NSError) {
+            override fun webView(
+                webView: WKWebView,
+                didFailProvisionalNavigation: WKNavigation?,
+                withError: NSError,
+            ) {
                 pdfReady.completeExceptionally(
                     PdfError.EngineFailure(IllegalStateException(withError.localizedDescription)),
                 )

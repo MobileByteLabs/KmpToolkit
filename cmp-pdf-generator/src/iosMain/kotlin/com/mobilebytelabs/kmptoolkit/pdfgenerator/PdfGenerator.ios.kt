@@ -116,10 +116,14 @@ public actual class PdfGenerator public actual constructor() {
                 webView.createPDFWithConfiguration(pdfConfig) { data: NSData?, error: NSError? ->
                     when {
                         error != null -> pdfReady.completeExceptionally(
-                            PdfError.EngineFailure(IllegalStateException("WKWebView.createPDF failed: ${error.localizedDescription}")),
+                            PdfError.EngineFailure(
+                                IllegalStateException("WKWebView.createPDF failed: ${error.localizedDescription}"),
+                            ),
                         )
                         data == null -> pdfReady.completeExceptionally(
-                            PdfError.EngineFailure(IllegalStateException("WKWebView.createPDF returned null")),
+                            PdfError.EngineFailure(
+                                IllegalStateException("WKWebView.createPDF returned null"),
+                            ),
                         )
                         else -> pdfReady.complete(data)
                     }
@@ -132,7 +136,9 @@ public actual class PdfGenerator public actual constructor() {
                 withError: NSError,
             ) {
                 pdfReady.completeExceptionally(
-                    PdfError.EngineFailure(IllegalStateException("WKWebView navigation failed: ${withError.localizedDescription}")),
+                    PdfError.EngineFailure(
+                        IllegalStateException("WKWebView navigation failed: ${withError.localizedDescription}"),
+                    ),
                 )
             }
 
@@ -142,7 +148,11 @@ public actual class PdfGenerator public actual constructor() {
                 withError: NSError,
             ) {
                 pdfReady.completeExceptionally(
-                    PdfError.EngineFailure(IllegalStateException("WKWebView provisional navigation failed: ${withError.localizedDescription}")),
+                    PdfError.EngineFailure(
+                        IllegalStateException(
+                            "WKWebView provisional navigation failed: ${withError.localizedDescription}",
+                        ),
+                    ),
                 )
             }
         }

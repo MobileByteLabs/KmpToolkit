@@ -47,7 +47,10 @@ class JvmGoldenSnapshotTest {
         assertIs<PdfResult.Success>(result)
         val bytes = result.bytes!!
         // PDF magic
-        assertTrue(bytes[0] == '%'.code.toByte() && bytes[1] == 'P'.code.toByte() && bytes[2] == 'D'.code.toByte() && bytes[3] == 'F'.code.toByte())
+        assertTrue(
+            bytes[0] == '%'.code.toByte() && bytes[1] == 'P'.code.toByte() &&
+                bytes[2] == 'D'.code.toByte() && bytes[3] == 'F'.code.toByte(),
+        )
         // Reasonable size envelope (golden ≈ 5-50KB invoice)
         assertTrue(bytes.size in 1000..200_000, "Expected envelope size; got ${bytes.size}")
     }

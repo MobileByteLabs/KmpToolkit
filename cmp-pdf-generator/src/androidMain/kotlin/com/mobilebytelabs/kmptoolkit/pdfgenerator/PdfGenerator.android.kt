@@ -115,8 +115,9 @@ public actual class PdfGenerator public actual constructor() {
 
     public actual fun progressFlow(): Flow<PdfProgressEvent> = progress.asSharedFlow()
 
-    private fun requireContext(): Context = context
-        ?: throw PdfError.InvalidInput("PdfGenerator requires a Context — call setContext() or use rememberPdfGenerator()")
+    private fun requireContext(): Context = context ?: throw PdfError.InvalidInput(
+        "PdfGenerator requires a Context — call setContext() or use createPdfGenerator(context)",
+    )
 
     private suspend fun renderHtmlToBytes(html: String, pageConfig: PageConfig): ByteArray =
         withContext(Dispatchers.Main) {
@@ -161,7 +162,11 @@ public actual class PdfGenerator public actual constructor() {
                 description: String?,
                 failingUrl: String?,
             ) {
-                if (cont.isActive) cont.resumeWithException(PdfError.EngineFailure(IllegalStateException("WebView: $description")))
+                if (cont.isActive) {
+                    cont.resumeWithException(
+                        PdfError.EngineFailure(IllegalStateException("WebView: $description")),
+                    )
+                }
             }
         }
         wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
@@ -172,7 +177,10 @@ public actual class PdfGenerator public actual constructor() {
      */
     private fun writeAdapterToFile(adapter: PrintDocumentAdapter, outFile: File, pageConfig: PageConfig) {
         val attrs = pageConfig.toPrintAttributes()
-        val pfd = ParcelFileDescriptor.open(outFile, ParcelFileDescriptor.MODE_READ_WRITE or ParcelFileDescriptor.MODE_CREATE)
+        val pfd = ParcelFileDescriptor.open(
+            outFile,
+            ParcelFileDescriptor.MODE_READ_WRITE or ParcelFileDescriptor.MODE_CREATE,
+        )
         adapter.onLayout(null, attrs, null, object : PrintDocumentAdapter.LayoutResultCallback() {
             override fun onLayoutFinished(info: PrintDocumentInfo?, changed: Boolean) {
                 adapter.onWrite(
@@ -224,18 +232,26 @@ public actual class PdfGenerator public actual constructor() {
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                ctx.startActivity(Intent.createChooser(intent, "Share PDF").apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+                ctx.startActivity(
+                    Intent.createChooser(intent, "Share PDF")
+                        .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) },
+                )
                 PdfResult.Success(uri = uri.toString(), byteCount = bytes.size)
             }
             PdfOutput.Print -> {
                 val pm = ctx.getSystemService<PrintManager>()!!
                 val tmpFile = File(ctx.cacheDir, suggestedFileName).apply { writeBytes(bytes) }
-                pm.print(suggestedFileName, BytesPrintAdapter(tmpFile), PrintAttributes.Builder().build())
+                pm.print(
+                    suggestedFileName,
+                    BytesPrintAdapter(tmpFile),
+                    PrintAttributes.Builder().build(),
+                )
                 PdfResult.Success(byteCount = bytes.size)
             }
-            PdfOutput.Save -> {
-                throw PdfError.UnsupportedFeature("PdfOutput.Save on Android requires hosting Activity wiring via ActivityResultLauncher<Intent>. Use PdfOutput.File(path) or PdfOutput.Share instead.")
-            }
+            PdfOutput.Save -> throw PdfError.UnsupportedFeature(
+                "PdfOutput.Save on Android requires hosting Activity wiring via " +
+                    "ActivityResultLauncher<Intent>. Use PdfOutput.File(path) or PdfOutput.Share instead.",
+            )
         }
     }
 
@@ -246,12 +262,13 @@ public actual class PdfGenerator public actual constructor() {
 /** Map PageConfig → Android PrintAttributes. */
 internal fun PageConfig.toPrintAttributes(): PrintAttributes {
     val landscape = orientation == Orientation.LANDSCAPE
+    fun applyLandscape(s: PrintAttributes.MediaSize) = if (landscape) s.asLandscape() else s
     val mediaSize = when (size) {
-        PageSize.A4 -> if (landscape) PrintAttributes.MediaSize.ISO_A4.asLandscape() else PrintAttributes.MediaSize.ISO_A4
-        PageSize.A3 -> if (landscape) PrintAttributes.MediaSize.ISO_A3.asLandscape() else PrintAttributes.MediaSize.ISO_A3
-        PageSize.A5 -> if (landscape) PrintAttributes.MediaSize.ISO_A5.asLandscape() else PrintAttributes.MediaSize.ISO_A5
-        PageSize.LETTER -> if (landscape) PrintAttributes.MediaSize.NA_LETTER.asLandscape() else PrintAttributes.MediaSize.NA_LETTER
-        PageSize.LEGAL -> if (landscape) PrintAttributes.MediaSize.NA_LEGAL.asLandscape() else PrintAttributes.MediaSize.NA_LEGAL
+        PageSize.A4 -> applyLandscape(PrintAttributes.MediaSize.ISO_A4)
+        PageSize.A3 -> applyLandscape(PrintAttributes.MediaSize.ISO_A3)
+        PageSize.A5 -> applyLandscape(PrintAttributes.MediaSize.ISO_A5)
+        PageSize.LETTER -> applyLandscape(PrintAttributes.MediaSize.NA_LETTER)
+        PageSize.LEGAL -> applyLandscape(PrintAttributes.MediaSize.NA_LEGAL)
         else -> PrintAttributes.MediaSize.ISO_A4
     }
     val marginMils = (margins.top * 39.3701).toInt() // approximate; per-edge would need custom Margins
@@ -260,22 +277,6 @@ internal fun PageConfig.toPrintAttributes(): PrintAttributes {
         .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
         .setMinMargins(PrintAttributes.Margins(marginMils, marginMils, marginMils, marginMils))
         .build()
-}
-
-internal fun String.injectPageConfigCss(pageConfig: PageConfig): String {
-    val orientation = if (pageConfig.orientation == Orientation.LANDSCAPE) "landscape" else "portrait"
-    val sizeKw = when (pageConfig.size) {
-        PageSize.A4 -> "A4"
-        PageSize.LETTER -> "letter"
-        PageSize.LEGAL -> "legal"
-        PageSize.A3 -> "A3"
-        PageSize.A5 -> "A5"
-        PageSize.B5 -> "B5"
-        PageSize.TABLOID -> "tabloid"
-        PageSize.STATEMENT -> "statement"
-    }
-    val pageCss = "@page { size: $sizeKw $orientation; margin: ${pageConfig.margins.top}mm ${pageConfig.margins.right}mm ${pageConfig.margins.bottom}mm ${pageConfig.margins.left}mm; }"
-    return replace("/* PAGE_CONFIG_PLACEHOLDER */", pageCss)
 }
 
 /** Minimal adapter that streams bytes from a file when PrintManager wants them. */

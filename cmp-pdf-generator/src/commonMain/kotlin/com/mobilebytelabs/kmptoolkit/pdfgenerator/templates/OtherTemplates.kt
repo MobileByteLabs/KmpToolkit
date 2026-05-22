@@ -197,7 +197,9 @@ public class StatementTemplate(
         h1 { +"Account Statement" }
         p { +"Account: ${statement.accountNumber}" }
         p {
-            +"Period: ${branding.dateFormatter(statement.periodStart)} – ${branding.dateFormatter(statement.periodEnd)}"
+            val start = branding.dateFormatter(statement.periodStart)
+            val end = branding.dateFormatter(statement.periodEnd)
+            +"Period: $start – $end"
         }
         p { +"Account holder: ${statement.accountHolder.name}" }
         p { +"Opening balance: ${statement.openingBalance}" }

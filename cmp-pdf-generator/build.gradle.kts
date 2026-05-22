@@ -114,12 +114,6 @@ kotlin {
             implementation(libs.kotlin.test.junit)
         }
 
-        getByName("androidDeviceTest").dependencies {
-            implementation("androidx.test.ext:junit:1.2.1")
-            implementation("androidx.test:runner:1.6.2")
-            implementation(libs.kotlinx.coroutines.test)
-        }
-
         jsMain.dependencies {
             implementation(npm("pdf-lib", "1.17.1"))
         }

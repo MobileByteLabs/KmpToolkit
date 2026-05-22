@@ -123,7 +123,8 @@ internal class AndroidNativePdfRenderer(
                 canvas.drawLine(x, y + 2, x + maxWidth, y + 2, paint)
                 y += 8f
             }
-            PdfElement.PageBreak -> y = Float.MAX_VALUE // signals new page; in v0.1 caller does not honor mid-page break — page break only at element boundary
+            // signals new page; v0.1 caller honors page breaks only at element boundaries
+            PdfElement.PageBreak -> y = Float.MAX_VALUE
             is PdfElement.Html -> {
                 // Native renderer cannot render HTML — emit a marker only.
                 paint.textSize = 6f

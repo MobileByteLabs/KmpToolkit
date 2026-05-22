@@ -127,9 +127,9 @@ public actual class PdfGenerator public actual constructor() {
                 openWithDefaultApp(tmp)
                 PdfResult.Success(byteCount = bytes.size)
             }
-            PdfOutput.Print -> {
-                throw PdfError.UnsupportedFeature("JVM PdfOutput.Print — use PdfOutput.Save and let user print from viewer")
-            }
+            PdfOutput.Print -> throw PdfError.UnsupportedFeature(
+                "JVM PdfOutput.Print — use PdfOutput.Save and let user print from viewer",
+            )
             PdfOutput.Save -> {
                 val out = pickSaveFile("document.pdf") ?: return PdfResult.Failure(PdfError.CancellationError)
                 out.writeBytes(bytes)

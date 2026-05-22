@@ -15,7 +15,8 @@ package com.mobilebytelabs.kmptoolkit.pdfgenerator
  */
 @RequiresOptIn(
     level = RequiresOptIn.Level.WARNING,
-    message = "cmp-pdf-generator is experimental; API may change before v1.0. Opt in with @OptIn(ExperimentalPdfGeneratorApi::class).",
+    message = "cmp-pdf-generator is experimental; API may change before v1.0. " +
+        "Opt in with @OptIn(ExperimentalPdfGeneratorApi::class).",
 )
 @Retention(AnnotationRetention.BINARY)
 @Target(
