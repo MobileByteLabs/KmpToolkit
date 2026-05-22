@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import platform.AppKit.NSApplication
-import platform.AppKit.NSMinYEdge
 import platform.AppKit.NSModalResponseOK
 import platform.AppKit.NSSavePanel
 import platform.AppKit.NSSharingServicePicker
@@ -188,7 +187,9 @@ public actual class PdfGenerator public actual constructor() {
     private fun presentSharePicker(url: NSURL) {
         val picker = NSSharingServicePicker(items = listOf(url))
         NSApplication.sharedApplication().keyWindow?.contentView?.let { view ->
-            picker.showRelativeToRect(view.bounds, ofView = view, preferredEdge = NSMinYEdge)
+            // NSMinYEdge = 3 (CGRectEdge.NSRectEdgeMinY). Hardcoding the value to avoid
+            // K/Native binding-name drift across AppKit versions.
+            picker.showRelativeToRect(view.bounds, ofView = view, preferredEdge = 3uL)
         }
     }
 
