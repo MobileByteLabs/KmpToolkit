@@ -24,6 +24,11 @@ koin = "4.1.1"
 kermit = "2.0.5"
 kotlinx-serialization = "1.8.1"
 kotlinx-datetime = "0.6.2"
+kotlinx-html = "0.12.0"
+openhtmltopdf = "1.0.10"
+pdfbox = "3.0.3"
+markdown = "0.7.3"
+androidx-core = "1.13.1"
 navigation = "2.9.2"
 
 # GitLive Firebase Kotlin SDK — Android, iOS, JS, JVM only
@@ -97,6 +102,14 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 # KotlinX
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-html = { module = "org.jetbrains.kotlinx:kotlinx-html", version.ref = "kotlinx-html" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+openhtmltopdf-pdfbox = { module = "io.github.openhtmltopdf:openhtmltopdf-pdfbox", version.ref = "openhtmltopdf" }
+openhtmltopdf-svg-support = { module = "io.github.openhtmltopdf:openhtmltopdf-svg-support", version.ref = "openhtmltopdf" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
+markdown = { module = "org.jetbrains:markdown", version.ref = "markdown" }
+androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 
 # Lifecycle (alias for mobilebytesensei modules)
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }

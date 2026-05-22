@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — cmp-pdf-generator (new module, v0.1.0)
+- **New module `cmp-pdf-generator`** — cross-platform PDF generation library.
+  Coordinates: `io.github.mobilebytelabs:kmp-pdf-generator`.
+- **Input modes (v0.1):** HTML string, Markdown (via `MarkdownPdfAdapter`), DSL (`pdf { … }`).
+  Composable snapshot + image-to-PDF deferred to v0.2.
+- **Output destinations (v0.1):** File, ByteArray, platform URI, Share, Print, Save.
+- **Page config:** A3/A4/A5/B5/LETTER/LEGAL/TABLOID/STATEMENT + custom size + portrait/landscape + per-edge margins + optional per-page header/footer/page-numbers.
+- **Branding:** injectable `PdfBranding(logo, poweredByText, theme, dateFormatter, watermark)`.
+  De-branded `HtmlTemplateGenerator` base class.
+- **Pre-built templates:** `InvoiceTemplate`, `ReportTemplate`, `ReceiptTemplate`, `StatementTemplate`, `LetterTemplate`.
+- **Error model:** sealed `PdfError` hierarchy + cancellation + `Flow<PdfProgressEvent>` progress.
+- **Platform tiers:**
+  - Tier-1 (functional): Android, iOS (14+), macOS (11+), JVM, JS, wasmJs
+  - Tier-3 (throws `PdfError.UnsupportedPlatform`): tvOS, watchOS, Linux, mingwX64, wasmWasi
+- **Marker:** all public symbols `@ExperimentalPdfGeneratorApi` until v1.0.
+- **PLAN:** `plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-pdf-generator/` (epic, 12 sub-plans, 266 tasks).
+- **NOTE:** initial commit lays down the full source structure across 22 source sets.
+  Production smoke tests on each platform are pending. v0.1.0 release is gated on green CI.
+
 ### Breaking — cmp-remote-config (next release: 4.0.0)
 - **Removed dependency on `cmp-product-tickets`.** `cmp-remote-config` is now standalone.
   No transitive Maven pull, no shared config object, no cross-module imports.
