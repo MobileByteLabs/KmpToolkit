@@ -11,7 +11,6 @@ import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.PDPageContentStream
 import org.apache.pdfbox.pdmodel.common.PDRectangle
 import org.apache.pdfbox.pdmodel.font.PDType1Font
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts
 import java.io.ByteArrayOutputStream
 
 @ExperimentalPdfGeneratorApi
@@ -28,8 +27,8 @@ internal class JvmNativePdfRenderer(
     private val progress: MutableSharedFlow<PdfProgressEvent>,
 ) {
     private val pdfDoc = PDDocument()
-    private val font = PDType1Font(Standard14Fonts.FontName.HELVETICA)
-    private val fontBold = PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD)
+    private val font = PDType1Font.HELVETICA
+    private val fontBold = PDType1Font.HELVETICA_BOLD
 
     fun render(): ByteArray {
         val widthPt = document.config.effectiveWidthMm * 2.834f

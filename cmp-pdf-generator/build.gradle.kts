@@ -128,8 +128,8 @@ mavenPublishing {
         name = "KMP PDF Generator"
         description =
             "Cross-platform PDF generation library for Kotlin Multiplatform — " +
-                "HTML, Markdown, and DSL input; File / ByteArray / URI / Share / Print / Save output. " +
-                "Supports Android, iOS, macOS, JVM, JS, wasmJs."
+            "HTML, Markdown, and DSL input; File / ByteArray / URI / Share / Print / Save output. " +
+            "Supports Android, iOS, macOS, JVM, JS, wasmJs."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 
