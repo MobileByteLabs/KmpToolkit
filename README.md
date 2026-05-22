@@ -21,6 +21,7 @@ A collection of production-ready Kotlin Multiplatform libraries — one dependen
 | [cmp-product-tickets](#cmp-product-tickets) | `io.github.mobilebytelabs:cmp-product-tickets` | In-app feedback and support tickets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 | [cmp-network-monitor](#cmp-network-monitor) | `io.github.mobilebytelabs:cmp-network-monitor` | Reactive network connectivity monitoring — all 21 KMP targets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 | [cmp-network-monitor-compose](#cmp-network-monitor-compose) | `io.github.mobilebytelabs:cmp-network-monitor-compose` | Compose Multiplatform extensions for network monitoring | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
+| [cmp-pdf-generator](cmp-pdf-generator/README.md) | `io.github.mobilebytelabs:kmp-pdf-generator` | Cross-platform PDF generation — HTML, Markdown, DSL → File / ByteArray / URI / Share / Print | ![](https://img.shields.io/badge/-0.1.0-yellow) |
 
 ## Installation
 

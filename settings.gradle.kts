@@ -29,6 +29,8 @@ include(":cmp-network-monitor") // Network Monitor — reactive connectivity mon
 include(":cmp-network-monitor-compose") // Network Monitor Compose — Compose Multiplatform UI extensions
 // Firebase Analytics — 21/21 KMP targets (GitLive on 11, Measurement Protocol HTTP on 10)
 include(":cmp-firebase-analytics")
+// PDF Generator — cross-platform PDF generation (HTML / Markdown / DSL input; multi-output)
+include(":cmp-pdf-generator")
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")
@@ -41,3 +43,5 @@ include(":samples:sample-deep-link:composeApp")
 include(":samples:sample-deep-link:androidApp")
 include(":samples:sample-network-monitor:composeApp")
 include(":samples:sample-network-monitor:androidApp")
+include(":samples:sample-pdf-generator:composeApp")
+include(":samples:sample-pdf-generator:androidApp")
