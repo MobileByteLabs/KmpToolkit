@@ -34,10 +34,7 @@ public object MarkdownPdfAdapter {
      * @param markdown Source Markdown.
      * @param branding Branding bundle (for header/footer chrome).
      */
-    public suspend fun markdownToHtml(
-        markdown: String,
-        branding: PdfBranding,
-    ): String {
+    public suspend fun markdownToHtml(markdown: String, branding: PdfBranding): String {
         val flavour = GFMFlavourDescriptor()
         val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(markdown)
         val inner = HtmlGenerator(markdown, parsedTree, flavour).generateHtml()
@@ -49,10 +46,8 @@ public object MarkdownPdfAdapter {
  * `HtmlTemplateGenerator` that wraps a Markdown-compiled HTML fragment in the standard chrome.
  */
 @ExperimentalPdfGeneratorApi
-private class MarkdownTemplate(
-    branding: PdfBranding,
-    private val innerHtml: String,
-) : HtmlTemplateGenerator(branding) {
+private class MarkdownTemplate(branding: PdfBranding, private val innerHtml: String) :
+    HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = "Markdown document"
 
     override fun getAdditionalStyles(): String =
@@ -83,8 +78,7 @@ private class MarkdownTemplate(
         }
     }
 
-    private fun stripBodyTags(html: String): String =
-        html
-            .replace(Regex("^<body[^>]*>", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("</body>\$", RegexOption.IGNORE_CASE), "")
+    private fun stripBodyTags(html: String): String = html
+        .replace(Regex("^<body[^>]*>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("</body>\$", RegexOption.IGNORE_CASE), "")
 }

@@ -55,25 +55,15 @@ public class PdfDocumentBuilder internal constructor() {
 public class PdfPageBuilder internal constructor() {
     private val elements = mutableListOf<PdfElement>()
 
-    public fun text(
-        content: String,
-        style: TextStyle = TextStyle(),
-    ) {
+    public fun text(content: String, style: TextStyle = TextStyle()) {
         elements.add(PdfElement.Text(content, style))
     }
 
-    public fun heading(
-        level: Int,
-        content: String,
-    ) {
+    public fun heading(level: Int, content: String) {
         elements.add(PdfElement.Heading(level, content))
     }
 
-    public fun image(
-        source: ImageSource,
-        widthMm: Int? = null,
-        heightMm: Int? = null,
-    ) {
+    public fun image(source: ImageSource, widthMm: Int? = null, heightMm: Int? = null) {
         elements.add(PdfElement.Image(source, widthMm, heightMm))
     }
 
@@ -131,11 +121,7 @@ public class TableBuilder internal constructor() {
 public class TableRowBuilder internal constructor() {
     private val cells = mutableListOf<TableCell>()
 
-    public fun cell(
-        content: String,
-        style: TextStyle = TextStyle(),
-        colSpan: Int = 1,
-    ) {
+    public fun cell(content: String, style: TextStyle = TextStyle(), colSpan: Int = 1) {
         cells.add(TableCell(content, style, colSpan))
     }
 

@@ -65,10 +65,8 @@ public data class InvoiceData(
  * line item table, totals, and optional notes / terms.
  */
 @ExperimentalPdfGeneratorApi
-public class InvoiceTemplate(
-    branding: PdfBranding,
-    public val invoice: InvoiceData,
-) : HtmlTemplateGenerator(branding) {
+public class InvoiceTemplate(branding: PdfBranding, public val invoice: InvoiceData) :
+    HtmlTemplateGenerator(branding) {
     override fun getTitle(): String = "Invoice ${invoice.invoiceNumber}"
 
     override fun getAdditionalStyles(): String =
