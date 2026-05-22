@@ -25,6 +25,7 @@ kermit = "2.0.5"
 kotlinx-serialization = "1.8.1"
 kotlinx-datetime = "0.6.2"
 kotlinx-html = "0.12.0"
+kotlinx-browser = "0.3"
 openhtmltopdf = "1.0.10"
 pdfbox = "2.0.32"
 markdown = "0.7.3"
@@ -103,6 +104,7 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-html = { module = "org.jetbrains.kotlinx:kotlinx-html", version.ref = "kotlinx-html" }
+kotlinx-browser = { module = "org.jetbrains.kotlinx:kotlinx-browser", version.ref = "kotlinx-browser" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 openhtmltopdf-pdfbox = { module = "com.openhtmltopdf:openhtmltopdf-pdfbox", version.ref = "openhtmltopdf" }
 openhtmltopdf-svg-support = { module = "com.openhtmltopdf:openhtmltopdf-svg-support", version.ref = "openhtmltopdf" }

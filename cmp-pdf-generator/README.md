@@ -2,7 +2,8 @@
 
 Cross-platform PDF generation library for Kotlin Multiplatform.
 
-> **Status:** v0.1.0 — Experimental. All public APIs marked `@ExperimentalPdfGeneratorApi`.
+> **Status:** Experimental. All public APIs marked `@ExperimentalPdfGeneratorApi`.
+> Ships alongside the other `cmp-*` modules at the shared `kmptoolkit.version`.
 
 ## Features
 
@@ -22,7 +23,7 @@ Cross-platform PDF generation library for Kotlin Multiplatform.
 | iOS | `WKWebView.createPDF` | `PDFKit` | iOS 14+ |
 | macOS | `WKWebView.createPDF` | `PDFKit` | macOS 11+ |
 | JS (Browser+Node) | iframe + `window.print()` | `pdf-lib` (npm) | Browser: needs user gesture for print |
-| wasmJs (Browser+Node) | iframe + `window.print()` | `pdf-lib` (npm) | Browser only practical |
+| wasmJs (Browser+Node) | iframe + `window.print()` | Deferred (pdf-lib wasmJs interop pending) | HTML route only in v1; needs `kotlinx-browser` dep |
 
 > **Not targeted:** tvOS, watchOS, Linux native, mingwX64, wasmWasi.
 > Per the [Kotlin Multiplatform target tiers](https://kotlinlang.org/docs/native-target-support.html),
@@ -35,7 +36,8 @@ Cross-platform PDF generation library for Kotlin Multiplatform.
 ```kotlin
 // build.gradle.kts (your consumer app)
 dependencies {
-    implementation("io.github.mobilebytelabs:kmp-pdf-generator:0.1.0")
+    val kmptoolkit = "3.2.8" // or latest — see https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-pdf-generator
+    implementation("io.github.mobilebytelabs:cmp-pdf-generator:$kmptoolkit")
 }
 ```
 

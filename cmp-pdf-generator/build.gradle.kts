@@ -8,6 +8,7 @@
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -20,16 +21,15 @@ plugins {
 // ============================================================================
 // Cross-platform PDF generation library. HTML / Markdown / DSL input modes;
 // File / ByteArray / URI / Share / Print / Save output destinations.
-// Targets: Android, iOS (14+), macOS (11+), JVM, JS.
-// (wasmJs / tvOS / watchOS / Linux / mingw / wasmWasi excluded — upstream
-// library coverage incomplete; wasmJs needs explicit kotlinx-browser dep
-// which is deferred to v0.2.)
+// Targets: Android, iOS (14+), macOS (11+), JVM, JS, wasmJs.
+// (tvOS / watchOS / Linux / mingw / wasmWasi excluded — upstream library
+// coverage incomplete; kotlinx-html doesn't publish for those targets.)
 // Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-pdf-generator/
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
 
-@OptIn(ExperimentalKotlinGradlePluginApi::class)
+@OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
     applyDefaultHierarchyTemplate()
 
@@ -61,6 +61,11 @@ kotlin {
                 useKarma { useChromeHeadless() }
             }
         }
+        nodejs()
+    }
+
+    wasmJs {
+        browser()
         nodejs()
     }
 
@@ -100,6 +105,11 @@ kotlin {
         jsMain.dependencies {
             implementation(npm("pdf-lib", "1.17.1"))
         }
+
+        wasmJsMain.dependencies {
+            implementation(libs.kotlinx.browser)
+            implementation(npm("pdf-lib", "1.17.1"))
+        }
     }
 }
 
@@ -107,20 +117,14 @@ kotlin {
 // MAVEN CENTRAL PUBLISHING
 // ============================================================================
 mavenPublishing {
-    coordinates(
-        groupId = group.toString(),
-        artifactId = "kmp-pdf-generator",
-        version = version.toString(),
-    )
-
     signAllPublications()
 
     pom {
-        name = "KMP PDF Generator"
+        name = "CMP PDF Generator"
         description =
             "Cross-platform PDF generation library for Kotlin Multiplatform — " +
             "HTML, Markdown, and DSL input; File / ByteArray / URI / Share / Print / Save output. " +
-            "Supports Android, iOS, macOS, JVM, JS, wasmJs."
+            "Supports Android, iOS, macOS, JVM, JS."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

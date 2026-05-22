@@ -5,9 +5,10 @@ Apps currently using the private `core/ui/util/pdf` utility in `mifos-x-field-of
 ## 1. Add the dependency
 
 ```kotlin
-// build.gradle.kts
+// build.gradle.kts — uses the shared kmp-toolkit version
 dependencies {
-    implementation("io.github.mobilebytelabs:kmp-pdf-generator:0.1.0")
+    val kmptoolkit = "3.2.8" // or latest from Maven Central
+    implementation("io.github.mobilebytelabs:cmp-pdf-generator:$kmptoolkit")
 }
 ```
 
@@ -74,4 +75,4 @@ Once your app is on the library:
 rm -rf core/ui/src/{commonMain,androidMain,desktopMain,iosMain,jsMain,wasmJsMain,nativeMain}/kotlin/com/mifos/core/ui/util/pdf/
 ```
 
-…and remove any `kotlinx-html`, `openhtmltopdf-pdfbox`, `openhtmltopdf-svg-support` deps that were only there for PDF — they're transitively pulled by `kmp-pdf-generator`.
+…and remove any `kotlinx-html`, `openhtmltopdf-pdfbox`, `openhtmltopdf-svg-support` deps that were only there for PDF — they're transitively pulled by `cmp-pdf-generator`.
