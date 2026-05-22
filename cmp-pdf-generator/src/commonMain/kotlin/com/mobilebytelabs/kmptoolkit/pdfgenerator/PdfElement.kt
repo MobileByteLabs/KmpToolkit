@@ -14,14 +14,25 @@ package com.mobilebytelabs.kmptoolkit.pdfgenerator
  */
 @ExperimentalPdfGeneratorApi
 public sealed class ImageSource {
-    public data class Bytes(public val bytes: ByteArray) : ImageSource() {
+    public data class Bytes(
+        public val bytes: ByteArray,
+    ) : ImageSource() {
         override fun equals(other: Any?): Boolean = other is Bytes && bytes.contentEquals(other.bytes)
+
         override fun hashCode(): Int = bytes.contentHashCode()
     }
 
-    public data class Url(public val url: String) : ImageSource()
-    public data class DataUri(public val uri: String) : ImageSource()
-    public data class Resource(public val path: String) : ImageSource()
+    public data class Url(
+        public val url: String,
+    ) : ImageSource()
+
+    public data class DataUri(
+        public val uri: String,
+    ) : ImageSource()
+
+    public data class Resource(
+        public val path: String,
+    ) : ImageSource()
 }
 
 /** Text alignment. */
@@ -57,7 +68,9 @@ public data class TableCell(
 
 /** A row of cells. */
 @ExperimentalPdfGeneratorApi
-public data class TableRow(public val cells: List<TableCell>)
+public data class TableRow(
+    public val cells: List<TableCell>,
+)
 
 /**
  * One element on a [PdfPage]. Composed via the [PdfDocumentBuilder] DSL or hand-built.
@@ -65,10 +78,16 @@ public data class TableRow(public val cells: List<TableCell>)
 @ExperimentalPdfGeneratorApi
 public sealed class PdfElement {
     /** Plain text paragraph. */
-    public data class Text(public val content: String, public val style: TextStyle = TextStyle()) : PdfElement()
+    public data class Text(
+        public val content: String,
+        public val style: TextStyle = TextStyle(),
+    ) : PdfElement()
 
     /** Heading. [level] 1-6, like HTML `<h1>`-`<h6>`. */
-    public data class Heading(public val level: Int, public val content: String) : PdfElement() {
+    public data class Heading(
+        public val level: Int,
+        public val content: String,
+    ) : PdfElement() {
         init {
             require(level in 1..6) { "Heading level must be 1..6" }
         }
@@ -88,7 +107,9 @@ public sealed class PdfElement {
     ) : PdfElement()
 
     /** Vertical whitespace (mm). */
-    public data class Spacer(public val mm: Int) : PdfElement() {
+    public data class Spacer(
+        public val mm: Int,
+    ) : PdfElement() {
         init {
             require(mm >= 0) { "Spacer mm must be >= 0" }
         }
@@ -101,12 +122,16 @@ public sealed class PdfElement {
     public object PageBreak : PdfElement()
 
     /** Raw HTML passthrough. Engine-dependent — only the HTML route renders this faithfully. */
-    public data class Html(public val raw: String) : PdfElement()
+    public data class Html(
+        public val raw: String,
+    ) : PdfElement()
 }
 
 /** One page worth of elements. */
 @ExperimentalPdfGeneratorApi
-public data class PdfPage(public val elements: List<PdfElement>)
+public data class PdfPage(
+    public val elements: List<PdfElement>,
+)
 
 /**
  * The DSL output — a fully-described PDF document. Pass to [PdfGenerator.generate] for rendering.

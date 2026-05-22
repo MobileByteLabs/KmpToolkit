@@ -58,33 +58,61 @@ internal class JsPdfLibRenderer(
             is PdfElement.Text -> {
                 val size = el.style.size.toDouble()
                 val theFont = if (el.style.bold) boldFont else font
-                page.drawText(el.content.take(2000), js("{}").also {
-                    it.x = x
-                    it.y = y - size
-                    it.size = size
-                    it.font = theFont
-                })
+                page.drawText(
+                    el.content.take(2000),
+                    js("{}").also {
+                        it.x = x
+                        it.y = y - size
+                        it.size = size
+                        it.font = theFont
+                    },
+                )
                 y -= size * 1.4
             }
+
             is PdfElement.Heading -> {
-                val size = when (el.level) { 1 -> 16.0; 2 -> 13.0; 3 -> 11.0; else -> 10.0 }
-                page.drawText(el.content.take(2000), js("{}").also {
-                    it.x = x
-                    it.y = y - size
-                    it.size = size
-                    it.font = boldFont
-                })
+                val size =
+                    when (el.level) {
+                        1 -> 16.0
+                        2 -> 13.0
+                        3 -> 11.0
+                        else -> 10.0
+                    }
+                page.drawText(
+                    el.content.take(2000),
+                    js("{}").also {
+                        it.x = x
+                        it.y = y - size
+                        it.size = size
+                        it.font = boldFont
+                    },
+                )
                 y -= size * 1.6
             }
-            is PdfElement.Spacer -> y -= el.mm * 2.834
+
+            is PdfElement.Spacer -> {
+                y -= el.mm * 2.834
+            }
+
             PdfElement.Divider -> {
-                page.drawLine(js("{}").also {
-                    it.start = js("{}").also { s -> s.x = x; s.y = y }
-                    it.end = js("{}").also { e -> e.x = x + maxWidth; e.y = y }
-                    it.thickness = 1
-                })
+                page.drawLine(
+                    js("{}").also {
+                        it.start =
+                            js("{}").also { s ->
+                                s.x = x
+                                s.y = y
+                            }
+                        it.end =
+                            js("{}").also { e ->
+                                e.x = x + maxWidth
+                                e.y = y
+                            }
+                        it.thickness = 1
+                    },
+                )
                 y -= 6.0
             }
+
             is PdfElement.Table -> {
                 val all = listOfNotNull(el.headerRow) + el.rows
                 if (all.isEmpty()) return y
@@ -94,24 +122,30 @@ internal class JsPdfLibRenderer(
                     var cellX = x
                     row.cells.forEach { cell ->
                         val cellW = colW * cell.colSpan
-                        page.drawRectangle(js("{}").also {
-                            it.x = cellX
-                            it.y = y - 14
-                            it.width = cellW
-                            it.height = 14
-                            it.borderWidth = 1
-                        })
-                        page.drawText(cell.content.take(60), js("{}").also {
-                            it.x = cellX + 2
-                            it.y = y - 10
-                            it.size = 8
-                            it.font = font
-                        })
+                        page.drawRectangle(
+                            js("{}").also {
+                                it.x = cellX
+                                it.y = y - 14
+                                it.width = cellW
+                                it.height = 14
+                                it.borderWidth = 1
+                            },
+                        )
+                        page.drawText(
+                            cell.content.take(60),
+                            js("{}").also {
+                                it.x = cellX + 2
+                                it.y = y - 10
+                                it.size = 8
+                                it.font = font
+                            },
+                        )
                         cellX += cellW
                     }
                     y -= 16.0
                 }
             }
+
             else -> { /* PageBreak, Html, Image — skipped in v0.1 pdf-lib path */ }
         }
         return y

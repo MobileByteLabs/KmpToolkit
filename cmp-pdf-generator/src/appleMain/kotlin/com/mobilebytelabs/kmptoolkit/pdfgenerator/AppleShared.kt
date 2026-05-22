@@ -32,10 +32,9 @@ internal fun NSData.toByteArray(): ByteArray {
 /** Convert ByteArray → NSData. */
 @ExperimentalPdfGeneratorApi
 @OptIn(ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
-internal fun ByteArray.toNSData(): NSData {
-    return usePinned { pinned ->
+internal fun ByteArray.toNSData(): NSData =
+    usePinned { pinned ->
         NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
     }
-}
 
 // injectPageConfigCss moved to commonMain (PageConfigCssInjection.kt) — internal visibility

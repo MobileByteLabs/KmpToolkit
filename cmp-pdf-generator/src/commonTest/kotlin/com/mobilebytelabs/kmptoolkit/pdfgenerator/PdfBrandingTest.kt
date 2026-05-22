@@ -14,7 +14,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PdfBrandingTest {
-
     @Test
     fun noneFactoryHasNoLogoNoFooter() {
         val b = PdfBranding.none()

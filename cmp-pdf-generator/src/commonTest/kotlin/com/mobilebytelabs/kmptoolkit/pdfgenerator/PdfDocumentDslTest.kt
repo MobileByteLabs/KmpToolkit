@@ -14,7 +14,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class PdfDocumentDslTest {
-
     @Test
     fun emptyDocumentRejected() {
         assertFailsWith<PdfError.InvalidInput> {
@@ -24,12 +23,13 @@ class PdfDocumentDslTest {
 
     @Test
     fun singlePageDocBuilds() {
-        val doc = pdf {
-            page {
-                heading(1, "Hello")
-                text("World")
+        val doc =
+            pdf {
+                page {
+                    heading(1, "Hello")
+                    text("World")
+                }
             }
-        }
         assertEquals(1, doc.pages.size)
         assertEquals(2, doc.pages[0].elements.size)
         assertIs<PdfElement.Heading>(doc.pages[0].elements[0])
@@ -40,36 +40,48 @@ class PdfDocumentDslTest {
     fun pageConfigAndBrandingPropagate() {
         val config = PageConfig(size = PageSize.A3, orientation = Orientation.LANDSCAPE)
         val branding = PdfBranding.mifosDefault()
-        val doc = pdf {
-            pageConfig(config)
-            branding(branding)
-            page { text("hi") }
-        }
+        val doc =
+            pdf {
+                pageConfig(config)
+                branding(branding)
+                page { text("hi") }
+            }
         assertEquals(config, doc.config)
         assertEquals(branding, doc.branding)
     }
 
     @Test
     fun multiPageDocBuilds() {
-        val doc = pdf {
-            page { text("Page 1") }
-            page { text("Page 2") }
-            page { text("Page 3") }
-        }
+        val doc =
+            pdf {
+                page { text("Page 1") }
+                page { text("Page 2") }
+                page { text("Page 3") }
+            }
         assertEquals(3, doc.pages.size)
     }
 
     @Test
     fun tableBuilderProducesHeaderAndRows() {
-        val doc = pdf {
-            page {
-                table {
-                    header { cell("A"); cell("B") }
-                    row { cell("1"); cell("2") }
-                    row { cell("3"); cell("4") }
+        val doc =
+            pdf {
+                page {
+                    table {
+                        header {
+                            cell("A")
+                            cell("B")
+                        }
+                        row {
+                            cell("1")
+                            cell("2")
+                        }
+                        row {
+                            cell("3")
+                            cell("4")
+                        }
+                    }
                 }
             }
-        }
         val table = doc.pages[0].elements[0] as PdfElement.Table
         assertNotNull(table.headerRow)
         assertEquals(2, table.headerRow!!.cells.size)
@@ -95,42 +107,46 @@ class PdfDocumentDslTest {
     }
 
     @Test
-    fun htmlCompilerProducesXhtml() = runTest {
-        val doc = pdf {
-            branding(PdfBranding.none())
-            page {
-                heading(1, "Title")
-                text("Body")
-            }
+    fun htmlCompilerProducesXhtml() =
+        runTest {
+            val doc =
+                pdf {
+                    branding(PdfBranding.none())
+                    page {
+                        heading(1, "Title")
+                        text("Body")
+                    }
+                }
+            val html = doc.toHtml()
+            assertTrue(html.startsWith("<!DOCTYPE html"))
+            assertTrue(html.contains("<title>"))
+            assertTrue(html.contains("Title"))
+            assertTrue(html.contains("Body"))
         }
-        val html = doc.toHtml()
-        assertTrue(html.startsWith("<!DOCTYPE html"))
-        assertTrue(html.contains("<title>"))
-        assertTrue(html.contains("Title"))
-        assertTrue(html.contains("Body"))
-    }
 
     @Test
-    fun mixedElementsRoundTripHtml() = runTest {
-        val doc = pdf {
-            branding(PdfBranding.none())
-            page {
-                heading(2, "Section")
-                text("Para 1")
-                divider()
-                table {
-                    header { cell("Col A") }
-                    row { cell("Cell A") }
+    fun mixedElementsRoundTripHtml() =
+        runTest {
+            val doc =
+                pdf {
+                    branding(PdfBranding.none())
+                    page {
+                        heading(2, "Section")
+                        text("Para 1")
+                        divider()
+                        table {
+                            header { cell("Col A") }
+                            row { cell("Cell A") }
+                        }
+                        spacer(10)
+                        pageBreak()
+                        text("After break")
+                    }
                 }
-                spacer(10)
-                pageBreak()
-                text("After break")
-            }
+            val html = doc.toHtml()
+            assertTrue(html.contains("<hr"))
+            assertTrue(html.contains("page-break-before"))
+            assertTrue(html.contains("<h2>"))
+            assertTrue(html.contains("Cell A"))
         }
-        val html = doc.toHtml()
-        assertTrue(html.contains("<hr"))
-        assertTrue(html.contains("page-break-before"))
-        assertTrue(html.contains("<h2>"))
-        assertTrue(html.contains("Cell A"))
-    }
 }

@@ -13,7 +13,10 @@ package com.mobilebytelabs.kmptoolkit.pdfgenerator
  * Standard page sizes in millimeters.
  */
 @ExperimentalPdfGeneratorApi
-public enum class PageSize(public val widthMm: Int, public val heightMm: Int) {
+public enum class PageSize(
+    public val widthMm: Int,
+    public val heightMm: Int,
+) {
     A3(297, 420),
     A4(210, 297),
     A5(148, 210),
@@ -28,7 +31,10 @@ public enum class PageSize(public val widthMm: Int, public val heightMm: Int) {
  * Custom page size (mm). Use when none of the standard [PageSize] values fit.
  */
 @ExperimentalPdfGeneratorApi
-public data class CustomPageSize(public val widthMm: Int, public val heightMm: Int) {
+public data class CustomPageSize(
+    public val widthMm: Int,
+    public val heightMm: Int,
+) {
     init {
         require(widthMm > 0) { "widthMm must be > 0" }
         require(heightMm > 0) { "heightMm must be > 0" }
@@ -101,13 +107,15 @@ public data class PageConfig(
 ) {
     /** Effective width in mm — honors customSize first, else size. */
     public val effectiveWidthMm: Int
-        get() = (customSize?.widthMm ?: size.widthMm).let {
-            if (orientation == Orientation.LANDSCAPE) (customSize?.heightMm ?: size.heightMm) else it
-        }
+        get() =
+            (customSize?.widthMm ?: size.widthMm).let {
+                if (orientation == Orientation.LANDSCAPE) (customSize?.heightMm ?: size.heightMm) else it
+            }
 
     /** Effective height in mm. */
     public val effectiveHeightMm: Int
-        get() = (customSize?.heightMm ?: size.heightMm).let {
-            if (orientation == Orientation.LANDSCAPE) (customSize?.widthMm ?: size.widthMm) else it
-        }
+        get() =
+            (customSize?.heightMm ?: size.heightMm).let {
+                if (orientation == Orientation.LANDSCAPE) (customSize?.widthMm ?: size.widthMm) else it
+            }
 }

@@ -17,10 +17,15 @@ import kotlin.js.Promise
 @JsName("PDFDocument")
 external class PDFDocumentJs {
     fun addPage(size: Array<Double>? = definedExternally): PDFPageJs
+
     fun embedFont(fontBytes: dynamic): Promise<dynamic>
+
     fun embedJpg(bytes: dynamic): Promise<dynamic>
+
     fun embedPng(bytes: dynamic): Promise<dynamic>
-    fun save(): Promise<dynamic /* Uint8Array */>
+
+    // Returns Uint8Array
+    fun save(): Promise<dynamic>
 
     companion object {
         fun create(): Promise<PDFDocumentJs>
@@ -29,10 +34,20 @@ external class PDFDocumentJs {
 
 @JsName("PDFPage")
 external class PDFPageJs {
-    fun drawText(text: String, options: dynamic = definedExternally)
-    fun drawImage(image: dynamic, options: dynamic = definedExternally)
+    fun drawText(
+        text: String,
+        options: dynamic = definedExternally,
+    )
+
+    fun drawImage(
+        image: dynamic,
+        options: dynamic = definedExternally,
+    )
+
     fun drawLine(options: dynamic)
+
     fun drawRectangle(options: dynamic)
+
     fun getSize(): dynamic
 }
 
@@ -46,4 +61,8 @@ external object StandardFontsJs {
 }
 
 @JsName("rgb")
-external fun rgbJs(r: Double, g: Double, b: Double): dynamic
+external fun rgbJs(
+    r: Double,
+    g: Double,
+    b: Double,
+): dynamic

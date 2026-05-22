@@ -12,7 +12,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PageConfigTest {
-
     @Test
     fun pageSizeDimensionsAreCorrect() {
         assertEquals(210, PageSize.A4.widthMm)
@@ -63,10 +62,11 @@ class PageConfigTest {
 
     @Test
     fun pageConfigCustomSizeTakesPrecedence() {
-        val c = PageConfig(
-            size = PageSize.A4,
-            customSize = CustomPageSize(100, 200),
-        )
+        val c =
+            PageConfig(
+                size = PageSize.A4,
+                customSize = CustomPageSize(100, 200),
+            )
         assertEquals(100, c.effectiveWidthMm)
         assertEquals(200, c.effectiveHeightMm)
     }

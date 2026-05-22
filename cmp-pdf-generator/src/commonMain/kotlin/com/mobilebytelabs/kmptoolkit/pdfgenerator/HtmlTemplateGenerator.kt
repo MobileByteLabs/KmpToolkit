@@ -38,8 +38,9 @@ import kotlin.time.Clock
  * @param branding Injected branding bundle. Use [PdfBranding.none] to omit logo + footer.
  */
 @ExperimentalPdfGeneratorApi
-public abstract class HtmlTemplateGenerator(protected val branding: PdfBranding) {
-
+public abstract class HtmlTemplateGenerator(
+    protected val branding: PdfBranding,
+) {
     /**
      * Generate the complete XHTML 1.0-strict document, ready to feed the platform's
      * HTML-to-PDF engine.
@@ -50,19 +51,20 @@ public abstract class HtmlTemplateGenerator(protected val branding: PdfBranding)
         val generationDateText = getGenerationDateText()
         val theme = branding.theme
 
-        val bodyContent = createHTML(xhtmlCompatible = true).body {
-            // Optional header — only when logo OR date is present
-            if (logoUri != null) {
-                renderHeader(logoUri, generationDateText, theme.accentColorHex)
-            }
+        val bodyContent =
+            createHTML(xhtmlCompatible = true).body {
+                // Optional header — only when logo OR date is present
+                if (logoUri != null) {
+                    renderHeader(logoUri, generationDateText, theme.accentColorHex)
+                }
 
-            generateBody()
+                generateBody()
 
-            // Optional footer — only when poweredByText is non-null
-            if (poweredBy != null) {
-                renderFooter(logoUri, poweredBy, theme.accentColorHex)
+                // Optional footer — only when poweredByText is non-null
+                if (poweredBy != null) {
+                    renderFooter(logoUri, poweredBy, theme.accentColorHex)
+                }
             }
-        }
 
         return buildString {
             append("<!DOCTYPE html PUBLIC ")
@@ -100,18 +102,21 @@ public abstract class HtmlTemplateGenerator(protected val branding: PdfBranding)
      * Convert the configured logo to a `data:image/...;base64,...` URI.
      * Returns null when [PdfBranding.logo] is [PdfLogo.None].
      */
-    protected fun getLogoDataUri(): String? {
-        return when (val logo = branding.logo) {
+    protected fun getLogoDataUri(): String? =
+        when (val logo = branding.logo) {
             is PdfLogo.None -> null
             is PdfLogo.DataUri -> logo.uri
             is PdfLogo.Svg -> "data:image/svg+xml;base64," + Base64.encode(logo.bytes)
             is PdfLogo.Png -> "data:image/png;base64," + Base64.encode(logo.bytes)
         }
-    }
 
     /** Today's date, formatted via [PdfBranding.dateFormatter]. */
     protected fun getGenerationDateText(): String {
-        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val today =
+            Clock.System
+                .now()
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+                .date
         return "Generated: " + branding.dateFormatter(today)
     }
 
@@ -121,91 +126,97 @@ public abstract class HtmlTemplateGenerator(protected val branding: PdfBranding)
      */
     protected fun getCommonStyles(): String {
         val t = branding.theme
-        val watermarkCss = branding.watermark?.let { wm ->
-            val src = when (wm.image) {
-                is ImageSource.Bytes -> "data:image/png;base64," + Base64.encode(wm.image.bytes)
-                is ImageSource.DataUri -> wm.image.uri
-                is ImageSource.Url -> wm.image.url
-                null -> null
-                else -> null
-            }
-            """
-            body::before {
-                content: ${if (wm.text != null) "\"${wm.text}\"" else "\"\""};
-                position: fixed;
-                top: 50%; left: 50%;
-                transform: translate(-50%, -50%) rotate(${wm.rotationDeg}deg);
-                font-size: 80pt;
-                color: #000;
-                opacity: ${wm.opacity};
-                z-index: 1000;
-                pointer-events: none;
-                ${watermarkBackgroundCss(src)}
-            }
-            """.trimIndent()
-        } ?: ""
+        val watermarkCss =
+            branding.watermark?.let { wm ->
+                val src =
+                    when (wm.image) {
+                        is ImageSource.Bytes -> "data:image/png;base64," + Base64.encode(wm.image.bytes)
+                        is ImageSource.DataUri -> wm.image.uri
+                        is ImageSource.Url -> wm.image.url
+                        null -> null
+                        else -> null
+                    }
+                """
+                body::before {
+                    content: ${if (wm.text != null) "\"${wm.text}\"" else "\"\""};
+                    position: fixed;
+                    top: 50%; left: 50%;
+                    transform: translate(-50%, -50%) rotate(${wm.rotationDeg}deg);
+                    font-size: 80pt;
+                    color: #000;
+                    opacity: ${wm.opacity};
+                    z-index: 1000;
+                    pointer-events: none;
+                    ${watermarkBackgroundCss(src)}
+                }
+                """.trimIndent()
+            } ?: ""
 
         return """
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: ${t.fontFamily};
-            font-size: ${(8 * t.fontScale).toInt()}pt;
-            line-height: 1.3;
-            color: #333;
-            background: #fff;
-        }
+            body {
+                font-family: ${t.fontFamily};
+                font-size: ${(8 * t.fontScale).toInt()}pt;
+                line-height: 1.3;
+                color: #333;
+                background: #fff;
+            }
 
-        .container { padding: 10px; max-width: 100%; }
+            .container { padding: 10px; max-width: 100%; }
 
-        .header {
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid ${t.accentColorHex};
-        }
+            .header {
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid ${t.accentColorHex};
+            }
 
-        h1 { color: ${t.headerColorHex}; font-size: ${(14 * t.fontScale).toInt()}pt;
-             font-weight: 500; margin-bottom: 10px; }
-        h2 { color: ${t.headerColorHex}; font-size: ${(11 * t.fontScale).toInt()}pt;
-             font-weight: 500; margin-bottom: 8px; }
-        h3 { color: ${t.headerColorHex}; font-size: ${(10 * t.fontScale).toInt()}pt;
-             font-weight: 500; margin-bottom: 6px; }
+            h1 { color: ${t.headerColorHex}; font-size: ${(14 * t.fontScale).toInt()}pt;
+                 font-weight: 500; margin-bottom: 10px; }
+            h2 { color: ${t.headerColorHex}; font-size: ${(11 * t.fontScale).toInt()}pt;
+                 font-weight: 500; margin-bottom: 8px; }
+            h3 { color: ${t.headerColorHex}; font-size: ${(10 * t.fontScale).toInt()}pt;
+                 font-weight: 500; margin-bottom: 6px; }
 
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px;
-                font-size: ${(6 * t.fontScale).toInt()}pt; }
-        th, td { border: 1px solid ${t.borderColorHex}; padding: 6px 8px; text-align: left; }
-        thead th { background-color: #f5f5f5; font-weight: 600; color: #424242; }
-        thead tr.header-group th { background-color: #e3f2fd; font-weight: 600;
-                                   border-bottom: 2px solid ${t.headerColorHex}; }
-        tbody tr:nth-child(even) { background-color: ${t.tableRowEvenHex}; }
-        tfoot td { background-color: #e3f2fd; font-weight: 600;
-                   border-top: 2px solid ${t.headerColorHex}; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 15px;
+                    font-size: ${(6 * t.fontScale).toInt()}pt; }
+            th, td { border: 1px solid ${t.borderColorHex}; padding: 6px 8px; text-align: left; }
+            thead th { background-color: #f5f5f5; font-weight: 600; color: #424242; }
+            thead tr.header-group th { background-color: #e3f2fd; font-weight: 600;
+                                       border-bottom: 2px solid ${t.headerColorHex}; }
+            tbody tr:nth-child(even) { background-color: ${t.tableRowEvenHex}; }
+            tfoot td { background-color: #e3f2fd; font-weight: 600;
+                       border-top: 2px solid ${t.headerColorHex}; }
 
-        .center { text-align: center !important; }
-        .right { text-align: right !important; }
-        .r-amount { text-align: right !important; }
+            .center { text-align: center !important; }
+            .right { text-align: right !important; }
+            .r-amount { text-align: right !important; }
 
-        .footer { margin-top: 20px; padding-top: 15px; text-align: center;
-                  font-size: ${(8 * t.fontScale).toInt()}pt; color: #666; }
-        .powered-by { margin-top: 5px; font-style: italic; }
+            .footer { margin-top: 20px; padding-top: 15px; text-align: center;
+                      font-size: ${(8 * t.fontScale).toInt()}pt; color: #666; }
+            .powered-by { margin-top: 5px; font-style: italic; }
 
-        a { color: ${t.accentColorHex}; text-decoration: none; }
-        hr { border: none; border-top: 1px solid ${t.borderColorHex}; margin: 8px 0; }
+            a { color: ${t.accentColorHex}; text-decoration: none; }
+            hr { border: none; border-top: 1px solid ${t.borderColorHex}; margin: 8px 0; }
 
-        @media print {
-            body { background: #fff; }
-            .container { padding: 0; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-        }
+            @media print {
+                body { background: #fff; }
+                .container { padding: 0; }
+                table { page-break-inside: auto; }
+                tr { page-break-inside: avoid; page-break-after: auto; }
+            }
 
-        $watermarkCss
+            $watermarkCss
 
-        /* PAGE_CONFIG_PLACEHOLDER */
-        """.trimIndent()
+            /* PAGE_CONFIG_PLACEHOLDER */
+            """.trimIndent()
     }
 
-    private fun BODY.renderHeader(logoUri: String, dateText: String, accentColor: String) {
+    private fun BODY.renderHeader(
+        logoUri: String,
+        dateText: String,
+        accentColor: String,
+    ) {
         div {
             attributes["style"] = "display: table; width: 100%; " +
                 "border-bottom: 2px solid $accentColor; margin-bottom: 20px; padding-bottom: 10px;"
@@ -224,7 +235,11 @@ public abstract class HtmlTemplateGenerator(protected val branding: PdfBranding)
         }
     }
 
-    private fun BODY.renderFooter(logoUri: String?, poweredBy: String, accentColor: String) {
+    private fun BODY.renderFooter(
+        logoUri: String?,
+        poweredBy: String,
+        accentColor: String,
+    ) {
         div("footer") {
             div("powered-by center") {
                 span {
@@ -242,10 +257,11 @@ public abstract class HtmlTemplateGenerator(protected val branding: PdfBranding)
         }
     }
 
-    private fun watermarkBackgroundCss(src: String?): String = if (src != null) {
-        "background-image: url('$src'); background-size: contain; " +
-            "background-repeat: no-repeat; width: 300pt; height: 300pt;"
-    } else {
-        ""
-    }
+    private fun watermarkBackgroundCss(src: String?): String =
+        if (src != null) {
+            "background-image: url('$src'); background-size: contain; " +
+                "background-repeat: no-repeat; width: 300pt; height: 300pt;"
+        } else {
+            ""
+        }
 }

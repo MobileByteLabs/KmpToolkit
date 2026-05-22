@@ -41,7 +41,6 @@ import platform.darwin.NSObject
  */
 @ExperimentalPdfGeneratorApi
 public actual class PdfGenerator public actual constructor() {
-
     private val progress = MutableSharedFlow<PdfProgressEvent>(extraBufferCapacity = 32)
     private var presentingRootViewController: platform.UIKit.UIViewController? = null
 
@@ -110,80 +109,106 @@ public actual class PdfGenerator public actual constructor() {
         val config = WKWebViewConfiguration()
         val webView = WKWebView(frame = CGRectMake(0.0, 0.0, 612.0, 792.0), configuration = config)
 
-        val navDelegate = object : NSObject(), WKNavigationDelegateProtocol {
-            override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
-                val pdfConfig = WKPDFConfiguration()
-                webView.createPDFWithConfiguration(pdfConfig) { data: NSData?, error: NSError? ->
-                    when {
-                        error != null -> pdfReady.completeExceptionally(
-                            PdfError.EngineFailure(
-                                IllegalStateException("WKWebView.createPDF failed: ${error.localizedDescription}"),
-                            ),
-                        )
-                        data == null -> pdfReady.completeExceptionally(
-                            PdfError.EngineFailure(
-                                IllegalStateException("WKWebView.createPDF returned null"),
-                            ),
-                        )
-                        else -> pdfReady.complete(data)
+        val navDelegate =
+            object : NSObject(), WKNavigationDelegateProtocol {
+                override fun webView(
+                    webView: WKWebView,
+                    didFinishNavigation: WKNavigation?,
+                ) {
+                    val pdfConfig = WKPDFConfiguration()
+                    webView.createPDFWithConfiguration(pdfConfig) { data: NSData?, error: NSError? ->
+                        when {
+                            error != null -> {
+                                pdfReady.completeExceptionally(
+                                    PdfError.EngineFailure(
+                                        IllegalStateException(
+                                            "WKWebView.createPDF failed: " +
+                                                error.localizedDescription,
+                                        ),
+                                    ),
+                                )
+                            }
+
+                            data == null -> {
+                                pdfReady.completeExceptionally(
+                                    PdfError.EngineFailure(
+                                        IllegalStateException("WKWebView.createPDF returned null"),
+                                    ),
+                                )
+                            }
+
+                            else -> {
+                                pdfReady.complete(data)
+                            }
+                        }
                     }
                 }
-            }
 
-            override fun webView(
-                webView: WKWebView,
-                didFailNavigation: WKNavigation?,
-                withError: NSError,
-            ) {
-                pdfReady.completeExceptionally(
-                    PdfError.EngineFailure(
-                        IllegalStateException("WKWebView navigation failed: ${withError.localizedDescription}"),
-                    ),
-                )
-            }
-
-            override fun webView(
-                webView: WKWebView,
-                didFailProvisionalNavigation: WKNavigation?,
-                withError: NSError,
-            ) {
-                pdfReady.completeExceptionally(
-                    PdfError.EngineFailure(
-                        IllegalStateException(
-                            "WKWebView provisional navigation failed: ${withError.localizedDescription}",
+                override fun webView(
+                    webView: WKWebView,
+                    didFailNavigation: WKNavigation?,
+                    withError: NSError,
+                ) {
+                    pdfReady.completeExceptionally(
+                        PdfError.EngineFailure(
+                            IllegalStateException("WKWebView navigation failed: ${withError.localizedDescription}"),
                         ),
-                    ),
-                )
+                    )
+                }
+
+                override fun webView(
+                    webView: WKWebView,
+                    didFailProvisionalNavigation: WKNavigation?,
+                    withError: NSError,
+                ) {
+                    pdfReady.completeExceptionally(
+                        PdfError.EngineFailure(
+                            IllegalStateException(
+                                "WKWebView provisional navigation failed: ${withError.localizedDescription}",
+                            ),
+                        ),
+                    )
+                }
             }
-        }
         webView.navigationDelegate = navDelegate
         webView.loadHTMLString(html, baseURL = null)
         return pdfReady.await()
     }
 
-    private fun dispatchOutput(data: NSData, output: PdfOutput, fileName: String): PdfResult =
+    private fun dispatchOutput(
+        data: NSData,
+        output: PdfOutput,
+        fileName: String,
+    ): PdfResult =
         when (output) {
             is PdfOutput.File -> {
                 val url = NSURL.fileURLWithPath(output.path)
                 data.writeToURL(url, true)
                 PdfResult.Success(byteCount = data.length.toInt())
             }
-            PdfOutput.ByteArrayOutput -> PdfResult.Success(bytes = data.toByteArray(), byteCount = data.length.toInt())
+
+            PdfOutput.ByteArrayOutput -> {
+                PdfResult.Success(bytes = data.toByteArray(), byteCount = data.length.toInt())
+            }
+
             is PdfOutput.Uri -> {
                 val url = writeToTemp(data, fileName)
                 output.callback(url.absoluteString ?: "")
                 PdfResult.Success(uri = url.absoluteString, byteCount = data.length.toInt())
             }
+
             PdfOutput.Share -> {
                 presentShareSheet(data, fileName)
                 PdfResult.Success(byteCount = data.length.toInt())
             }
+
             PdfOutput.Print -> {
                 val printer = UIPrintInteractionController.sharedPrintController()
                 printer.printingItem = data
                 printer.presentAnimated(true, completionHandler = null)
                 PdfResult.Success(byteCount = data.length.toInt())
             }
+
             PdfOutput.Save -> {
                 val url = writeToTemp(data, fileName)
                 val picker = UIDocumentPickerViewController(forExportingURLs = listOf(url))
@@ -193,14 +218,20 @@ public actual class PdfGenerator public actual constructor() {
             }
         }
 
-    private fun writeToTemp(data: NSData, fileName: String): NSURL {
+    private fun writeToTemp(
+        data: NSData,
+        fileName: String,
+    ): NSURL {
         val tmpPath = NSTemporaryDirectory() + fileName
         val url = NSURL.fileURLWithPath(tmpPath)
         data.writeToURL(url, true)
         return url
     }
 
-    private fun presentShareSheet(data: NSData, fileName: String) {
+    private fun presentShareSheet(
+        data: NSData,
+        fileName: String,
+    ) {
         val url = writeToTemp(data, fileName)
         val vc = UIActivityViewController(activityItems = listOf(url), applicationActivities = null)
         rootViewController()?.presentViewController(vc, animated = true, completion = null)

@@ -28,14 +28,16 @@ import org.intellij.markdown.parser.MarkdownParser
  */
 @ExperimentalPdfGeneratorApi
 public object MarkdownPdfAdapter {
-
     /**
      * Compile Markdown to a complete HTML document, ready for `PdfGenerator.generateFromHtml`.
      *
      * @param markdown Source Markdown.
      * @param branding Branding bundle (for header/footer chrome).
      */
-    public suspend fun markdownToHtml(markdown: String, branding: PdfBranding): String {
+    public suspend fun markdownToHtml(
+        markdown: String,
+        branding: PdfBranding,
+    ): String {
         val flavour = GFMFlavourDescriptor()
         val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(markdown)
         val inner = HtmlGenerator(markdown, parsedTree, flavour).generateHtml()
@@ -51,10 +53,10 @@ private class MarkdownTemplate(
     branding: PdfBranding,
     private val innerHtml: String,
 ) : HtmlTemplateGenerator(branding) {
-
     override fun getTitle(): String = "Markdown document"
 
-    override fun getAdditionalStyles(): String = """
+    override fun getAdditionalStyles(): String =
+        """
         pre {
             background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto;
             font-family: 'Roboto Mono', 'Courier New', monospace; font-size: 7pt;
@@ -69,7 +71,7 @@ private class MarkdownTemplate(
         }
         ul, ol { margin: 8px 0 8px 20px; }
         li { margin-bottom: 4px; }
-    """.trimIndent()
+        """.trimIndent()
 
     override fun kotlinx.html.BODY.generateBody() {
         // The compiled HTML already contains a `<body>` from HtmlGenerator — strip it and inject raw.
@@ -81,7 +83,8 @@ private class MarkdownTemplate(
         }
     }
 
-    private fun stripBodyTags(html: String): String = html
-        .replace(Regex("^<body[^>]*>", RegexOption.IGNORE_CASE), "")
-        .replace(Regex("</body>\$", RegexOption.IGNORE_CASE), "")
+    private fun stripBodyTags(html: String): String =
+        html
+            .replace(Regex("^<body[^>]*>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("</body>\$", RegexOption.IGNORE_CASE), "")
 }

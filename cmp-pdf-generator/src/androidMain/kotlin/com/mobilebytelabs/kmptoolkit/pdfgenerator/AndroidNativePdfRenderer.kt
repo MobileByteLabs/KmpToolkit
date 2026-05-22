@@ -9,10 +9,10 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.pdf.PdfDocument as NativePdfDocument
 import android.util.Base64
 import kotlinx.coroutines.flow.MutableSharedFlow
 import java.io.ByteArrayOutputStream
+import android.graphics.pdf.PdfDocument as NativePdfDocument
 
 /**
  * DSL → Android-native `PdfDocument`. Used when the document has no `Html` elements and is
@@ -33,10 +33,11 @@ internal class AndroidNativePdfRenderer(
     private val progress: MutableSharedFlow<PdfProgressEvent>,
 ) {
     private val pdf = NativePdfDocument()
-    private val paint = Paint().apply {
-        isAntiAlias = true
-        color = Color.parseColor("#333333")
-    }
+    private val paint =
+        Paint().apply {
+            isAntiAlias = true
+            color = Color.parseColor("#333333")
+        }
 
     fun render(): ByteArray {
         val widthMm = document.config.effectiveWidthMm
@@ -65,7 +66,13 @@ internal class AndroidNativePdfRenderer(
         return out.toByteArray()
     }
 
-    private fun renderElement(canvas: Canvas, el: PdfElement, x: Float, yIn: Float, maxWidth: Float): Float {
+    private fun renderElement(
+        canvas: Canvas,
+        el: PdfElement,
+        x: Float,
+        yIn: Float,
+        maxWidth: Float,
+    ): Float {
         var y = yIn
         when (el) {
             is PdfElement.Text -> {
@@ -75,20 +82,29 @@ internal class AndroidNativePdfRenderer(
                 canvas.drawText(el.content, x, y + el.style.size, paint)
                 y += el.style.size * 1.4f
             }
+
             is PdfElement.Heading -> {
-                val size = when (el.level) { 1 -> 16; 2 -> 13; 3 -> 11; else -> 10 }
+                val size =
+                    when (el.level) {
+                        1 -> 16
+                        2 -> 13
+                        3 -> 11
+                        else -> 10
+                    }
                 paint.textSize = size.toFloat()
                 paint.isFakeBoldText = true
                 canvas.drawText(el.content, x, y + size, paint)
                 paint.isFakeBoldText = false
                 y += size * 1.6f
             }
+
             is PdfElement.Image -> {
-                val bytes = when (val src = el.source) {
-                    is ImageSource.Bytes -> src.bytes
-                    is ImageSource.DataUri -> Base64.decode(src.uri.substringAfter(","), Base64.DEFAULT)
-                    else -> null
-                }
+                val bytes =
+                    when (val src = el.source) {
+                        is ImageSource.Bytes -> src.bytes
+                        is ImageSource.DataUri -> Base64.decode(src.uri.substringAfter(","), Base64.DEFAULT)
+                        else -> null
+                    }
                 if (bytes != null) {
                     val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     if (bmp != null) {
@@ -99,6 +115,7 @@ internal class AndroidNativePdfRenderer(
                     }
                 }
             }
+
             is PdfElement.Table -> {
                 val allRows = listOfNotNull(el.headerRow) + el.rows
                 if (allRows.isEmpty()) return y
@@ -118,13 +135,21 @@ internal class AndroidNativePdfRenderer(
                 }
                 paint.style = Paint.Style.FILL
             }
-            is PdfElement.Spacer -> y += el.mm * 2.834f
+
+            is PdfElement.Spacer -> {
+                y += el.mm * 2.834f
+            }
+
             PdfElement.Divider -> {
                 canvas.drawLine(x, y + 2, x + maxWidth, y + 2, paint)
                 y += 8f
             }
+
             // signals new page; v0.1 caller honors page breaks only at element boundaries
-            PdfElement.PageBreak -> y = Float.MAX_VALUE
+            PdfElement.PageBreak -> {
+                y = Float.MAX_VALUE
+            }
+
             is PdfElement.Html -> {
                 // Native renderer cannot render HTML — emit a marker only.
                 paint.textSize = 6f

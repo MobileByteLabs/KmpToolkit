@@ -30,10 +30,13 @@ import org.w3c.files.BlobPropertyBag
  */
 @ExperimentalPdfGeneratorApi
 public actual class PdfGenerator public actual constructor() {
-
     private val progress = MutableSharedFlow<PdfProgressEvent>(extraBufferCapacity = 32)
 
-    public actual suspend fun generateAndSharePdf(htmlContent: String, fileName: String, pageConfig: PageConfig) {
+    public actual suspend fun generateAndSharePdf(
+        htmlContent: String,
+        fileName: String,
+        pageConfig: PageConfig,
+    ) {
         printViaIframe(htmlContent.injectPageConfigCss(pageConfig))
     }
 
@@ -51,6 +54,7 @@ public actual class PdfGenerator public actual constructor() {
                     progress.tryEmit(PdfProgressEvent.Complete(html.length))
                     PdfResult.Success()
                 }
+
                 PdfOutput.ByteArrayOutput, is PdfOutput.File, is PdfOutput.Uri, PdfOutput.Share, PdfOutput.Save -> {
                     val bytes = JsPdfLibRenderer(document, progress).render()
                     progress.tryEmit(PdfProgressEvent.Finalizing)
@@ -81,16 +85,20 @@ public actual class PdfGenerator public actual constructor() {
                     printViaIframe(finalHtml)
                     PdfResult.Success()
                 }
+
                 is PdfOutput.Uri -> {
                     val blob = Blob(arrayOf(finalHtml), BlobPropertyBag(type = "text/html"))
                     val url = URL.createObjectURL(blob)
                     output.callback(url)
                     PdfResult.Success(uri = url)
                 }
-                else -> throw PdfError.UnsupportedFeature(
-                    "JS generateFromHtml only supports Print/Share/Save/Uri. " +
-                        "For ByteArray/File output use the DSL route via generate(PdfDocument, ...).",
-                )
+
+                else -> {
+                    throw PdfError.UnsupportedFeature(
+                        "JS generateFromHtml only supports Print/Share/Save/Uri. " +
+                            "For ByteArray/File output use the DSL route via generate(PdfDocument, ...).",
+                    )
+                }
             }
         } catch (e: Throwable) {
             PdfResult.Failure(e.toPdfError())
@@ -99,18 +107,27 @@ public actual class PdfGenerator public actual constructor() {
 
     public actual fun progressFlow(): Flow<PdfProgressEvent> = progress.asSharedFlow()
 
-    private fun dispatchOutput(bytes: ByteArray, output: PdfOutput, fileName: String): PdfResult {
-        return when (output) {
+    private fun dispatchOutput(
+        bytes: ByteArray,
+        output: PdfOutput,
+        fileName: String,
+    ): PdfResult =
+        when (output) {
             is PdfOutput.File -> {
                 triggerBytesDownload(bytes, output.path.substringAfterLast('/'))
                 PdfResult.Success(byteCount = bytes.size)
             }
-            PdfOutput.ByteArrayOutput -> PdfResult.Success(bytes = bytes, byteCount = bytes.size)
+
+            PdfOutput.ByteArrayOutput -> {
+                PdfResult.Success(bytes = bytes, byteCount = bytes.size)
+            }
+
             is PdfOutput.Uri -> {
                 val url = createBlobUrl(bytes)
                 output.callback(url)
                 PdfResult.Success(uri = url, byteCount = bytes.size)
             }
+
             PdfOutput.Share -> {
                 if (js("typeof navigator !== 'undefined' && navigator.share") != null) {
                     sharePdfNative(bytes, fileName)
@@ -119,15 +136,18 @@ public actual class PdfGenerator public actual constructor() {
                 }
                 PdfResult.Success(byteCount = bytes.size)
             }
+
             PdfOutput.Save -> {
                 triggerBytesDownload(bytes, fileName)
                 PdfResult.Success(byteCount = bytes.size)
             }
-            PdfOutput.Print -> throw PdfError.UnsupportedFeature(
-                "Print of DSL bytes not supported on JS — pass HTML via generateAndSharePdf",
-            )
+
+            PdfOutput.Print -> {
+                throw PdfError.UnsupportedFeature(
+                    "Print of DSL bytes not supported on JS — pass HTML via generateAndSharePdf",
+                )
+            }
         }
-    }
 
     private fun createBlobUrl(bytes: ByteArray): String {
         val u8 = byteArrayToUint8Array(bytes)
@@ -135,7 +155,10 @@ public actual class PdfGenerator public actual constructor() {
         return URL.createObjectURL(blob)
     }
 
-    private fun triggerBytesDownload(bytes: ByteArray, fileName: String) {
+    private fun triggerBytesDownload(
+        bytes: ByteArray,
+        fileName: String,
+    ) {
         val url = createBlobUrl(bytes)
         val a = document.createElement("a") as HTMLAnchorElement
         a.href = url
@@ -143,10 +166,16 @@ public actual class PdfGenerator public actual constructor() {
         document.body?.appendChild(a)
         a.click()
         document.body?.removeChild(a)
-        window.setTimeout({ URL.revokeObjectURL(url); null }, 5000)
+        window.setTimeout({
+            URL.revokeObjectURL(url)
+            null
+        }, 5000)
     }
 
-    private fun sharePdfNative(bytes: ByteArray, fileName: String) {
+    private fun sharePdfNative(
+        bytes: ByteArray,
+        fileName: String,
+    ) {
         val u8 = byteArrayToUint8Array(bytes)
         val blob = Blob(arrayOf(u8), BlobPropertyBag(type = "application/pdf"))
         val file = js("new File([blob], fileName, { type: 'application/pdf' })")
@@ -162,8 +191,9 @@ public actual class PdfGenerator public actual constructor() {
         val iframe = document.createElement("iframe") as HTMLIFrameElement
         iframe.setAttribute("style", "position:fixed;visibility:hidden;width:0;height:0;border:none;")
         docBody.appendChild(iframe)
-        val frameDoc = iframe.contentWindow?.document
-            ?: throw PdfError.EngineFailure(IllegalStateException("iframe content window inaccessible"))
+        val frameDoc =
+            iframe.contentWindow?.document
+                ?: throw PdfError.EngineFailure(IllegalStateException("iframe content window inaccessible"))
         frameDoc.open()
         frameDoc.write(html)
         iframe.onload = {

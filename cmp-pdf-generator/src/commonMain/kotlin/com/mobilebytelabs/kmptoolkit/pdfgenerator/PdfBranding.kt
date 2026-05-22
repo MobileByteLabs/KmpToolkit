@@ -16,17 +16,26 @@ import kotlinx.datetime.LocalDate
  */
 @ExperimentalPdfGeneratorApi
 public sealed class PdfLogo {
-    public data class Svg(public val bytes: ByteArray) : PdfLogo() {
+    public data class Svg(
+        public val bytes: ByteArray,
+    ) : PdfLogo() {
         override fun equals(other: Any?): Boolean = other is Svg && bytes.contentEquals(other.bytes)
+
         override fun hashCode(): Int = bytes.contentHashCode()
     }
 
-    public data class Png(public val bytes: ByteArray) : PdfLogo() {
+    public data class Png(
+        public val bytes: ByteArray,
+    ) : PdfLogo() {
         override fun equals(other: Any?): Boolean = other is Png && bytes.contentEquals(other.bytes)
+
         override fun hashCode(): Int = bytes.contentHashCode()
     }
 
-    public data class DataUri(public val uri: String) : PdfLogo()
+    public data class DataUri(
+        public val uri: String,
+    ) : PdfLogo()
+
     public object None : PdfLogo()
 }
 
@@ -126,22 +135,25 @@ public data class PdfBranding(
         public fun none(): PdfBranding = PdfBranding()
 
         /** Default theme with no logo but generic "Powered by KmpToolkit" footer. */
-        public fun default(): PdfBranding = PdfBranding(
-            poweredByText = "Powered by KmpToolkit",
-        )
+        public fun default(): PdfBranding =
+            PdfBranding(
+                poweredByText = "Powered by KmpToolkit",
+            )
 
         /**
          * Back-compat: reproduces mifos-x reference branding (colors only — consumers must supply their own logo).
          * Intended for code migrating off mifos-x's private utility.
          */
-        public fun mifosDefault(logo: PdfLogo = PdfLogo.None): PdfBranding = PdfBranding(
-            logo = logo,
-            poweredByText = "Powered by Mifos",
-            theme = PdfTheme(
-                accentColorHex = "#33618D",
-                headerColorHex = "#1976d2",
-            ),
-        )
+        public fun mifosDefault(logo: PdfLogo = PdfLogo.None): PdfBranding =
+            PdfBranding(
+                logo = logo,
+                poweredByText = "Powered by Mifos",
+                theme =
+                    PdfTheme(
+                        accentColorHex = "#33618D",
+                        headerColorHex = "#1976d2",
+                    ),
+            )
     }
 }
 

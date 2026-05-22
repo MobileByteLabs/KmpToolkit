@@ -50,7 +50,6 @@ public suspend fun PdfDocument.toHtml(): String = PdfDocumentHtmlTemplate(this).
 public open class PdfDocumentHtmlTemplate(
     protected val document: PdfDocument,
 ) : HtmlTemplateGenerator(document.branding) {
-
     override fun getTitle(): String = "PDF Document"
 
     override fun BODY.generateBody() {
@@ -68,18 +67,24 @@ public open class PdfDocumentHtmlTemplate(
 
 private fun FlowContent.renderElement(el: PdfElement) {
     when (el) {
-        is PdfElement.Text -> p {
-            attributes["style"] = el.style.toCssStyle()
-            +el.content
+        is PdfElement.Text -> {
+            p {
+                attributes["style"] = el.style.toCssStyle()
+                +el.content
+            }
         }
-        is PdfElement.Heading -> when (el.level) {
-            1 -> h1 { +el.content }
-            2 -> h2 { +el.content }
-            3 -> h3 { +el.content }
-            4 -> h4 { +el.content }
-            5 -> h5 { +el.content }
-            else -> h6 { +el.content }
+
+        is PdfElement.Heading -> {
+            when (el.level) {
+                1 -> h1 { +el.content }
+                2 -> h2 { +el.content }
+                3 -> h3 { +el.content }
+                4 -> h4 { +el.content }
+                5 -> h5 { +el.content }
+                else -> h6 { +el.content }
+            }
         }
+
         is PdfElement.Image -> {
             img(src = el.source.toSrc(), alt = "image") {
                 val styleParts = mutableListOf<String>()
@@ -88,43 +93,58 @@ private fun FlowContent.renderElement(el: PdfElement) {
                 if (styleParts.isNotEmpty()) attributes["style"] = styleParts.joinToString("; ")
             }
         }
-        is PdfElement.Table -> table {
-            el.headerRow?.let { hr0 ->
-                thead {
-                    tr {
-                        hr0.cells.forEach { cell ->
-                            th {
-                                attributes["style"] = cell.style.toCssStyle()
-                                if (cell.colSpan > 1) attributes["colspan"] = cell.colSpan.toString()
-                                +cell.content
+
+        is PdfElement.Table -> {
+            table {
+                el.headerRow?.let { hr0 ->
+                    thead {
+                        tr {
+                            hr0.cells.forEach { cell ->
+                                th {
+                                    attributes["style"] = cell.style.toCssStyle()
+                                    if (cell.colSpan > 1) attributes["colspan"] = cell.colSpan.toString()
+                                    +cell.content
+                                }
+                            }
+                        }
+                    }
+                }
+                tbody {
+                    el.rows.forEach { row ->
+                        tr {
+                            row.cells.forEach { cell ->
+                                td {
+                                    attributes["style"] = cell.style.toCssStyle()
+                                    if (cell.colSpan > 1) attributes["colspan"] = cell.colSpan.toString()
+                                    +cell.content
+                                }
                             }
                         }
                     }
                 }
             }
-            tbody {
-                el.rows.forEach { row ->
-                    tr {
-                        row.cells.forEach { cell ->
-                            td {
-                                attributes["style"] = cell.style.toCssStyle()
-                                if (cell.colSpan > 1) attributes["colspan"] = cell.colSpan.toString()
-                                +cell.content
-                            }
-                        }
-                    }
-                }
+        }
+
+        is PdfElement.Spacer -> {
+            div {
+                attributes["style"] = "height: ${el.mm}mm;"
             }
         }
-        is PdfElement.Spacer -> div {
-            attributes["style"] = "height: ${el.mm}mm;"
+
+        is PdfElement.Divider -> {
+            hr {}
         }
-        is PdfElement.Divider -> hr {}
-        is PdfElement.PageBreak -> div {
-            attributes["style"] = "page-break-before: always;"
+
+        is PdfElement.PageBreak -> {
+            div {
+                attributes["style"] = "page-break-before: always;"
+            }
         }
-        is PdfElement.Html -> div {
-            unsafe { +sanitize(el.raw) }
+
+        is PdfElement.Html -> {
+            div {
+                unsafe { +sanitize(el.raw) }
+            }
         }
     }
 }
@@ -139,19 +159,21 @@ internal fun TextStyle.toCssStyle(): String {
     return parts.joinToString("; ")
 }
 
-internal fun ImageSource.toSrc(): String = when (this) {
-    is ImageSource.Bytes -> "data:image/png;base64," + Base64.encode(bytes)
-    is ImageSource.DataUri -> uri
-    is ImageSource.Url -> url
-    is ImageSource.Resource -> "/$path"
-}
+internal fun ImageSource.toSrc(): String =
+    when (this) {
+        is ImageSource.Bytes -> "data:image/png;base64," + Base64.encode(bytes)
+        is ImageSource.DataUri -> uri
+        is ImageSource.Url -> url
+        is ImageSource.Resource -> "/$path"
+    }
 
 /**
  * Minimal sanitizer for `PdfElement.Html(raw)` — strips `<script>`, `<iframe>`, and inline `on*`
  * handlers. NOT a full HTML sanitizer; `PdfElement.Html` is marked for "trusted input" usage.
  */
-private fun sanitize(raw: String): String = raw
-    .replace(Regex("<script\\b[^>]*>.*?</script>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)), "")
-    .replace(Regex("<iframe\\b[^>]*>.*?</iframe>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)), "")
-    .replace(Regex("\\son\\w+\\s*=\\s*\"[^\"]*\"", RegexOption.IGNORE_CASE), "")
-    .replace(Regex("\\son\\w+\\s*=\\s*'[^']*'", RegexOption.IGNORE_CASE), "")
+private fun sanitize(raw: String): String =
+    raw
+        .replace(Regex("<script\\b[^>]*>.*?</script>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)), "")
+        .replace(Regex("<iframe\\b[^>]*>.*?</iframe>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)), "")
+        .replace(Regex("\\son\\w+\\s*=\\s*\"[^\"]*\"", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("\\son\\w+\\s*=\\s*'[^']*'", RegexOption.IGNORE_CASE), "")

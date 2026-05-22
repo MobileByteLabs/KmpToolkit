@@ -20,10 +20,13 @@ import org.w3c.dom.HTMLIFrameElement
  */
 @ExperimentalPdfGeneratorApi
 public actual class PdfGenerator public actual constructor() {
-
     private val progress = MutableSharedFlow<PdfProgressEvent>(extraBufferCapacity = 32)
 
-    public actual suspend fun generateAndSharePdf(htmlContent: String, fileName: String, pageConfig: PageConfig) {
+    public actual suspend fun generateAndSharePdf(
+        htmlContent: String,
+        fileName: String,
+        pageConfig: PageConfig,
+    ) {
         printViaIframe(htmlContent.injectPageConfigCss(pageConfig))
     }
 
@@ -51,25 +54,47 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
-    ): PdfResult = try {
-        handleOutput(html.injectPageConfigCss(pageConfig), output, "document.pdf").also {
-            progress.tryEmit(PdfProgressEvent.Complete(html.length))
+    ): PdfResult =
+        try {
+            handleOutput(html.injectPageConfigCss(pageConfig), output, "document.pdf").also {
+                progress.tryEmit(PdfProgressEvent.Complete(html.length))
+            }
+        } catch (e: Throwable) {
+            PdfResult.Failure(e.toPdfError())
         }
-    } catch (e: Throwable) {
-        PdfResult.Failure(e.toPdfError())
-    }
 
     public actual fun progressFlow(): Flow<PdfProgressEvent> = progress.asSharedFlow()
 
-    private suspend fun handleOutput(html: String, output: PdfOutput, fileName: String): PdfResult = when (output) {
-        PdfOutput.Print -> { printViaIframe(html); PdfResult.Success() }
-        PdfOutput.Share, PdfOutput.Save -> { printViaIframe(html); PdfResult.Success() }
-        is PdfOutput.File -> throw PdfError.UnsupportedFeature("File output on wasmJs — use Print")
-        PdfOutput.ByteArrayOutput -> throw PdfError.UnsupportedFeature(
-            "ByteArray output on wasmJs requires pdf-lib JS interop (deferred to v0.2).",
-        )
-        is PdfOutput.Uri -> throw PdfError.UnsupportedFeature("Uri output on wasmJs deferred to v0.2.")
-    }
+    private suspend fun handleOutput(
+        html: String,
+        output: PdfOutput,
+        fileName: String,
+    ): PdfResult =
+        when (output) {
+            PdfOutput.Print -> {
+                printViaIframe(html)
+                PdfResult.Success()
+            }
+
+            PdfOutput.Share, PdfOutput.Save -> {
+                printViaIframe(html)
+                PdfResult.Success()
+            }
+
+            is PdfOutput.File -> {
+                throw PdfError.UnsupportedFeature("File output on wasmJs — use Print")
+            }
+
+            PdfOutput.ByteArrayOutput -> {
+                throw PdfError.UnsupportedFeature(
+                    "ByteArray output on wasmJs requires pdf-lib JS interop (deferred to v0.2).",
+                )
+            }
+
+            is PdfOutput.Uri -> {
+                throw PdfError.UnsupportedFeature("Uri output on wasmJs deferred to v0.2.")
+            }
+        }
 
     private suspend fun printViaIframe(html: String) {
         val docBody = document.body ?: throw PdfError.EngineFailure(IllegalStateException("document.body is null"))
@@ -77,8 +102,9 @@ public actual class PdfGenerator public actual constructor() {
         val iframe = document.createElement("iframe") as HTMLIFrameElement
         iframe.setAttribute("style", "position:fixed;visibility:hidden;width:0;height:0;border:none;")
         docBody.appendChild(iframe)
-        val frameDoc = iframe.contentWindow?.document
-            ?: throw PdfError.EngineFailure(IllegalStateException("iframe content window inaccessible"))
+        val frameDoc =
+            iframe.contentWindow?.document
+                ?: throw PdfError.EngineFailure(IllegalStateException("iframe content window inaccessible"))
         frameDoc.open()
         frameDoc.write(html)
         iframe.onload = { _ ->

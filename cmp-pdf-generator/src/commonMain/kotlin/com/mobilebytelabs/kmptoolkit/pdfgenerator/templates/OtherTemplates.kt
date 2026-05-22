@@ -52,7 +52,6 @@ public class ReportTemplate(
     branding: PdfBranding,
     public val report: ReportData,
 ) : HtmlTemplateGenerator(branding) {
-
     override fun getTitle(): String = report.title
 
     override fun BODY.generateBody() {
@@ -71,7 +70,11 @@ public class ReportTemplate(
         }
     }
 
-    private fun BODY.renderSection(section: ReportSection, level: Int, index: String) {
+    private fun BODY.renderSection(
+        section: ReportSection,
+        level: Int,
+        index: String,
+    ) {
         when (level) {
             2 -> h2 { +"$index ${section.heading}" }
             else -> h3 { +"$index ${section.heading}" }
@@ -112,13 +115,13 @@ public class ReceiptTemplate(
     branding: PdfBranding,
     public val receipt: ReceiptData,
 ) : HtmlTemplateGenerator(branding) {
-
     override fun getTitle(): String = "Receipt ${receipt.receiptNumber}"
 
-    override fun getAdditionalStyles(): String = """
+    override fun getAdditionalStyles(): String =
+        """
         body { max-width: 80mm; }
         .receipt-line { display: flex; justify-content: space-between; }
-    """.trimIndent()
+        """.trimIndent()
 
     override fun BODY.generateBody() {
         div {
@@ -133,21 +136,33 @@ public class ReceiptTemplate(
                 receipt.items.forEach { item ->
                     tr {
                         td { +item.description }
-                        td { attributes["class"] = "right"; +item.amount }
+                        td {
+                            attributes["class"] = "right"
+                            +item.amount
+                        }
                     }
                 }
                 tr {
                     td { +"Subtotal" }
-                    td { attributes["class"] = "right"; +receipt.subtotal }
+                    td {
+                        attributes["class"] = "right"
+                        +receipt.subtotal
+                    }
                 }
                 receipt.tax?.let { taxAmt ->
                     tr {
                         td { +"Tax" }
-                        td { attributes["class"] = "right"; +taxAmt }
+                        td {
+                            attributes["class"] = "right"
+                            +taxAmt
+                        }
                     }
                 }
                 tr {
-                    td { attributes["style"] = "font-weight:bold"; +"TOTAL" }
+                    td {
+                        attributes["style"] = "font-weight:bold"
+                        +"TOTAL"
+                    }
                     td {
                         attributes["class"] = "right"
                         attributes["style"] = "font-weight:bold"
@@ -157,7 +172,12 @@ public class ReceiptTemplate(
             }
         }
         receipt.paymentMethod?.let { p { +"Paid: $it" } }
-        receipt.footer?.let { div { attributes["class"] = "center"; p { +it } } }
+        receipt.footer?.let {
+            div {
+                attributes["class"] = "center"
+                p { +it }
+            }
+        }
     }
 }
 
@@ -190,7 +210,6 @@ public class StatementTemplate(
     branding: PdfBranding,
     public val statement: StatementData,
 ) : HtmlTemplateGenerator(branding) {
-
     override fun getTitle(): String = "Account Statement"
 
     override fun BODY.generateBody() {
@@ -209,9 +228,18 @@ public class StatementTemplate(
                 tr {
                     th { +"Date" }
                     th { +"Description" }
-                    th { attributes["class"] = "right"; +"Debit" }
-                    th { attributes["class"] = "right"; +"Credit" }
-                    th { attributes["class"] = "right"; +"Balance" }
+                    th {
+                        attributes["class"] = "right"
+                        +"Debit"
+                    }
+                    th {
+                        attributes["class"] = "right"
+                        +"Credit"
+                    }
+                    th {
+                        attributes["class"] = "right"
+                        +"Balance"
+                    }
                 }
             }
             tbody {
@@ -219,9 +247,18 @@ public class StatementTemplate(
                     tr {
                         td { +branding.dateFormatter(tx.date) }
                         td { +tx.description }
-                        td { attributes["class"] = "right"; +(tx.debit ?: "") }
-                        td { attributes["class"] = "right"; +(tx.credit ?: "") }
-                        td { attributes["class"] = "right"; +tx.balance }
+                        td {
+                            attributes["class"] = "right"
+                            +(tx.debit ?: "")
+                        }
+                        td {
+                            attributes["class"] = "right"
+                            +(tx.credit ?: "")
+                        }
+                        td {
+                            attributes["class"] = "right"
+                            +tx.balance
+                        }
                     }
                 }
             }
@@ -252,7 +289,6 @@ public class LetterTemplate(
     branding: PdfBranding,
     public val letter: LetterData,
 ) : HtmlTemplateGenerator(branding) {
-
     override fun getTitle(): String = letter.subject ?: "Letter"
 
     override fun BODY.generateBody() {
@@ -262,17 +298,28 @@ public class LetterTemplate(
             p { +letter.sender.name }
             letter.sender.addressLines.forEach { p { +it } }
         }
-        p { attributes["class"] = "right"; +branding.dateFormatter(letter.date) }
+        p {
+            attributes["class"] = "right"
+            +branding.dateFormatter(letter.date)
+        }
 
         // Recipient block
         p { +letter.recipient.name }
         letter.recipient.addressLines.forEach { p { +it } }
 
-        letter.subject?.let { p { attributes["style"] = "font-weight:bold"; +"Subject: $it" } }
+        letter.subject?.let {
+            p {
+                attributes["style"] = "font-weight:bold"
+                +"Subject: $it"
+            }
+        }
         p { +letter.salutation }
 
         letter.bodyParagraphs.forEach { para ->
-            p { attributes["style"] = "text-align: justify; margin-bottom: 10pt;"; +para }
+            p {
+                attributes["style"] = "text-align: justify; margin-bottom: 10pt;"
+                +para
+            }
         }
 
         p { +letter.closing }

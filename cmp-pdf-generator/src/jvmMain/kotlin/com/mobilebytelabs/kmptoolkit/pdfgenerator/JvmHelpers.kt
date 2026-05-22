@@ -55,7 +55,13 @@ internal class JvmNativePdfRenderer(
         return out.toByteArray()
     }
 
-    private fun renderElement(cs: PDPageContentStream, el: PdfElement, x: Float, yIn: Float, maxWidth: Float): Float {
+    private fun renderElement(
+        cs: PDPageContentStream,
+        el: PdfElement,
+        x: Float,
+        yIn: Float,
+        maxWidth: Float,
+    ): Float {
         var y = yIn
         when (el) {
             is PdfElement.Text -> {
@@ -67,8 +73,15 @@ internal class JvmNativePdfRenderer(
                 cs.endText()
                 y -= size * 1.4f
             }
+
             is PdfElement.Heading -> {
-                val size = when (el.level) { 1 -> 16f; 2 -> 13f; 3 -> 11f; else -> 10f }
+                val size =
+                    when (el.level) {
+                        1 -> 16f
+                        2 -> 13f
+                        3 -> 11f
+                        else -> 10f
+                    }
                 cs.beginText()
                 cs.setFont(fontBold, size)
                 cs.newLineAtOffset(x, y - size)
@@ -76,11 +89,18 @@ internal class JvmNativePdfRenderer(
                 cs.endText()
                 y -= size * 1.6f
             }
-            is PdfElement.Spacer -> y -= el.mm * 2.834f
+
+            is PdfElement.Spacer -> {
+                y -= el.mm * 2.834f
+            }
+
             PdfElement.Divider -> {
-                cs.moveTo(x, y); cs.lineTo(x + maxWidth, y); cs.stroke()
+                cs.moveTo(x, y)
+                cs.lineTo(x + maxWidth, y)
+                cs.stroke()
                 y -= 6f
             }
+
             is PdfElement.Table -> {
                 val allRows = listOfNotNull(el.headerRow) + el.rows
                 if (allRows.isEmpty()) return y
@@ -102,6 +122,7 @@ internal class JvmNativePdfRenderer(
                     y -= 16f
                 }
             }
+
             is PdfElement.Image -> {
                 // v0.1: image embedding via PDFBox is non-trivial — emit placeholder
                 cs.beginText()
@@ -111,7 +132,11 @@ internal class JvmNativePdfRenderer(
                 cs.endText()
                 y -= 14f
             }
-            PdfElement.PageBreak -> y = 0f
+
+            PdfElement.PageBreak -> {
+                y = 0f
+            }
+
             is PdfElement.Html -> {
                 cs.beginText()
                 cs.setFont(font, 6f)

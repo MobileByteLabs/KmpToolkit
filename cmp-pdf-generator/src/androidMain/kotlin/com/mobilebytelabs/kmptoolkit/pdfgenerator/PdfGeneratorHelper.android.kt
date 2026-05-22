@@ -17,5 +17,4 @@ import android.content.Context
  * ```
  */
 @ExperimentalPdfGeneratorApi
-public fun createPdfGenerator(context: Context): PdfGenerator =
-    PdfGenerator().apply { setContext(context) }
+public fun createPdfGenerator(context: Context): PdfGenerator = PdfGenerator().apply { setContext(context) }

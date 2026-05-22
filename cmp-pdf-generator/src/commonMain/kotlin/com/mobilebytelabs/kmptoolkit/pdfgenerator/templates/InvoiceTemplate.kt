@@ -20,9 +20,9 @@ import kotlinx.html.p
 import kotlinx.html.table
 import kotlinx.html.tbody
 import kotlinx.html.td
+import kotlinx.html.tfoot
 import kotlinx.html.th
 import kotlinx.html.thead
-import kotlinx.html.tfoot
 import kotlinx.html.tr
 
 /** Generic party (bill-from / bill-to) — name, address lines, optional tax id. */
@@ -69,16 +69,16 @@ public class InvoiceTemplate(
     branding: PdfBranding,
     public val invoice: InvoiceData,
 ) : HtmlTemplateGenerator(branding) {
-
     override fun getTitle(): String = "Invoice ${invoice.invoiceNumber}"
 
-    override fun getAdditionalStyles(): String = """
+    override fun getAdditionalStyles(): String =
+        """
         .invoice-meta { display: table; width: 100%; margin-bottom: 20px; }
         .party-block { display: inline-block; width: 48%; vertical-align: top; }
         .party-block.right { float: right; text-align: right; }
         .totals { width: 50%; margin-left: auto; margin-top: 20px; }
         .notes-section { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
-    """.trimIndent()
+        """.trimIndent()
 
     override fun BODY.generateBody() {
         h1 { +"Invoice ${invoice.invoiceNumber}" }
@@ -108,35 +108,74 @@ public class InvoiceTemplate(
             thead {
                 tr {
                     th { +"Description" }
-                    th { attributes["class"] = "right"; +"Qty" }
-                    th { attributes["class"] = "right"; +"Unit price" }
-                    th { attributes["class"] = "right"; +"Total" }
+                    th {
+                        attributes["class"] = "right"
+                        +"Qty"
+                    }
+                    th {
+                        attributes["class"] = "right"
+                        +"Unit price"
+                    }
+                    th {
+                        attributes["class"] = "right"
+                        +"Total"
+                    }
                 }
             }
             tbody {
                 invoice.lineItems.forEach { item ->
                     tr {
                         td { +item.description }
-                        td { attributes["class"] = "right"; +item.quantity }
-                        td { attributes["class"] = "right"; +item.unitPrice }
-                        td { attributes["class"] = "right"; +item.lineTotal }
+                        td {
+                            attributes["class"] = "right"
+                            +item.quantity
+                        }
+                        td {
+                            attributes["class"] = "right"
+                            +item.unitPrice
+                        }
+                        td {
+                            attributes["class"] = "right"
+                            +item.lineTotal
+                        }
                     }
                 }
             }
             tfoot {
                 tr {
-                    td { attributes["colspan"] = "3"; attributes["class"] = "right"; +"Subtotal" }
-                    td { attributes["class"] = "right"; +invoice.subtotal }
+                    td {
+                        attributes["colspan"] = "3"
+                        attributes["class"] = "right"
+                        +"Subtotal"
+                    }
+                    td {
+                        attributes["class"] = "right"
+                        +invoice.subtotal
+                    }
                 }
                 invoice.tax?.let { taxAmt ->
                     tr {
-                        td { attributes["colspan"] = "3"; attributes["class"] = "right"; +"Tax" }
-                        td { attributes["class"] = "right"; +taxAmt }
+                        td {
+                            attributes["colspan"] = "3"
+                            attributes["class"] = "right"
+                            +"Tax"
+                        }
+                        td {
+                            attributes["class"] = "right"
+                            +taxAmt
+                        }
                     }
                 }
                 tr {
-                    td { attributes["colspan"] = "3"; attributes["class"] = "right"; +"Total" }
-                    td { attributes["class"] = "right"; +invoice.total }
+                    td {
+                        attributes["colspan"] = "3"
+                        attributes["class"] = "right"
+                        +"Total"
+                    }
+                    td {
+                        attributes["class"] = "right"
+                        +invoice.total
+                    }
                 }
             }
         }

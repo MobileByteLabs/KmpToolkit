@@ -12,7 +12,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class PdfErrorTest {
-
     @Test
     fun toPdfErrorIdentityOnPdfError() {
         val original: PdfError = PdfError.InvalidInput("test")

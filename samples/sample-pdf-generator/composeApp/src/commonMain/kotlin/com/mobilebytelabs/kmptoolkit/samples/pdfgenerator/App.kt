@@ -54,13 +54,14 @@ fun SamplePdfGeneratorApp(generator: PdfGenerator) {
 
     LaunchedEffect(generator) {
         generator.progressFlow().collect { ev ->
-            progressText = when (ev) {
-                PdfProgressEvent.Started -> "Started…"
-                is PdfProgressEvent.PageRendered -> "Page ${ev.pageNum}/${ev.total ?: "?"}"
-                PdfProgressEvent.Finalizing -> "Finalizing…"
-                is PdfProgressEvent.Complete -> "Complete (${ev.byteCount} bytes)"
-                is PdfProgressEvent.Failed -> "Failed: ${ev.error.message}"
-            }
+            progressText =
+                when (ev) {
+                    PdfProgressEvent.Started -> "Started…"
+                    is PdfProgressEvent.PageRendered -> "Page ${ev.pageNum}/${ev.total ?: "?"}"
+                    PdfProgressEvent.Finalizing -> "Finalizing…"
+                    is PdfProgressEvent.Complete -> "Complete (${ev.byteCount} bytes)"
+                    is PdfProgressEvent.Failed -> "Failed: ${ev.error.message}"
+                }
         }
     }
 
@@ -71,7 +72,12 @@ fun SamplePdfGeneratorApp(generator: PdfGenerator) {
             },
         ) { padding ->
             Column(
-                modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize().verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .padding(padding)
+                        .padding(16.dp)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text("Status: $lastResult", style = MaterialTheme.typography.bodySmall)
@@ -104,11 +110,12 @@ fun SamplePdfGeneratorApp(generator: PdfGenerator) {
 
 private suspend fun runInvoiceDemo(gen: PdfGenerator): String {
     val html = InvoiceFixture.template(PdfBranding.default()).generateHtml()
-    val result = gen.generateFromHtml(
-        html = html,
-        output = PdfOutput.Share,
-        pageConfig = PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(15)),
-    )
+    val result =
+        gen.generateFromHtml(
+            html = html,
+            output = PdfOutput.Share,
+            pageConfig = PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(15)),
+        )
     return when (result) {
         is PdfResult.Success -> "Invoice generated · ${result.byteCount} bytes"
         is PdfResult.Failure -> "Invoice failed: ${result.error.message}"
@@ -116,28 +123,31 @@ private suspend fun runInvoiceDemo(gen: PdfGenerator): String {
 }
 
 private suspend fun runReceiptDemo(gen: PdfGenerator): String {
-    val receipt = ReceiptData(
-        merchantName = "Sample Co",
-        merchantAddress = "123 Sample Street, Sampleville",
-        receiptNumber = "RCP-2026-0042",
-        date = LocalDate(2026, 5, 22),
-        items = listOf(
-            ReceiptLineItem("Coffee", "$4.50"),
-            ReceiptLineItem("Bagel", "$3.50"),
-            ReceiptLineItem("Donation", "$1.00"),
-        ),
-        subtotal = "$9.00",
-        tax = "$0.90",
-        total = "$9.90",
-        paymentMethod = "Card ****1234",
-        footer = "Thank you!",
-    )
+    val receipt =
+        ReceiptData(
+            merchantName = "Sample Co",
+            merchantAddress = "123 Sample Street, Sampleville",
+            receiptNumber = "RCP-2026-0042",
+            date = LocalDate(2026, 5, 22),
+            items =
+                listOf(
+                    ReceiptLineItem("Coffee", "$4.50"),
+                    ReceiptLineItem("Bagel", "$3.50"),
+                    ReceiptLineItem("Donation", "$1.00"),
+                ),
+            subtotal = "$9.00",
+            tax = "$0.90",
+            total = "$9.90",
+            paymentMethod = "Card ****1234",
+            footer = "Thank you!",
+        )
     val html = ReceiptTemplate(PdfBranding.default(), receipt).generateHtml()
-    val result = gen.generateFromHtml(
-        html = html,
-        output = PdfOutput.Save,
-        pageConfig = PageConfig(size = PageSize.A4),
-    )
+    val result =
+        gen.generateFromHtml(
+            html = html,
+            output = PdfOutput.Save,
+            pageConfig = PageConfig(size = PageSize.A4),
+        )
     return when (result) {
         is PdfResult.Success -> "Receipt saved · ${result.byteCount} bytes"
         is PdfResult.Failure -> "Receipt failed: ${result.error.message}"
@@ -145,7 +155,8 @@ private suspend fun runReceiptDemo(gen: PdfGenerator): String {
 }
 
 private suspend fun runMarkdownDemo(gen: PdfGenerator): String {
-    val md = """
+    val md =
+        """
         # Markdown → PDF Demo
 
         This PDF was generated from Markdown source.
@@ -168,7 +179,7 @@ private suspend fun runMarkdownDemo(gen: PdfGenerator): String {
         ```
 
         > Blockquotes work too.
-    """.trimIndent()
+        """.trimIndent()
     val html = MarkdownPdfAdapter.markdownToHtml(md, PdfBranding.default())
     val result = gen.generateFromHtml(html = html, output = PdfOutput.Save)
     return when (result) {
@@ -178,50 +189,71 @@ private suspend fun runMarkdownDemo(gen: PdfGenerator): String {
 }
 
 private suspend fun runDslDemo(gen: PdfGenerator): String {
-    val doc = pdf {
-        pageConfig(PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(20)))
-        branding(PdfBranding.default())
-        page {
-            heading(1, "DSL Demo Report")
-            text("This PDF was constructed programmatically using the pdf { … } DSL.")
-            spacer(8)
-            heading(2, "Key Metrics")
-            table {
-                header { cell("Metric"); cell("Value"); cell("Trend") }
-                row { cell("Active users"); cell("12,345"); cell("↑ 8%") }
-                row { cell("Revenue"); cell("$50,000"); cell("↑ 12%") }
-                row { cell("Churn"); cell("3.2%"); cell("↓ 0.4%") }
+    val doc =
+        pdf {
+            pageConfig(PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(20)))
+            branding(PdfBranding.default())
+            page {
+                heading(1, "DSL Demo Report")
+                text("This PDF was constructed programmatically using the pdf { … } DSL.")
+                spacer(8)
+                heading(2, "Key Metrics")
+                table {
+                    header {
+                        cell("Metric")
+                        cell("Value")
+                        cell("Trend")
+                    }
+                    row {
+                        cell("Active users")
+                        cell("12,345")
+                        cell("↑ 8%")
+                    }
+                    row {
+                        cell("Revenue")
+                        cell("$50,000")
+                        cell("↑ 12%")
+                    }
+                    row {
+                        cell("Churn")
+                        cell("3.2%")
+                        cell("↓ 0.4%")
+                    }
+                }
+                spacer(8)
+                divider()
+                text("Generated via cmp-pdf-generator v0.1.0")
             }
-            spacer(8)
-            divider()
-            text("Generated via cmp-pdf-generator v0.1.0")
         }
-    }
     val result = gen.generate(doc, PdfOutput.ByteArrayOutput)
     return when (result) {
         is PdfResult.Success -> {
             val magicOk = result.bytes?.startsWith(byteArrayOf(0x25, 0x50, 0x44, 0x46))
             "DSL bytes: ${result.byteCount} (magic ok: $magicOk)"
         }
-        is PdfResult.Failure -> "DSL failed: ${result.error.message}"
+
+        is PdfResult.Failure -> {
+            "DSL failed: ${result.error.message}"
+        }
     }
 }
 
 private suspend fun runMultiPageDslDemo(gen: PdfGenerator): String {
-    val doc = pdf {
-        pageConfig(PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(20)))
-        branding(PdfBranding.default())
-        repeat(5) { idx ->
-            page {
-                heading(1, "Page ${idx + 1} of 5")
-                text("Auto-pagination demo. Each page rendered to a separate PDF page.")
-                spacer(4)
-                repeat(15) { row ->
-                    text("Line ${row + 1}: lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+    val doc =
+        pdf {
+            pageConfig(PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(20)))
+            branding(PdfBranding.default())
+            repeat(5) { idx ->
+                page {
+                    heading(1, "Page ${idx + 1} of 5")
+                    text("Auto-pagination demo. Each page rendered to a separate PDF page.")
+                    spacer(4)
+                    repeat(15) { row ->
+                        text("Line ${row + 1}: lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+                    }
                 }
             }
         }
-    }
     val result = gen.generate(doc, PdfOutput.ByteArrayOutput)
     return when (result) {
         is PdfResult.Success -> "Multi-page bytes: ${result.byteCount}"
