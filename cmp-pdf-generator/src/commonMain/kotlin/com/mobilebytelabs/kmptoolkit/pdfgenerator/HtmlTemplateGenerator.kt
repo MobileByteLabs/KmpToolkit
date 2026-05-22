@@ -14,6 +14,7 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import kotlin.io.encoding.Base64
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -23,7 +24,6 @@ import kotlinx.html.div
 import kotlinx.html.img
 import kotlinx.html.span
 import kotlinx.html.stream.createHTML
-import kotlin.io.encoding.Base64
 
 /**
  * Base class for HTML-based PDF templates.
@@ -37,9 +37,7 @@ import kotlin.io.encoding.Base64
  * @param branding Injected branding bundle. Use [PdfBranding.none] to omit logo + footer.
  */
 @ExperimentalPdfGeneratorApi
-public abstract class HtmlTemplateGenerator(
-    protected val branding: PdfBranding,
-) {
+public abstract class HtmlTemplateGenerator(protected val branding: PdfBranding) {
     /**
      * Generate the complete XHTML 1.0-strict document, ready to feed the platform's
      * HTML-to-PDF engine.
@@ -101,13 +99,12 @@ public abstract class HtmlTemplateGenerator(
      * Convert the configured logo to a `data:image/...;base64,...` URI.
      * Returns null when [PdfBranding.logo] is [PdfLogo.None].
      */
-    protected fun getLogoDataUri(): String? =
-        when (val logo = branding.logo) {
-            is PdfLogo.None -> null
-            is PdfLogo.DataUri -> logo.uri
-            is PdfLogo.Svg -> "data:image/svg+xml;base64," + Base64.encode(logo.bytes)
-            is PdfLogo.Png -> "data:image/png;base64," + Base64.encode(logo.bytes)
-        }
+    protected fun getLogoDataUri(): String? = when (val logo = branding.logo) {
+        is PdfLogo.None -> null
+        is PdfLogo.DataUri -> logo.uri
+        is PdfLogo.Svg -> "data:image/svg+xml;base64," + Base64.encode(logo.bytes)
+        is PdfLogo.Png -> "data:image/png;base64," + Base64.encode(logo.bytes)
+    }
 
     /** Today's date, formatted via [PdfBranding.dateFormatter]. */
     protected fun getGenerationDateText(): String {
@@ -208,14 +205,10 @@ public abstract class HtmlTemplateGenerator(
             $watermarkCss
 
             /* PAGE_CONFIG_PLACEHOLDER */
-            """.trimIndent()
+        """.trimIndent()
     }
 
-    private fun BODY.renderHeader(
-        logoUri: String,
-        dateText: String,
-        accentColor: String,
-    ) {
+    private fun BODY.renderHeader(logoUri: String, dateText: String, accentColor: String) {
         div {
             attributes["style"] = "display: table; width: 100%; " +
                 "border-bottom: 2px solid $accentColor; margin-bottom: 20px; padding-bottom: 10px;"
@@ -234,11 +227,7 @@ public abstract class HtmlTemplateGenerator(
         }
     }
 
-    private fun BODY.renderFooter(
-        logoUri: String?,
-        poweredBy: String,
-        accentColor: String,
-    ) {
+    private fun BODY.renderFooter(logoUri: String?, poweredBy: String, accentColor: String) {
         div("footer") {
             div("powered-by center") {
                 span {
@@ -256,11 +245,10 @@ public abstract class HtmlTemplateGenerator(
         }
     }
 
-    private fun watermarkBackgroundCss(src: String?): String =
-        if (src != null) {
-            "background-image: url('$src'); background-size: contain; " +
-                "background-repeat: no-repeat; width: 300pt; height: 300pt;"
-        } else {
-            ""
-        }
+    private fun watermarkBackgroundCss(src: String?): String = if (src != null) {
+        "background-image: url('$src'); background-size: contain; " +
+            "background-repeat: no-repeat; width: 300pt; height: 300pt;"
+    } else {
+        ""
+    }
 }

@@ -11,6 +11,7 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import kotlin.io.encoding.Base64
 import kotlinx.html.BODY
 import kotlinx.html.FlowContent
 import kotlinx.html.div
@@ -30,7 +31,6 @@ import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.tr
 import kotlinx.html.unsafe
-import kotlin.io.encoding.Base64
 
 /**
  * Compile a [PdfDocument] DSL tree to an XHTML string ready to feed an HTML-to-PDF engine.
@@ -47,9 +47,8 @@ public suspend fun PdfDocument.toHtml(): String = PdfDocumentHtmlTemplate(this).
  * Public so consumers can subclass / inspect the output.
  */
 @ExperimentalPdfGeneratorApi
-public open class PdfDocumentHtmlTemplate(
-    protected val document: PdfDocument,
-) : HtmlTemplateGenerator(document.branding) {
+public open class PdfDocumentHtmlTemplate(protected val document: PdfDocument) :
+    HtmlTemplateGenerator(document.branding) {
     override fun getTitle(): String = "PDF Document"
 
     override fun BODY.generateBody() {
@@ -159,13 +158,12 @@ internal fun TextStyle.toCssStyle(): String {
     return parts.joinToString("; ")
 }
 
-internal fun ImageSource.toSrc(): String =
-    when (this) {
-        is ImageSource.Bytes -> "data:image/png;base64," + Base64.encode(bytes)
-        is ImageSource.DataUri -> uri
-        is ImageSource.Url -> url
-        is ImageSource.Resource -> "/$path"
-    }
+internal fun ImageSource.toSrc(): String = when (this) {
+    is ImageSource.Bytes -> "data:image/png;base64," + Base64.encode(bytes)
+    is ImageSource.DataUri -> uri
+    is ImageSource.Url -> url
+    is ImageSource.Resource -> "/$path"
+}
 
 /**
  * Minimal sanitizer for `PdfElement.Html(raw)` — strips `<script>`, `<iframe>`, and inline `on*`
@@ -174,9 +172,8 @@ internal fun ImageSource.toSrc(): String =
  * Uses `[\s\S]*?` (any-char incl. newline) since `RegexOption.DOT_MATCHES_ALL` is JVM-only and we
  * compile against commonMain.
  */
-private fun sanitize(raw: String): String =
-    raw
-        .replace(Regex("<script\\b[^>]*>[\\s\\S]*?</script>", RegexOption.IGNORE_CASE), "")
-        .replace(Regex("<iframe\\b[^>]*>[\\s\\S]*?</iframe>", RegexOption.IGNORE_CASE), "")
-        .replace(Regex("\\son\\w+\\s*=\\s*\"[^\"]*\"", RegexOption.IGNORE_CASE), "")
-        .replace(Regex("\\son\\w+\\s*=\\s*'[^']*'", RegexOption.IGNORE_CASE), "")
+private fun sanitize(raw: String): String = raw
+    .replace(Regex("<script\\b[^>]*>[\\s\\S]*?</script>", RegexOption.IGNORE_CASE), "")
+    .replace(Regex("<iframe\\b[^>]*>[\\s\\S]*?</iframe>", RegexOption.IGNORE_CASE), "")
+    .replace(Regex("\\son\\w+\\s*=\\s*\"[^\"]*\"", RegexOption.IGNORE_CASE), "")
+    .replace(Regex("\\son\\w+\\s*=\\s*'[^']*'", RegexOption.IGNORE_CASE), "")

@@ -32,11 +32,7 @@ import org.w3c.files.BlobPropertyBag
 public actual class PdfGenerator public actual constructor() {
     private val progress = MutableSharedFlow<PdfProgressEvent>(extraBufferCapacity = 32)
 
-    public actual suspend fun generateAndSharePdf(
-        htmlContent: String,
-        fileName: String,
-        pageConfig: PageConfig,
-    ) {
+    public actual suspend fun generateAndSharePdf(htmlContent: String, fileName: String, pageConfig: PageConfig) {
         printViaIframe(htmlContent.injectPageConfigCss(pageConfig))
     }
 
@@ -107,47 +103,42 @@ public actual class PdfGenerator public actual constructor() {
 
     public actual fun progressFlow(): Flow<PdfProgressEvent> = progress.asSharedFlow()
 
-    private fun dispatchOutput(
-        bytes: ByteArray,
-        output: PdfOutput,
-        fileName: String,
-    ): PdfResult =
-        when (output) {
-            is PdfOutput.File -> {
-                triggerBytesDownload(bytes, output.path.substringAfterLast('/'))
-                PdfResult.Success(byteCount = bytes.size)
-            }
-
-            PdfOutput.ByteArrayOutput -> {
-                PdfResult.Success(bytes = bytes, byteCount = bytes.size)
-            }
-
-            is PdfOutput.Uri -> {
-                val url = createBlobUrl(bytes)
-                output.callback(url)
-                PdfResult.Success(uri = url, byteCount = bytes.size)
-            }
-
-            PdfOutput.Share -> {
-                if (js("typeof navigator !== 'undefined' && navigator.share") != null) {
-                    sharePdfNative(bytes, fileName)
-                } else {
-                    triggerBytesDownload(bytes, fileName)
-                }
-                PdfResult.Success(byteCount = bytes.size)
-            }
-
-            PdfOutput.Save -> {
-                triggerBytesDownload(bytes, fileName)
-                PdfResult.Success(byteCount = bytes.size)
-            }
-
-            PdfOutput.Print -> {
-                throw PdfError.UnsupportedFeature(
-                    "Print of DSL bytes not supported on JS — pass HTML via generateAndSharePdf",
-                )
-            }
+    private fun dispatchOutput(bytes: ByteArray, output: PdfOutput, fileName: String): PdfResult = when (output) {
+        is PdfOutput.File -> {
+            triggerBytesDownload(bytes, output.path.substringAfterLast('/'))
+            PdfResult.Success(byteCount = bytes.size)
         }
+
+        PdfOutput.ByteArrayOutput -> {
+            PdfResult.Success(bytes = bytes, byteCount = bytes.size)
+        }
+
+        is PdfOutput.Uri -> {
+            val url = createBlobUrl(bytes)
+            output.callback(url)
+            PdfResult.Success(uri = url, byteCount = bytes.size)
+        }
+
+        PdfOutput.Share -> {
+            if (js("typeof navigator !== 'undefined' && navigator.share") != null) {
+                sharePdfNative(bytes, fileName)
+            } else {
+                triggerBytesDownload(bytes, fileName)
+            }
+            PdfResult.Success(byteCount = bytes.size)
+        }
+
+        PdfOutput.Save -> {
+            triggerBytesDownload(bytes, fileName)
+            PdfResult.Success(byteCount = bytes.size)
+        }
+
+        PdfOutput.Print -> {
+            throw PdfError.UnsupportedFeature(
+                "Print of DSL bytes not supported on JS — pass HTML via generateAndSharePdf",
+            )
+        }
+    }
 
     private fun createBlobUrl(bytes: ByteArray): String {
         val u8 = byteArrayToUint8Array(bytes)
@@ -155,10 +146,7 @@ public actual class PdfGenerator public actual constructor() {
         return URL.createObjectURL(blob)
     }
 
-    private fun triggerBytesDownload(
-        bytes: ByteArray,
-        fileName: String,
-    ) {
+    private fun triggerBytesDownload(bytes: ByteArray, fileName: String) {
         val url = createBlobUrl(bytes)
         val a = document.createElement("a") as HTMLAnchorElement
         a.href = url
@@ -172,10 +160,7 @@ public actual class PdfGenerator public actual constructor() {
         }, 5000)
     }
 
-    private fun sharePdfNative(
-        bytes: ByteArray,
-        fileName: String,
-    ) {
+    private fun sharePdfNative(bytes: ByteArray, fileName: String) {
         val u8 = byteArrayToUint8Array(bytes)
         val blob = Blob(arrayOf(u8), BlobPropertyBag(type = "application/pdf"))
         val file = js("new File([blob], fileName, { type: 'application/pdf' })")

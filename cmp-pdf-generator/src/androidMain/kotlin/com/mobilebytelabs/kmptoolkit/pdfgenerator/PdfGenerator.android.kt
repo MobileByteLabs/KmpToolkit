@@ -16,16 +16,16 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.core.content.FileProvider
 import androidx.core.content.getSystemService
+import java.io.File
+import java.io.FileOutputStream
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * Android implementation of [PdfGenerator].
@@ -47,11 +47,7 @@ public actual class PdfGenerator public actual constructor() {
         this.context = context
     }
 
-    public actual suspend fun generateAndSharePdf(
-        htmlContent: String,
-        fileName: String,
-        pageConfig: PageConfig,
-    ) {
+    public actual suspend fun generateAndSharePdf(htmlContent: String, fileName: String, pageConfig: PageConfig) {
         val ctx = requireContext()
         withContext(Dispatchers.Main) {
             val finalHtml = htmlContent.injectPageConfigCss(pageConfig)
@@ -115,10 +111,9 @@ public actual class PdfGenerator public actual constructor() {
 
     public actual fun progressFlow(): Flow<PdfProgressEvent> = progress.asSharedFlow()
 
-    private fun requireContext(): Context =
-        context ?: throw PdfError.InvalidInput(
-            "PdfGenerator requires a Context — call setContext() or use createPdfGenerator(context)",
-        )
+    private fun requireContext(): Context = context ?: throw PdfError.InvalidInput(
+        "PdfGenerator requires a Context — call setContext() or use createPdfGenerator(context)",
+    )
 
     /**
      * Android can't easily extract bytes from a WebView-driven `PrintDocumentAdapter` because
@@ -127,68 +122,56 @@ public actual class PdfGenerator public actual constructor() {
      * via the [pdf] DSL (which uses `android.graphics.pdf.PdfDocument`) or use the JVM target
      * server-side. HTML→bytes on Android is deferred to v0.2.
      */
-    private fun renderHtmlToBytes(
-        html: String,
-        pageConfig: PageConfig,
-    ): ByteArray =
-        throw PdfError.UnsupportedFeature(
-            "HTML→ByteArray output not supported on Android. Use PdfOutput.Share/Print/File, " +
-                "or declare the document via the DSL (`pdf { … }`) which routes through " +
-                "`android.graphics.pdf.PdfDocument` and supports ByteArrayOutput.",
-        )
+    private fun renderHtmlToBytes(html: String, pageConfig: PageConfig): ByteArray = throw PdfError.UnsupportedFeature(
+        "HTML→ByteArray output not supported on Android. Use PdfOutput.Share/Print/File, " +
+            "or declare the document via the DSL (`pdf { … }`) which routes through " +
+            "`android.graphics.pdf.PdfDocument` and supports ByteArrayOutput.",
+    )
 
     private suspend fun renderWebViewToPrintAdapter(
         ctx: Context,
         html: String,
         block: (PrintDocumentAdapter) -> Unit,
-    ): Unit =
-        suspendCancellableCoroutine { cont ->
-            var webView: WebView? = WebView(ctx)
-            cont.invokeOnCancellation {
-                webView?.stopLoading()
-                webView?.destroy()
-                webView = null
-            }
-            val wv = webView ?: return@suspendCancellableCoroutine
-            wv.settings.javaScriptEnabled = false
-            wv.webViewClient =
-                object : WebViewClient() {
-                    override fun onPageFinished(
-                        view: WebView?,
-                        url: String?,
-                    ) {
-                        try {
-                            val adapter =
-                                view?.createPrintDocumentAdapter("document")
-                                    ?: throw PdfError.EngineFailure(IllegalStateException("Adapter null"))
-                            block(adapter)
-                            if (cont.isActive) cont.resume(Unit)
-                        } catch (e: Throwable) {
-                            if (cont.isActive) cont.resumeWithException(e)
-                        }
-                    }
-
-                    override fun onReceivedError(
-                        view: WebView?,
-                        errorCode: Int,
-                        description: String?,
-                        failingUrl: String?,
-                    ) {
-                        if (cont.isActive) {
-                            cont.resumeWithException(
-                                PdfError.EngineFailure(IllegalStateException("WebView: $description")),
-                            )
-                        }
+    ): Unit = suspendCancellableCoroutine { cont ->
+        var webView: WebView? = WebView(ctx)
+        cont.invokeOnCancellation {
+            webView?.stopLoading()
+            webView?.destroy()
+            webView = null
+        }
+        val wv = webView ?: return@suspendCancellableCoroutine
+        wv.settings.javaScriptEnabled = false
+        wv.webViewClient =
+            object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    try {
+                        val adapter =
+                            view?.createPrintDocumentAdapter("document")
+                                ?: throw PdfError.EngineFailure(IllegalStateException("Adapter null"))
+                        block(adapter)
+                        if (cont.isActive) cont.resume(Unit)
+                    } catch (e: Throwable) {
+                        if (cont.isActive) cont.resumeWithException(e)
                     }
                 }
-            wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-        }
 
-    private fun dispatchOutput(
-        bytes: ByteArray,
-        output: PdfOutput,
-        suggestedFileName: String,
-    ): PdfResult {
+                override fun onReceivedError(
+                    view: WebView?,
+                    errorCode: Int,
+                    description: String?,
+                    failingUrl: String?,
+                ) {
+                    if (cont.isActive) {
+                        cont.resumeWithException(
+                            PdfError.EngineFailure(IllegalStateException("WebView: $description")),
+                        )
+                    }
+                }
+            }
+        wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+    }
+
+    private fun dispatchOutput(bytes: ByteArray, output: PdfOutput, suggestedFileName: String): PdfResult {
         val ctx = requireContext()
         return when (output) {
             is PdfOutput.File -> {
@@ -280,9 +263,7 @@ internal fun PageConfig.toPrintAttributes(): PrintAttributes {
 }
 
 /** Minimal adapter that streams bytes from a file when PrintManager wants them. */
-private class BytesPrintAdapter(
-    private val file: File,
-) : PrintDocumentAdapter() {
+private class BytesPrintAdapter(private val file: File) : PrintDocumentAdapter() {
     override fun onLayout(
         oldAttributes: PrintAttributes?,
         newAttributes: PrintAttributes?,

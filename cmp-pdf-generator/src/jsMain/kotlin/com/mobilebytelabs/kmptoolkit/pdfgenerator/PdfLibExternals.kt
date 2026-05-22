@@ -34,15 +34,9 @@ external class PDFDocumentJs {
 
 @JsName("PDFPage")
 external class PDFPageJs {
-    fun drawText(
-        text: String,
-        options: dynamic = definedExternally,
-    )
+    fun drawText(text: String, options: dynamic = definedExternally)
 
-    fun drawImage(
-        image: dynamic,
-        options: dynamic = definedExternally,
-    )
+    fun drawImage(image: dynamic, options: dynamic = definedExternally)
 
     fun drawLine(options: dynamic)
 
@@ -61,8 +55,4 @@ external object StandardFontsJs {
 }
 
 @JsName("rgb")
-external fun rgbJs(
-    r: Double,
-    g: Double,
-    b: Double,
-): dynamic
+external fun rgbJs(r: Double, g: Double, b: Double): dynamic

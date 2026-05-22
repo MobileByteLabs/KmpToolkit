@@ -7,17 +7,17 @@ package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer
+import java.awt.Desktop
+import java.io.ByteArrayOutputStream
+import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.swing.Swing
 import kotlinx.coroutines.withContext
-import java.awt.Desktop
-import java.io.ByteArrayOutputStream
-import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
 
 /**
  * JVM (Desktop) implementation. Uses OpenHTMLToPDF for HTML route + JvmNativePdfRenderer
@@ -27,11 +27,7 @@ import javax.swing.filechooser.FileNameExtensionFilter
 public actual class PdfGenerator public actual constructor() {
     private val progress = MutableSharedFlow<PdfProgressEvent>(extraBufferCapacity = 32)
 
-    public actual suspend fun generateAndSharePdf(
-        htmlContent: String,
-        fileName: String,
-        pageConfig: PageConfig,
-    ) {
+    public actual suspend fun generateAndSharePdf(htmlContent: String, fileName: String, pageConfig: PageConfig) {
         val outputFile = pickSaveFile("$fileName.pdf") ?: return
         val finalHtml = htmlContent.injectPageConfigCss(pageConfig)
         withContext(Dispatchers.IO) {
@@ -97,10 +93,7 @@ public actual class PdfGenerator public actual constructor() {
 
     public actual fun progressFlow(): Flow<PdfProgressEvent> = progress.asSharedFlow()
 
-    private suspend fun renderHtmlToBytes(
-        html: String,
-        pageConfig: PageConfig,
-    ): ByteArray =
+    private suspend fun renderHtmlToBytes(html: String, pageConfig: PageConfig): ByteArray =
         withContext(Dispatchers.IO) {
             val bao = ByteArrayOutputStream()
             PdfRendererBuilder()
@@ -112,10 +105,7 @@ public actual class PdfGenerator public actual constructor() {
             bao.toByteArray()
         }
 
-    private suspend fun dispatchOutput(
-        bytes: ByteArray,
-        output: PdfOutput,
-    ): PdfResult {
+    private suspend fun dispatchOutput(bytes: ByteArray, output: PdfOutput): PdfResult {
         return when (output) {
             is PdfOutput.File -> {
                 File(output.path).writeBytes(bytes)
@@ -162,22 +152,21 @@ public actual class PdfGenerator public actual constructor() {
         }
     }
 
-    private suspend fun pickSaveFile(defaultName: String): File? =
-        withContext(Dispatchers.Swing) {
-            val chooser =
-                JFileChooser().apply {
-                    dialogTitle = "Save PDF"
-                    fileFilter = FileNameExtensionFilter("PDF Documents", "pdf")
-                    selectedFile = File(defaultName)
-                }
-            if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
-                var f = chooser.selectedFile
-                if (!f.name.lowercase().endsWith(".pdf")) f = File(f.absolutePath + ".pdf")
-                f
-            } else {
-                null
+    private suspend fun pickSaveFile(defaultName: String): File? = withContext(Dispatchers.Swing) {
+        val chooser =
+            JFileChooser().apply {
+                dialogTitle = "Save PDF"
+                fileFilter = FileNameExtensionFilter("PDF Documents", "pdf")
+                selectedFile = File(defaultName)
             }
+        if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            var f = chooser.selectedFile
+            if (!f.name.lowercase().endsWith(".pdf")) f = File(f.absolutePath + ".pdf")
+            f
+        } else {
+            null
         }
+    }
 
     private fun openWithDefaultApp(file: File) {
         if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
