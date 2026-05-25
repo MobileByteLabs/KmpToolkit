@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Desktop JVM expansion for cmp-product-tickets + cmp-remote-config
+
+- **`cmp-product-tickets`** now ships a `jvm()` target — Desktop Compose apps can consume the full ProductTickets DSL + UI + Supabase integration. Pure commonMain module (no platform-specific code), so the entire change was adding `jvm()` to the targets list. Transitive deps (Ktor, Supabase, Koin, kotlinx) were already JVM-ready.
+- **`cmp-remote-config`** same treatment — `jvm()` added, DynamicUiRenderer + RemoteConfigService + UiNode model all compile cleanly on JVM. Coil-compose, multiplatform-settings, supabase-postgrest all multiplatform-ready.
+- Motivation: the unified `samples/sample-toolkit` catalog app (also added in this release) needs every catalog library to support Desktop JVM. Previously these two were the only commonMain-only-but-JVM-missing libraries, blocking the desktop demo.
+- No API changes. No expect/actual added. No platform-specific source set introduced.
+
+### Added — Unified `samples/sample-toolkit` catalog app
+
+- New `samples/sample-toolkit/{composeApp,androidApp}` showcases every `cmp-*` library in a single navigable Compose Multiplatform app. Home screen groups libraries by category (UI / Comms / Network / Lifecycle / Data / Backend); tap a card to drill into that library's demo screen.
+- Built with `androidx.navigation:navigation-compose-multiplatform` v2.9.2 (already in the version catalog).
+- 15 demo screens covering: toast, bubble, clipboard, share, intent-launcher, app-intents, open-url, deep-link, network-monitor, in-app-update, pdf-generator, remote-config, firebase-analytics, product-tickets.
+- Per-module samples (`sample-clipboard`, `sample-cmp-share`, `sample-inter-app-comms`, etc.) remain alongside — sample-toolkit is the catalog, the per-module samples remain the focused references.
+
 ### Added — v0.2 Platform Parity (cmp-share + cmp-app-intents)
 
 **Toolkit version bumped 3.2.11 → 3.3.0.** Two suite modules now ship 19 KMP targets each — matching the target matrix of `cmp-deep-link` / `cmp-open-url` / `cmp-clipboard`.

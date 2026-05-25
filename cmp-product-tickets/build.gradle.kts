@@ -49,6 +49,11 @@ kotlin {
     macosX64()
     macosArm64()
 
+    // Desktop JVM — added 2026-05-25 to support unified sample-toolkit catalog
+    // and Desktop Compose consumers. Pure commonMain module — no JVM-specific
+    // source set needed (Ktor / Supabase / Koin / kotlinx all multiplatform-ready).
+    jvm()
+
     js {
         browser()
         nodejs()
