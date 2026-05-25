@@ -31,6 +31,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PLAN:** `plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-pdf-generator/`
   (epic, 12 sub-plans, 266 tasks).
 
+### Fixed — cmp-open-url
+- **iOS / macOS `AppHint` parity (G6 fix)** — `openWithApp(url, AppHint.{EMAIL/PHONE/SMS/MAPS})`
+  on Apple platforms now rewrites the URL to the scheme-appropriate form (`mailto:`, `tel:`,
+  `sms:`, `maps:`/`geo:`) BEFORE calling `UIApplication.openURL` / `NSWorkspace.openURL`.
+  Previously the hint was silently ignored — `AppHint.EMAIL + bare HTTPS` would open Safari
+  instead of Mail.app. Incompatible (url, hint) combinations now return
+  `OpenUrlResult.Error(message)` with a clear hint about the required URL scheme.
+  - `AppHint.Custom(packageName)` is now documented as **Android-only**; on iOS / macOS /
+    JVM / JS / wasmJs it silently falls back to `AppHint.DEFAULT` behaviour (no behaviour
+    change vs the previous silent fallback — only KDoc clarification).
+  - Pure-logic `transformUrl()` helper added in commonMain (internal); 20+ unit-test cases
+    cover the rewrite matrix.
+  - Plan: `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/03-open-url-g6-fix.md`
+  - **No public API changes** — BCV baseline unaffected; consumer code requires no migration.
+
 ### Breaking — cmp-remote-config (next release: 4.0.0)
 - **Removed dependency on `cmp-product-tickets`.** `cmp-remote-config` is now standalone.
   No transitive Maven pull, no shared config object, no cross-module imports.

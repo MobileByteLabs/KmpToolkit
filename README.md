@@ -22,6 +22,9 @@ A collection of production-ready Kotlin Multiplatform libraries — one dependen
 | [cmp-network-monitor](#cmp-network-monitor) | `io.github.mobilebytelabs:cmp-network-monitor` | Reactive network connectivity monitoring — all 21 KMP targets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 | [cmp-network-monitor-compose](#cmp-network-monitor-compose) | `io.github.mobilebytelabs:cmp-network-monitor-compose` | Compose Multiplatform extensions for network monitoring | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
 | [cmp-pdf-generator](cmp-pdf-generator/README.md) | `io.github.mobilebytelabs:cmp-pdf-generator` | Cross-platform PDF generation — HTML, Markdown, DSL → File / ByteArray / URI / Share / Print | ![](https://img.shields.io/badge/-3.2.8-brightgreen) |
+| [cmp-share](cmp-share/README.md) | `io.github.mobilebytelabs:cmp-share` | Cross-platform share sheet — text / URL / image / file / multi via Android Intent.ACTION_SEND, iOS UAVC, JVM clipboard, JS navigator.share | ![](https://img.shields.io/badge/-0.1.0-orange) |
+| [cmp-intent-launcher](cmp-intent-launcher/README.md) | `io.github.mobilebytelabs:cmp-intent-launcher` | Typed Android-Intent builder + ActivityResult — picker contracts cross-platform; full Intent + extras on Android | ![](https://img.shields.io/badge/-0.1.0-orange) |
+| [cmp-app-intents](cmp-app-intents/README.md) | `io.github.mobilebytelabs:cmp-app-intents` | Declarative App Intents DSL — SiriKit Shortcuts + Spotlight (iOS 16+); Android on-device registry (Assistant integration v0.2) | ![](https://img.shields.io/badge/-0.1.0-orange) |
 
 ## Installation
 
@@ -45,6 +48,11 @@ kotlin {
             implementation("io.github.mobilebytelabs:cmp-network-monitor:$kmptoolkit")
             // Optional: Compose extensions for network monitoring
             implementation("io.github.mobilebytelabs:cmp-network-monitor-compose:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-pdf-generator:$kmptoolkit")
+            // Inter-app communication suite (v0.1 experimental)
+            implementation("io.github.mobilebytelabs:cmp-share:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-intent-launcher:$kmptoolkit")
+            implementation("io.github.mobilebytelabs:cmp-app-intents:$kmptoolkit")
         }
     }
 }

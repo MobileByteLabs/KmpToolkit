@@ -1,0 +1,49 @@
+// AppIntentStub.swift.template — cmp-app-intents per-intent stub template
+//
+// USAGE:
+// 1. Copy this file into your iOS / macOS Xcode app target as `${INTENT_ID}Intent.swift`
+//    (e.g. `openTransferIntent.swift`).
+// 2. Replace `${INTENT_ID}` with your Kotlin intent ID (e.g. "openTransfer").
+// 3. Replace `${INTENT_TITLE}` with the title from your Kotlin DSL.
+// 4. Replace `${INTENT_DESCRIPTION}` with the description from your Kotlin DSL.
+// 5. Replace `${PARAMS_BLOCK}` with `@Parameter(...)` declarations matching your Kotlin
+//    `parameter(name, type)` calls. Example for a single Number param "amount":
+//       @Parameter(title: "Amount")
+//       var amount: Double?
+// 6. Replace `${PARAMS_DICT}` with the dictionary literal mapping parameter names to
+//    Swift values. Example:
+//       ["amount": amount as Any?].compactMapValues { $0 }
+// 7. Add `${INTENT_ID}Intent()` to your `AppShortcutsProvider.appShortcuts` array.
+//
+// Per ADR-04: this template is consumer-customized per declared intent.
+// iOS 16+ / macOS 13+ enforced via `@available` (per ADR-07).
+
+import AppIntents
+import Foundation
+
+@available(iOS 16, macOS 13, *)
+public struct ${INTENT_ID}Intent: AppIntent {
+
+    public static let title: LocalizedStringResource = "${INTENT_TITLE}"
+    public static let description = IntentDescription("${INTENT_DESCRIPTION}")
+
+    // Parameter declarations — replace this block per your Kotlin DSL.
+    // ${PARAMS_BLOCK}
+
+    public init() {}
+
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
+        let params: [String: Any] = ${PARAMS_DICT}
+        let result = CmpAppIntentBridge.shared.perform(id: "${INTENT_ID}", params: params)
+        switch result {
+        case .dialog(let message):
+            return .result(dialog: IntentDialog(stringLiteral: message))
+        case .snippet(let markdown):
+            return .result(dialog: IntentDialog(stringLiteral: markdown))
+        case .done(let message):
+            return .result(dialog: IntentDialog(stringLiteral: message ?? "Done"))
+        case .failed(let message):
+            throw NSError(domain: "cmp-app-intents", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+}
