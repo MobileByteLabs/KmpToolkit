@@ -11,8 +11,8 @@
 
 package com.mobilebytelabs.kmptoolkit.share
 
-import kotlin.js.Promise
 import kotlinx.coroutines.await
+import kotlin.js.Promise
 
 /**
  * wasmJs implementation — Web Share API + clipboard fallback. Same shape as JS;
@@ -62,8 +62,11 @@ public actual object Share {
 
     private fun buildShareText(payload: SharePayload): String? = when (payload) {
         is SharePayload.Text -> payload.content
+
         is SharePayload.Url -> payload.href
+
         is SharePayload.Image, is SharePayload.File -> null
+
         is SharePayload.Multi -> payload.items.mapNotNull {
             when (it) {
                 is SharePayload.Text -> it.content
@@ -89,10 +92,9 @@ private external fun hasNavigatorShare(): Boolean
         if (text != null) data.text = text;
         if (url != null) data.url = url;
         return navigator.share(data);
-    }"""
+    }""",
 )
 private external fun navigatorShare(title: String?, text: String?, url: String?): Promise<JsAny?>
 
 @JsFun("(text) => navigator.clipboard.writeText(text)")
 private external fun navigatorClipboardWriteText(text: String): Promise<JsAny?>
-

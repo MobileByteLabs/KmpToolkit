@@ -23,7 +23,9 @@ fun IntentLauncherDemoScreen(onStatus: (String) -> Unit) {
     val launcher = rememberIntentLauncher()
     val scope = rememberCoroutineScope()
 
-    DemoIntro("Compose-scoped Intent launcher. Picker contracts work on Android + JVM + JS; iOS/macOS/wasmJs route through onUnsupported in v0.1.")
+    DemoIntro(
+        "Compose-scoped Intent launcher. Picker contracts work on Android + JVM + JS; iOS/macOS/wasmJs route through onUnsupported in v0.1.",
+    )
 
     Button(
         onClick = {

@@ -22,7 +22,9 @@ fun ClipboardDemoScreen(onStatus: (String) -> Unit) {
     val clipboard = remember { ClipboardManager() }
     var text by remember { mutableStateOf("Hello from KmpToolkit clipboard!") }
 
-    DemoIntro("Sync copy/paste via ClipboardManager. Also supports observation, URL detection, and history (see API docs).")
+    DemoIntro(
+        "Sync copy/paste via ClipboardManager. Also supports observation, URL detection, and history (see API docs).",
+    )
 
     OutlinedTextField(
         value = text,

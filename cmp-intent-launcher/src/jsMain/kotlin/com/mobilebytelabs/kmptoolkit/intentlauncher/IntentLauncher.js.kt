@@ -31,7 +31,13 @@ public actual class IntentLauncher internal constructor() {
             ResultContracts.PickImage,
             ResultContracts.PickDocument,
             ResultContracts.PickMultipleImages,
-            is ResultContracts.Custom<*> -> openFileInput(builder, multiple = contract == ResultContracts.PickMultipleImages)
+            is ResultContracts.Custom<*>,
+            -> openFileInput(
+                builder,
+                multiple =
+                contract == ResultContracts.PickMultipleImages,
+            )
+
             else -> builder.onUnsupportedHandler?.invoke() ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
         }
     }

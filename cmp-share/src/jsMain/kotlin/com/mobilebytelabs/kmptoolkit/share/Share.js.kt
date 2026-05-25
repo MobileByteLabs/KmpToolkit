@@ -11,9 +11,9 @@ package com.mobilebytelabs.kmptoolkit.share
 
 import kotlinx.coroutines.await
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import kotlin.js.Promise
 import kotlin.js.json
-import kotlin.coroutines.resume
 
 /**
  * JS browser implementation.
@@ -31,7 +31,7 @@ public actual object Share {
 
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult {
         val shareData = buildShareData(payload, options) ?: return ShareResult.Failed(
-            ShareError.Unknown("Empty share payload")
+            ShareError.Unknown("Empty share payload"),
         )
 
         // Web Share API path
@@ -56,27 +56,38 @@ public actual object Share {
             ShareResult.Completed
         } catch (e: Throwable) {
             val name = readJsErrorName(e)
-            if (name == "NotAllowedError") ShareResult.Failed(ShareError.UserGestureMissing)
-            else ShareResult.Failed(ShareError.Unknown(e.message ?: name ?: "clipboard.writeText failed"))
+            if (name == "NotAllowedError") {
+                ShareResult.Failed(ShareError.UserGestureMissing)
+            } else {
+                ShareResult.Failed(ShareError.Unknown(e.message ?: name ?: "clipboard.writeText failed"))
+            }
         }
     }
 
     private fun buildShareData(payload: SharePayload, options: ShareOptions): dynamic {
         val data: dynamic = json()
         var hasContent = false
-        options.chooserTitle?.let { data["title"] = it; hasContent = true }
+        options.chooserTitle?.let {
+            data["title"] = it
+            hasContent = true
+        }
         when (payload) {
             is SharePayload.Text -> {
-                data["text"] = payload.content; hasContent = true
+                data["text"] = payload.content
+                hasContent = true
             }
+
             is SharePayload.Url -> {
-                data["url"] = payload.href; hasContent = true
+                data["url"] = payload.href
+                hasContent = true
             }
+
             is SharePayload.Image, is SharePayload.File -> {
                 // Web Share Level 2 file support varies; fall back to clipboard via payloadAsText.
                 // (Real file sharing would need to construct File objects from bytes — deferred.)
                 return null
             }
+
             is SharePayload.Multi -> {
                 val parts = mutableListOf<String>()
                 for (item in payload.items) {
@@ -97,8 +108,11 @@ public actual object Share {
 
     private fun payloadAsText(payload: SharePayload): String? = when (payload) {
         is SharePayload.Text -> payload.content
+
         is SharePayload.Url -> payload.href
+
         is SharePayload.Image, is SharePayload.File -> null
+
         is SharePayload.Multi -> payload.items.mapNotNull { payloadAsText(it) }
             .takeIf { it.isNotEmpty() }?.joinToString("\n")
     }
@@ -107,16 +121,14 @@ public actual object Share {
 private fun hasNavigatorShare(): Boolean =
     js("typeof navigator !== 'undefined' && typeof navigator.share === 'function'") as Boolean
 
-private fun navigatorShare(data: dynamic): Promise<dynamic> =
-    js("navigator.share(data)") as Promise<dynamic>
+private fun navigatorShare(data: dynamic): Promise<dynamic> = js("navigator.share(data)") as Promise<dynamic>
 
 private fun navigatorClipboardWriteText(text: String): Promise<dynamic> =
     js("navigator.clipboard.writeText(text)") as Promise<dynamic>
 
-private fun readJsErrorName(e: Throwable): String? =
-    try {
-        @Suppress("UNCHECKED_CAST")
-        (e.asDynamic().name as? String)
-    } catch (_: Throwable) {
-        null
-    }
+private fun readJsErrorName(e: Throwable): String? = try {
+    @Suppress("UNCHECKED_CAST")
+    (e.asDynamic().name as? String)
+} catch (_: Throwable) {
+    null
+}

@@ -31,21 +31,23 @@ import platform.posix.system
 @OptIn(ExperimentalForeignApi::class)
 @ExperimentalShareApi
 public actual object Share {
-    public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult =
-        when (payload) {
-            is SharePayload.Url -> winStart(payload.href)
-            is SharePayload.Text -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-            is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-            is SharePayload.File -> winStart(payload.uri)
-            is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-        }
+    public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
+        is SharePayload.Url -> winStart(payload.href)
+        is SharePayload.Text -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        is SharePayload.File -> winStart(payload.uri)
+        is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+    }
 
     private fun winStart(rawTarget: String): ShareResult {
         val target = rawTarget.replace("\"", "\\\"")
         // `start` needs an empty title arg ("") when the target is quoted.
         val cmd = "cmd /c start \"\" \"$target\""
         val rc = system(cmd)
-        return if (rc == 0) ShareResult.Completed
-        else ShareResult.Failed(ShareError.Unknown("cmd start exit=$rc"))
+        return if (rc == 0) {
+            ShareResult.Completed
+        } else {
+            ShareResult.Failed(ShareError.Unknown("cmd start exit=$rc"))
+        }
     }
 }

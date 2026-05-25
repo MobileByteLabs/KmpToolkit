@@ -24,7 +24,9 @@ fun ToastDemoScreen(onStatus: (String) -> Unit) {
     val toastState = rememberToastHostState()
     val scope = rememberCoroutineScope()
 
-    DemoIntro("Material 3-styled toasts via ToastHost. Five styles (DEFAULT/SUCCESS/ERROR/WARNING/INFO) mapped to colors. Default position bottom-center.")
+    DemoIntro(
+        "Material 3-styled toasts via ToastHost. Five styles (DEFAULT/SUCCESS/ERROR/WARNING/INFO) mapped to colors. Default position bottom-center.",
+    )
 
     Button(
         onClick = {

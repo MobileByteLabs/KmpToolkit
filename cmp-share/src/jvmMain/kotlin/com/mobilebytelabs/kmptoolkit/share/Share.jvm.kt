@@ -9,21 +9,21 @@
  */
 package com.mobilebytelabs.kmptoolkit.share
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.awt.FileDialog
 import java.awt.Frame
-import java.awt.Image as AwtImage
 import java.awt.Toolkit
 import java.awt.datatransfer.Clipboard
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 import java.awt.datatransfer.Transferable
 import java.awt.datatransfer.UnsupportedFlavorException
-import java.awt.FileDialog
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
 import javax.imageio.ImageIO
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import java.awt.Image as AwtImage
 
 /**
  * JVM Desktop best-effort share — Java AWT system clipboard for text/url/image,
@@ -67,7 +67,7 @@ public actual object Share {
     private fun saveFileDialog(file: SharePayload.File, title: String?): ShareResult {
         val sourcePath = uriToFilePath(file.uri)
             ?: return ShareResult.Failed(
-                ShareError.Unknown("JVM Desktop only supports file:// URIs and local paths; got: ${file.uri}")
+                ShareError.Unknown("JVM Desktop only supports file:// URIs and local paths; got: ${file.uri}"),
             )
         val source = File(sourcePath)
         if (!source.exists()) {
@@ -116,8 +116,12 @@ public actual object Share {
 
     private fun uriToFilePath(uri: String): String? = when {
         uri.startsWith("file://") -> uri.removePrefix("file://")
+
         uri.startsWith("/") -> uri
-        !uri.contains("://") -> uri // bare relative path
+
+        !uri.contains("://") -> uri
+
+        // bare relative path
         else -> null
     }
 }

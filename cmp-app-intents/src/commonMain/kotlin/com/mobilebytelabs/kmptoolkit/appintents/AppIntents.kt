@@ -10,8 +10,8 @@
 package com.mobilebytelabs.kmptoolkit.appintents
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Opt-in marker for the experimental cmp-app-intents API.
@@ -120,11 +120,7 @@ public class AppIntentDef internal constructor(
 )
 
 @ExperimentalAppIntentsApi
-public data class ParamDef(
-    val name: String,
-    val type: ParamType,
-    val isRequired: Boolean,
-)
+public data class ParamDef(val name: String, val type: ParamType, val isRequired: Boolean)
 
 // -----------------------------------------------------------------------------
 // Runtime registry (internal) — holds perform lambdas keyed by intent id;
@@ -146,8 +142,7 @@ internal object AppIntentsRuntime {
 
     fun current(): AppIntentsConfig? = registered
 
-    suspend fun invoke(id: String, params: Map<String, Any>): AppIntentResult? =
-        handlers[id]?.invoke(params)
+    suspend fun invoke(id: String, params: Map<String, Any>): AppIntentResult? = handlers[id]?.invoke(params)
 }
 
 // -----------------------------------------------------------------------------
@@ -168,7 +163,7 @@ internal data class ManifestEntry(
 @Serializable
 internal data class ManifestParam(
     val name: String,
-    val type: String,           // "Text" / "Integer" / "Number" / "Bool" / "Entity:Name"
+    val type: String, // "Text" / "Integer" / "Number" / "Bool" / "Entity:Name"
     val isRequired: Boolean,
 )
 

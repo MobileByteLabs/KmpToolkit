@@ -24,11 +24,7 @@ import androidx.compose.ui.unit.dp
  * Tells the reader *why* and links to setup docs.
  */
 @Composable
-fun SetupRequiredCard(
-    title: String,
-    explanation: String,
-    setupSteps: List<String>,
-) {
+fun SetupRequiredCard(title: String, explanation: String, setupSteps: List<String>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(

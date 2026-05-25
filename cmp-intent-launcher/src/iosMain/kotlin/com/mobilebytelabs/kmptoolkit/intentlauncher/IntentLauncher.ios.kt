@@ -18,9 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Contacts.CNContact
 import platform.ContactsUI.CNContactPickerDelegateProtocol
 import platform.ContactsUI.CNContactPickerViewController
-import platform.Contacts.CNContact
 import platform.Foundation.NSURL
 import platform.PhotosUI.PHPickerConfiguration
 import platform.PhotosUI.PHPickerFilter
@@ -69,95 +69,103 @@ public actual class IntentLauncher internal constructor() {
 
         return when (contract) {
             ResultContracts.PickImage -> presentPhotoPicker(presenting, multi = false)
+
             ResultContracts.PickMultipleImages -> presentPhotoPicker(presenting, multi = true)
+
             ResultContracts.PickDocument -> presentDocumentPicker(presenting, builder)
+
             ResultContracts.PickContact -> presentContactPicker(presenting)
+
             else -> builder.onUnsupportedHandler?.invoke()
                 ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
         }
     }
 
-    private suspend fun presentPhotoPicker(
-        presenting: UIViewController,
-        multi: Boolean,
-    ): IntentResult = suspendCancellableCoroutine { cont ->
-        val config = PHPickerConfiguration().apply {
-            filter = PHPickerFilter.imagesFilter()
-            selectionLimit = if (multi) 0L else 1L
-        }
-        val vc = PHPickerViewController(configuration = config)
-        val delegate = PhotoPickerDelegate { uris ->
-            vc.dismissViewControllerAnimated(true, completion = null)
-            if (cont.isActive) {
-                cont.resume(
-                    when {
-                        uris == null -> IntentResult.Failed(IntentError.Unknown("PHPicker error"))
-                        uris.isEmpty() -> IntentResult.Cancelled
-                        multi -> IntentResult.Ok(
-                            IntentData(uri = uris.firstOrNull(), extras = mapOf("uris" to uris)),
-                        )
-                        else -> IntentResult.Ok(IntentData(uri = uris.first()))
-                    },
-                )
+    private suspend fun presentPhotoPicker(presenting: UIViewController, multi: Boolean): IntentResult =
+        suspendCancellableCoroutine { cont ->
+            val config = PHPickerConfiguration().apply {
+                filter = PHPickerFilter.imagesFilter()
+                selectionLimit = if (multi) 0L else 1L
             }
-        }
-        vc.delegate = delegate
-        DelegatePin.retain(delegate)
-        cont.invokeOnCancellation {
-            DelegatePin.release(delegate)
-            vc.dismissViewControllerAnimated(true, completion = null)
-        }
-        presenting.presentViewController(vc, animated = true, completion = null)
-    }
+            val vc = PHPickerViewController(configuration = config)
+            val delegate = PhotoPickerDelegate { uris ->
+                vc.dismissViewControllerAnimated(true, completion = null)
+                if (cont.isActive) {
+                    cont.resume(
+                        when {
+                            uris == null -> IntentResult.Failed(IntentError.Unknown("PHPicker error"))
 
-    private suspend fun presentDocumentPicker(
-        presenting: UIViewController,
-        builder: IntentBuilder,
-    ): IntentResult = suspendCancellableCoroutine { cont ->
-        val utis = utisFromMimeType(builder.type)
-        val vc = UIDocumentPickerViewController(
-            documentTypes = utis,
-            inMode = UIDocumentPickerMode.UIDocumentPickerModeImport,
-        )
-        val delegate = DocumentPickerDelegate { uri ->
-            vc.dismissViewControllerAnimated(true, completion = null)
-            if (cont.isActive) {
-                cont.resume(
-                    if (uri == null) IntentResult.Cancelled
-                    else IntentResult.Ok(IntentData(uri = uri, mimeType = builder.type)),
-                )
-            }
-        }
-        vc.delegate = delegate
-        DelegatePin.retain(delegate)
-        cont.invokeOnCancellation {
-            DelegatePin.release(delegate)
-            vc.dismissViewControllerAnimated(true, completion = null)
-        }
-        presenting.presentViewController(vc, animated = true, completion = null)
-    }
+                            uris.isEmpty() -> IntentResult.Cancelled
 
-    private suspend fun presentContactPicker(
-        presenting: UIViewController,
-    ): IntentResult = suspendCancellableCoroutine { cont ->
-        val vc = CNContactPickerViewController()
-        val delegate = ContactPickerDelegate { identifier ->
-            vc.dismissViewControllerAnimated(true, completion = null)
-            if (cont.isActive) {
-                cont.resume(
-                    if (identifier == null) IntentResult.Cancelled
-                    else IntentResult.Ok(IntentData(uri = identifier)),
-                )
+                            multi -> IntentResult.Ok(
+                                IntentData(uri = uris.firstOrNull(), extras = mapOf("uris" to uris)),
+                            )
+
+                            else -> IntentResult.Ok(IntentData(uri = uris.first()))
+                        },
+                    )
+                }
             }
+            vc.delegate = delegate
+            DelegatePin.retain(delegate)
+            cont.invokeOnCancellation {
+                DelegatePin.release(delegate)
+                vc.dismissViewControllerAnimated(true, completion = null)
+            }
+            presenting.presentViewController(vc, animated = true, completion = null)
         }
-        vc.delegate = delegate
-        DelegatePin.retain(delegate)
-        cont.invokeOnCancellation {
-            DelegatePin.release(delegate)
-            vc.dismissViewControllerAnimated(true, completion = null)
+
+    private suspend fun presentDocumentPicker(presenting: UIViewController, builder: IntentBuilder): IntentResult =
+        suspendCancellableCoroutine { cont ->
+            val utis = utisFromMimeType(builder.type)
+            val vc = UIDocumentPickerViewController(
+                documentTypes = utis,
+                inMode = UIDocumentPickerMode.UIDocumentPickerModeImport,
+            )
+            val delegate = DocumentPickerDelegate { uri ->
+                vc.dismissViewControllerAnimated(true, completion = null)
+                if (cont.isActive) {
+                    cont.resume(
+                        if (uri == null) {
+                            IntentResult.Cancelled
+                        } else {
+                            IntentResult.Ok(IntentData(uri = uri, mimeType = builder.type))
+                        },
+                    )
+                }
+            }
+            vc.delegate = delegate
+            DelegatePin.retain(delegate)
+            cont.invokeOnCancellation {
+                DelegatePin.release(delegate)
+                vc.dismissViewControllerAnimated(true, completion = null)
+            }
+            presenting.presentViewController(vc, animated = true, completion = null)
         }
-        presenting.presentViewController(vc, animated = true, completion = null)
-    }
+
+    private suspend fun presentContactPicker(presenting: UIViewController): IntentResult =
+        suspendCancellableCoroutine { cont ->
+            val vc = CNContactPickerViewController()
+            val delegate = ContactPickerDelegate { identifier ->
+                vc.dismissViewControllerAnimated(true, completion = null)
+                if (cont.isActive) {
+                    cont.resume(
+                        if (identifier == null) {
+                            IntentResult.Cancelled
+                        } else {
+                            IntentResult.Ok(IntentData(uri = identifier))
+                        },
+                    )
+                }
+            }
+            vc.delegate = delegate
+            DelegatePin.retain(delegate)
+            cont.invokeOnCancellation {
+                DelegatePin.release(delegate)
+                vc.dismissViewControllerAnimated(true, completion = null)
+            }
+            presenting.presentViewController(vc, animated = true, completion = null)
+        }
 
     private fun utisFromMimeType(mime: String?): List<String> = when {
         mime == null -> listOf("public.data")
@@ -186,14 +194,11 @@ public actual fun rememberIntentLauncher(): IntentLauncher = remember { IntentLa
 // Delegate bridges — subclass NSObject + implement Apple's delegate protocols.
 // -----------------------------------------------------------------------------
 
-private class PhotoPickerDelegate(
-    private val onComplete: (List<String>?) -> Unit,
-) : NSObject(), PHPickerViewControllerDelegateProtocol {
+private class PhotoPickerDelegate(private val onComplete: (List<String>?) -> Unit) :
+    NSObject(),
+    PHPickerViewControllerDelegateProtocol {
 
-    override fun picker(
-        picker: PHPickerViewController,
-        didFinishPicking: List<*>,
-    ) {
+    override fun picker(picker: PHPickerViewController, didFinishPicking: List<*>) {
         @Suppress("UNCHECKED_CAST")
         val results = didFinishPicking as List<PHPickerResult>
         if (results.isEmpty()) {
@@ -208,22 +213,16 @@ private class PhotoPickerDelegate(
     }
 }
 
-private class DocumentPickerDelegate(
-    private val onComplete: (String?) -> Unit,
-) : NSObject(), UIDocumentPickerDelegateProtocol {
+private class DocumentPickerDelegate(private val onComplete: (String?) -> Unit) :
+    NSObject(),
+    UIDocumentPickerDelegateProtocol {
 
-    override fun documentPicker(
-        controller: UIDocumentPickerViewController,
-        didPickDocumentAtURL: NSURL,
-    ) {
+    override fun documentPicker(controller: UIDocumentPickerViewController, didPickDocumentAtURL: NSURL) {
         onComplete(didPickDocumentAtURL.absoluteString)
     }
 
     @ObjCSignatureOverride
-    override fun documentPicker(
-        controller: UIDocumentPickerViewController,
-        didPickDocumentsAtURLs: List<*>,
-    ) {
+    override fun documentPicker(controller: UIDocumentPickerViewController, didPickDocumentsAtURLs: List<*>) {
         @Suppress("UNCHECKED_CAST")
         val urls = didPickDocumentsAtURLs as List<NSURL>
         onComplete(urls.firstOrNull()?.absoluteString)
@@ -234,14 +233,11 @@ private class DocumentPickerDelegate(
     }
 }
 
-private class ContactPickerDelegate(
-    private val onComplete: (String?) -> Unit,
-) : NSObject(), CNContactPickerDelegateProtocol {
+private class ContactPickerDelegate(private val onComplete: (String?) -> Unit) :
+    NSObject(),
+    CNContactPickerDelegateProtocol {
 
-    override fun contactPicker(
-        picker: CNContactPickerViewController,
-        didSelectContact: CNContact,
-    ) {
+    override fun contactPicker(picker: CNContactPickerViewController, didSelectContact: CNContact) {
         onComplete(didSelectContact.identifier)
     }
 

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -28,7 +29,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -115,7 +115,10 @@ private fun ShareTab(onStatus: (String) -> Unit) {
     Button(
         onClick = {
             scope.launch {
-                val result = Share.url("https://github.com/MobileByteLabs/KmpToolkit", ShareOptions(chooserTitle = "Share URL"))
+                val result = Share.url(
+                    "https://github.com/MobileByteLabs/KmpToolkit",
+                    ShareOptions(chooserTitle = "Share URL"),
+                )
                 onStatus("Share.url → $result")
             }
         },
@@ -162,7 +165,9 @@ private fun IntentTab(onStatus: (String) -> Unit) {
                     result(ResultContracts.PickImage)
                     type("image/*")
                     onUnsupported {
-                        IntentResult.Failed(com.mobilebytelabs.kmptoolkit.intentlauncher.IntentError.UnsupportedPlatform)
+                        IntentResult.Failed(
+                            com.mobilebytelabs.kmptoolkit.intentlauncher.IntentError.UnsupportedPlatform,
+                        )
                     }
                 }
                 onStatus("Pick image → $result")
@@ -178,7 +183,9 @@ private fun IntentTab(onStatus: (String) -> Unit) {
                     result(ResultContracts.PickDocument)
                     type("application/pdf")
                     onUnsupported {
-                        IntentResult.Failed(com.mobilebytelabs.kmptoolkit.intentlauncher.IntentError.UnsupportedPlatform)
+                        IntentResult.Failed(
+                            com.mobilebytelabs.kmptoolkit.intentlauncher.IntentError.UnsupportedPlatform,
+                        )
                     }
                 }
                 onStatus("Pick PDF → $result")
