@@ -143,12 +143,7 @@ private fun LibraryCard(lib: LibraryDemo, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DemoScaffold(
-    lib: LibraryDemo,
-    status: String,
-    onBack: () -> Unit,
-    onStatus: (String) -> Unit,
-) {
+private fun DemoScaffold(lib: LibraryDemo, status: String, onBack: () -> Unit, onStatus: (String) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(

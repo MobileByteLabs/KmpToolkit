@@ -158,7 +158,9 @@ fun IntentBuilderScreen() {
 
 private fun formatBuilderResult(result: IntentResult): String = when (result) {
     is IntentResult.Ok -> "OK — uri=${result.data?.uri ?: "null"}, extras=${result.data?.extras}"
+
     IntentResult.Cancelled -> "Cancelled by user"
+
     is IntentResult.Failed -> "Failed: " + when (result.cause) {
         IntentError.UnsupportedPlatform -> "Unsupported on this platform"
         IntentError.NoHandler -> "No handler available"

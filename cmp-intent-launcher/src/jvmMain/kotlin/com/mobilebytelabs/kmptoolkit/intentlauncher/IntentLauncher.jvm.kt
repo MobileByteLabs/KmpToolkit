@@ -11,10 +11,10 @@ package com.mobilebytelabs.kmptoolkit.intentlauncher
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import java.awt.FileDialog
-import java.awt.Frame
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.awt.FileDialog
+import java.awt.Frame
 
 /**
  * JVM Desktop `IntentLauncher` — uses AWT `FileDialog` (LOAD mode) for picker contracts.
@@ -33,7 +33,10 @@ public actual class IntentLauncher internal constructor() {
 
         return when (contract) {
             ResultContracts.PickImage, ResultContracts.PickDocument -> openFileDialog(builder)
-            is ResultContracts.Custom<*> -> openFileDialog(builder) // best-effort generic file pick
+
+            is ResultContracts.Custom<*> -> openFileDialog(builder)
+
+            // best-effort generic file pick
             else -> builder.onUnsupportedHandler?.invoke() ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
         }
     }

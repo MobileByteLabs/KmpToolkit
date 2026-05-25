@@ -54,9 +54,11 @@ public actual object Share {
             vc.completionWithItemsHandler = { _, completed, _, error ->
                 val result = when {
                     error != null -> ShareResult.Failed(
-                        ShareError.Unknown(error.localizedDescription ?: "iOS share error")
+                        ShareError.Unknown(error.localizedDescription ?: "iOS share error"),
                     )
+
                     completed -> ShareResult.Completed
+
                     else -> ShareResult.Cancelled
                 }
                 if (cont.isActive) cont.resume(result)
@@ -71,16 +73,20 @@ public actual object Share {
     @OptIn(BetaInteropApi::class)
     private fun buildActivityItems(payload: SharePayload): List<Any> = when (payload) {
         is SharePayload.Text -> listOf(NSString.create(string = payload.content))
+
         is SharePayload.Url -> listOf(
-            NSURL.URLWithString(payload.href) ?: NSString.create(string = payload.href)
+            NSURL.URLWithString(payload.href) ?: NSString.create(string = payload.href),
         )
+
         is SharePayload.Image -> {
             val image = imageFromBytes(payload.bytes)
             if (image != null) listOf(image) else listOf(NSString.create(string = "<image>"))
         }
+
         is SharePayload.File -> listOf(
-            NSURL.URLWithString(payload.uri) ?: NSString.create(string = payload.uri)
+            NSURL.URLWithString(payload.uri) ?: NSString.create(string = payload.uri),
         )
+
         is SharePayload.Multi -> payload.items.flatMap { buildActivityItems(it) }
     }
 

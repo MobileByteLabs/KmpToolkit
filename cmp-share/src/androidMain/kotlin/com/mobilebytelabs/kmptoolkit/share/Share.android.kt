@@ -12,8 +12,8 @@ package com.mobilebytelabs.kmptoolkit.share
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
-import java.io.File as JavaFile
 import java.io.FileOutputStream
+import java.io.File as JavaFile
 
 /**
  * Android `Intent.ACTION_SEND` implementation.
@@ -33,7 +33,9 @@ public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult {
         if (!ShareContext.isInitialized()) {
             return ShareResult.Failed(
-                ShareError.Unknown("ShareContext not initialized — ShareInitProvider must be declared in AndroidManifest.xml")
+                ShareError.Unknown(
+                    "ShareContext not initialized — ShareInitProvider must be declared in AndroidManifest.xml",
+                ),
             )
         }
         val ctx = ShareContext.context
@@ -55,19 +57,23 @@ public actual object Share {
             type = payload.mimeType
             putExtra(Intent.EXTRA_TEXT, payload.content)
         }
+
         is SharePayload.Url -> Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, payload.href)
         }
+
         is SharePayload.Image -> Intent(Intent.ACTION_SEND).apply {
             type = payload.mimeType
             val uri = writeBytesToCache(payload.bytes, payload.mimeType, payload.filename)
             putExtra(Intent.EXTRA_STREAM, uri)
         }
+
         is SharePayload.File -> Intent(Intent.ACTION_SEND).apply {
             type = payload.mimeType
             putExtra(Intent.EXTRA_STREAM, Uri.parse(payload.uri))
         }
+
         is SharePayload.Multi -> Intent(Intent.ACTION_SEND_MULTIPLE).apply {
             val uris = ArrayList<Uri>()
             val texts = ArrayList<String>()

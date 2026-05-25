@@ -71,6 +71,7 @@ public object ResultContracts {
 
     public object PickMultipleImages : ResultContract<List<String>> {
         override val resultType: KClass<*> = List::class
+
         @Suppress("UNCHECKED_CAST")
         override fun parse(data: IntentData?): List<String> =
             (data?.extras?.get("uris") as? List<String>) ?: listOfNotNull(data?.uri)
@@ -86,10 +87,8 @@ public object ResultContracts {
         override fun parse(data: IntentData?): String? = data?.uri
     }
 
-    public class Custom<R>(
-        private val parse: (IntentData?) -> R,
-        override val resultType: KClass<*>,
-    ) : ResultContract<R> {
+    public class Custom<R>(private val parse: (IntentData?) -> R, override val resultType: KClass<*>) :
+        ResultContract<R> {
         override fun parse(data: IntentData?): R = parse.invoke(data)
     }
 }

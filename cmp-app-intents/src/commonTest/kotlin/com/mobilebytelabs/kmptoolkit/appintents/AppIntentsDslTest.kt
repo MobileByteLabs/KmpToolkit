@@ -77,7 +77,7 @@ class AppIntentsDslTest {
                     parameter("name", ParamType.Text)
                     perform { params -> AppIntentResult.Dialog("Hello, ${params["name"]}!") }
                 }
-            }
+            },
         )
         val result = AppIntents.invokeForTesting("greet", mapOf("name" to "World"))
         assertNotNull(result)

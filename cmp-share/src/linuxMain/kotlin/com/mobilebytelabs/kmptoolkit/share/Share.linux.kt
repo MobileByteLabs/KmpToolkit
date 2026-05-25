@@ -29,24 +29,28 @@ import platform.posix.system
 @OptIn(ExperimentalForeignApi::class)
 @ExperimentalShareApi
 public actual object Share {
-    public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult =
-        when (payload) {
-            is SharePayload.Url -> xdgOpen(payload.href)
-            is SharePayload.Text -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-            is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-            is SharePayload.File -> xdgOpen(uriFromFile(payload.uri))
-            is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-        }
+    public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
+        is SharePayload.Url -> xdgOpen(payload.href)
+        is SharePayload.Text -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        is SharePayload.File -> xdgOpen(uriFromFile(payload.uri))
+        is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+    }
 
     private fun xdgOpen(rawTarget: String): ShareResult {
         val target = rawTarget.replace("'", "'\\''")
         val cmd = "xdg-open '$target' >/dev/null 2>&1"
         val rc = system(cmd)
-        return if (rc == 0) ShareResult.Completed
-        else ShareResult.Failed(ShareError.Unknown("xdg-open exit=$rc (is xdg-utils installed?)"))
+        return if (rc == 0) {
+            ShareResult.Completed
+        } else {
+            ShareResult.Failed(ShareError.Unknown("xdg-open exit=$rc (is xdg-utils installed?)"))
+        }
     }
 
-    private fun uriFromFile(uri: String): String =
-        if (uri.startsWith("file://") || uri.contains("://")) uri
-        else "file://$uri"
+    private fun uriFromFile(uri: String): String = if (uri.startsWith("file://") || uri.contains("://")) {
+        uri
+    } else {
+        "file://$uri"
+    }
 }

@@ -36,7 +36,8 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
 spotless {
     kotlin {
         target("**/*.kt")
-        targetExclude("**/build/**/*.kt", "**/.gradle/**/*.kt")
+        // Samples are demo apps with long UI explanatory strings — exclude from strict library-grade formatting.
+        targetExclude("**/build/**/*.kt", "**/.gradle/**/*.kt", "**/samples/**/*.kt")
         ktlint(libs.versions.ktlint.get())
             .editorConfigOverride(
                 mapOf(

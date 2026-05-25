@@ -24,7 +24,9 @@ import kotlinx.coroutines.launch
 fun ShareDemoScreen(onStatus: (String) -> Unit) {
     val scope = rememberCoroutineScope()
 
-    DemoIntro("Tap a button to invoke Share.share(...). The native share sheet appears on Android/iOS/macOS; navigator.share() on JS/wasmJs; xdg-open/cmd-start on Linux/mingw.")
+    DemoIntro(
+        "Tap a button to invoke Share.share(...). The native share sheet appears on Android/iOS/macOS; navigator.share() on JS/wasmJs; xdg-open/cmd-start on Linux/mingw.",
+    )
 
     Button(
         onClick = {

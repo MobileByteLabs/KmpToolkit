@@ -14,7 +14,9 @@ import com.mobilebytelabs.kmptoolkit.samples.toolkit.features._shared.DemoIntro
 
 @Composable
 fun OpenUrlDemoScreen(onStatus: (String) -> Unit) {
-    DemoIntro("Single extension on String — `.open()` routes by scheme (http→browser, mailto→mail, tel→dialer, sms→messaging).")
+    DemoIntro(
+        "Single extension on String — `.open()` routes by scheme (http→browser, mailto→mail, tel→dialer, sms→messaging).",
+    )
 
     Button(
         onClick = {

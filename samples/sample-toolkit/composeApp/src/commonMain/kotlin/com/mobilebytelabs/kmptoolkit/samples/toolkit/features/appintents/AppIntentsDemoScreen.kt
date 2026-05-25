@@ -44,7 +44,9 @@ fun AppIntentsDemoScreen(onStatus: (String) -> Unit) {
         onStatus("Registered 2 intents (openHome, greet)")
     }
 
-    DemoIntro("Declarative App Intents DSL. iOS: writes manifest JSON for the CmpAppIntentBridge.swift consumer to read. Android: on-device registry. Desktop/Web: invokeForTesting helper for unit tests.")
+    DemoIntro(
+        "Declarative App Intents DSL. iOS: writes manifest JSON for the CmpAppIntentBridge.swift consumer to read. Android: on-device registry. Desktop/Web: invokeForTesting helper for unit tests.",
+    )
 
     Button(
         onClick = {

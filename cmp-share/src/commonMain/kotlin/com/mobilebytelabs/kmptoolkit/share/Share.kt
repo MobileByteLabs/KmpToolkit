@@ -31,24 +31,16 @@ public annotation class ExperimentalShareApi
  */
 @ExperimentalShareApi
 public sealed class SharePayload {
-    public data class Text(
-        val content: String,
-        val mimeType: String = "text/plain",
-    ) : SharePayload()
+    public data class Text(val content: String, val mimeType: String = "text/plain") : SharePayload()
 
-    public data class Url(
-        val href: String,
-    ) : SharePayload()
+    public data class Url(val href: String) : SharePayload()
 
     /**
      * Image bytes with their MIME type. [filename] is optional but recommended on Android
      * (used by FileProvider) and macOS (used by NSItemProvider).
      */
-    public class Image(
-        public val bytes: ByteArray,
-        public val mimeType: String,
-        public val filename: String? = null,
-    ) : SharePayload() {
+    public class Image(public val bytes: ByteArray, public val mimeType: String, public val filename: String? = null) :
+        SharePayload() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is Image) return false
@@ -65,19 +57,12 @@ public sealed class SharePayload {
             return result
         }
 
-        override fun toString(): String =
-            "Image(bytes=${bytes.size} bytes, mimeType=$mimeType, filename=$filename)"
+        override fun toString(): String = "Image(bytes=${bytes.size} bytes, mimeType=$mimeType, filename=$filename)"
     }
 
-    public data class File(
-        val uri: String,
-        val mimeType: String,
-        val filename: String? = null,
-    ) : SharePayload()
+    public data class File(val uri: String, val mimeType: String, val filename: String? = null) : SharePayload()
 
-    public data class Multi(
-        val items: List<SharePayload>,
-    ) : SharePayload()
+    public data class Multi(val items: List<SharePayload>) : SharePayload()
 }
 
 /**
@@ -152,7 +137,5 @@ public suspend fun Share.file(
 ): ShareResult = share(SharePayload.File(uri, mimeType, filename), options)
 
 @ExperimentalShareApi
-public suspend fun Share.multi(
-    payloads: List<SharePayload>,
-    options: ShareOptions = ShareOptions(),
-): ShareResult = share(SharePayload.Multi(payloads), options)
+public suspend fun Share.multi(payloads: List<SharePayload>, options: ShareOptions = ShareOptions()): ShareResult =
+    share(SharePayload.Multi(payloads), options)

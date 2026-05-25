@@ -68,16 +68,20 @@ public actual object Share {
     @OptIn(BetaInteropApi::class)
     private fun buildItems(payload: SharePayload): List<Any> = when (payload) {
         is SharePayload.Text -> listOf(NSString.create(string = payload.content))
+
         is SharePayload.Url -> listOf(
-            NSURL.URLWithString(payload.href) ?: NSString.create(string = payload.href)
+            NSURL.URLWithString(payload.href) ?: NSString.create(string = payload.href),
         )
+
         is SharePayload.Image -> {
             val img = imageFromBytes(payload.bytes)
             if (img != null) listOf(img) else listOf(NSString.create(string = "<image>"))
         }
+
         is SharePayload.File -> listOf(
-            NSURL.URLWithString(payload.uri) ?: NSString.create(string = payload.uri)
+            NSURL.URLWithString(payload.uri) ?: NSString.create(string = payload.uri),
         )
+
         is SharePayload.Multi -> payload.items.flatMap { buildItems(it) }
     }
 
@@ -108,4 +112,3 @@ internal fun ByteArray.toNSData(): NSData? {
         NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
     }
 }
-

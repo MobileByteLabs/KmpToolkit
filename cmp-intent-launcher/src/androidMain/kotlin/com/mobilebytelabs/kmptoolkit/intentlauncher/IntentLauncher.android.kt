@@ -64,17 +64,26 @@ public actual class IntentLauncher internal constructor(
             for ((key, value) in extras) {
                 when (value) {
                     null -> { /* skip */ }
+
                     is String -> intent.putExtra(key, value)
+
                     is Int -> intent.putExtra(key, value)
+
                     is Long -> intent.putExtra(key, value)
+
                     is Boolean -> intent.putExtra(key, value)
+
                     is Float -> intent.putExtra(key, value)
+
                     is Double -> intent.putExtra(key, value)
+
                     is ByteArray -> intent.putExtra(key, value)
+
                     is Array<*> -> {
                         @Suppress("UNCHECKED_CAST")
                         if (value.isArrayOf<String>()) intent.putExtra(key, value as Array<String>)
                     }
+
                     else -> { /* unsupported extra type — silently skip */ }
                 }
             }
@@ -90,7 +99,9 @@ public actual class IntentLauncher internal constructor(
                         bundle.keySet().associateWith { k -> bundle.get(k) }
                     } ?: emptyMap(),
                 )
-            } else null
+            } else {
+                null
+            }
             return IntentResult.Ok(intentData)
         }
     }
