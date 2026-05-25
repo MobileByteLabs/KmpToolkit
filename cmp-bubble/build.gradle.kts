@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -29,6 +30,18 @@ kotlin {
             libs.versions.android.minSdk
                 .get()
                 .toInt()
+
+        withJava()
+
+        withHostTestBuilder {}.configure {}
+
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }
+
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_11
+        }
     }
 
     iosX64()
