@@ -9,6 +9,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Desktop JVM expansion for cmp-product-tickets + cmp-remote-config
+
+- **`cmp-product-tickets`** now ships a `jvm()` target — Desktop Compose apps can consume the full ProductTickets DSL + UI + Supabase integration. Pure commonMain module (no platform-specific code), so the entire change was adding `jvm()` to the targets list. Transitive deps (Ktor, Supabase, Koin, kotlinx) were already JVM-ready.
+- **`cmp-remote-config`** same treatment — `jvm()` added, DynamicUiRenderer + RemoteConfigService + UiNode model all compile cleanly on JVM. Coil-compose, multiplatform-settings, supabase-postgrest all multiplatform-ready.
+- Motivation: the unified `samples/sample-toolkit` catalog app (also added in this release) needs every catalog library to support Desktop JVM. Previously these two were the only commonMain-only-but-JVM-missing libraries, blocking the desktop demo.
+- No API changes. No expect/actual added. No platform-specific source set introduced.
+
+### Added — Unified `samples/sample-toolkit` catalog app
+
+- New `samples/sample-toolkit/{composeApp,androidApp}` showcases every `cmp-*` library in a single navigable Compose Multiplatform app. Home screen groups libraries by category (UI / Comms / Network / Lifecycle / Data / Backend); tap a card to drill into that library's demo screen.
+- Built with `androidx.navigation:navigation-compose-multiplatform` v2.9.2 (already in the version catalog).
+- 15 demo screens covering: toast, bubble, clipboard, share, intent-launcher, app-intents, open-url, deep-link, network-monitor, in-app-update, pdf-generator, remote-config, firebase-analytics, product-tickets.
+- Per-module samples (`sample-clipboard`, `sample-cmp-share`, `sample-inter-app-comms`, etc.) remain alongside — sample-toolkit is the catalog, the per-module samples remain the focused references.
+
+### Added — v0.2 Platform Parity (cmp-share + cmp-app-intents)
+
+**Toolkit version bumped 3.2.11 → 3.3.0.** Two suite modules now ship 19 KMP targets each — matching the target matrix of `cmp-deep-link` / `cmp-open-url` / `cmp-clipboard`.
+
+- **`cmp-share`** adds `tvosX64/Arm64/SimulatorArm64`, `watchosX64/Arm32/Arm64/SimulatorArm64/DeviceArm64`, `linuxX64/Arm64`, `mingwX64` (11 new targets, 19 total). Real implementations:
+  - **Linux**: URL/file share via `xdg-open` subprocess (`xdg-utils` dependency). Single-quote-escaped to prevent shell injection.
+  - **mingw (Windows)**: URL/file share via `cmd /c start`. Double-quote-escaped.
+  - **tvOS**: `UnsupportedPlatform` fallback — Kotlin/Native bindings (as of Kotlin 2.3.10) don't expose `UIPasteboard` for tvOS even though the Objective-C API exists.
+  - **watchOS**: `UnsupportedPlatform` fallback — no share-sheet surface.
+- **`cmp-app-intents`** adds same 11 targets (19 total). Tier-3 platforms get registry-only behavior — `AppIntents.register()` stores config in `AppIntentsRuntime`; `invokeForTesting()` works for dev/test on every platform. Swift bridge `CmpAppIntentBridge.swift` updated with `#if canImport(CoreSpotlight)` guards so the same file compiles for iOS, macOS, tvOS, and watchOS — Spotlight indexing silently skips on tvOS/watchOS (no CoreSpotlight on those platforms).
+- **`cmp-intent-launcher`** stays at 9 targets. **Constraint discovered during Phase 10.A**: the Compose Compiler Gradle plugin is module-level (not source-set-level) and requires `compose.runtime` on every target's classpath. The `composeMain` intermediate source-set workaround fails because the compiler plugin runs before source-set resolution. Future v0.3 path: split into `cmp-intent-launcher-core` (non-Compose, 19 targets) + `cmp-intent-launcher` (current API, depends on -core). Documented in `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/10-platform-parity-v0-2.md`.
+- **wasmWasi** remains excluded — server-side WASM has no DOM, no clipboard, no UI gesture surface (genuine technical impossibility).
+
+### Added — cmp-intent-launcher iOS picker support
+- **iOS picker contracts now route to native UIKit pickers.** `ResultContracts.PickImage`
+  + `PickMultipleImages` → `PHPickerViewController` (iOS 14+); `PickDocument` →
+  `UIDocumentPickerViewController`; `PickContact` → `CNContactPickerViewController`.
+  Suspend-coroutine bridges resume exactly once from the delegate callback (success /
+  cancel / error); a `DelegatePin` singleton holds strong refs while presentations are
+  in flight to defend against ARC dropping the Kotlin/Native delegate shadow.
+- Arbitrary actions still fall back to `onUnsupported` or `IntentResult.Failed(UnsupportedPlatform)`.
+- Plan: `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/09-per-module-samples.md` §G-9.6 follow-up.
+- **No public API changes** — caller code that already used `ResultContracts.PickImage`
+  with an `onUnsupported` fallback now receives real picker results on iOS; the fallback
+  is preserved for non-picker actions.
+
+### Added — cmp-app-intents iOS Spotlight indexing
+- **Searchable intents are now indexed into iOS Spotlight + Siri Suggestions.** The Swift
+  bridge `CmpAppIntentBridge.bootstrap(callbackResolver:)` reads the manifest written by
+  Kotlin's `AppIntents.register(config)`, pushes every `searchable: true` entry into
+  `CSSearchableIndex.defaultSearchableIndex()` with title + contentDescription, and
+  exposes `handleContinue(_:)` to route Spotlight taps back into the Kotlin DSL via
+  `CmpAppIntentsCallback.shared.handler`.
+- Activity prefix `com.mobilebytelabs.kmptoolkit.appintents.<id>` is the user-activity
+  type to declare in your Info.plist `NSUserActivityTypes` array.
+- Real Kotlin↔Swift callback wiring replaces the placeholder `print()` from v0.1.
+  The bridge uses KVC + `NSSelectorFromString("invoke::")` so it stays framework-alias
+  agnostic (works whether your Kotlin/Native framework is published as `kmptoolkit`,
+  `shared`, or any custom name).
+- macOS 10.13+ also benefits — `CoreSpotlight` is available there.
+- Plan: `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/09-per-module-samples.md` §Resolved deferred items.
+- Migration: existing consumers should replace `CmpAppIntentBridge.shared.loadManifest()`
+  at app launch with `CmpAppIntentBridge.shared.bootstrap { CmpAppIntentsCallback.shared }`.
+
+### Changed — build configuration
+- **`org.gradle.jvmargs` bumped to `-Xmx4096M`** (was 2048M). The lower heap was OOMing
+  wasmJs compilation when 3+ new sample modules with Compose were added to the workspace.
+  Local developer machines and CI both benefit; no downstream changes required.
+- **`compose.desktop.packaging.checkJdkVendor=false`** added to `gradle.properties` to
+  permit `createDistributable` runs on Homebrew JDKs (per JetBrains/compose-multiplatform#3107).
+  CI release pipelines are unaffected — they use vendor-pinned Corretto/Temurin where
+  the flag is a no-op.
+
 ### Added — cmp-pdf-generator (new module)
 - **New module `cmp-pdf-generator`** — cross-platform PDF generation library.
   Coordinates: `io.github.mobilebytelabs:cmp-pdf-generator` (ships at the shared
@@ -30,6 +97,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Marker:** all public symbols `@ExperimentalPdfGeneratorApi` until v1.0.
 - **PLAN:** `plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-pdf-generator/`
   (epic, 12 sub-plans, 266 tasks).
+
+### Fixed — cmp-open-url
+- **iOS / macOS `AppHint` parity (G6 fix)** — `openWithApp(url, AppHint.{EMAIL/PHONE/SMS/MAPS})`
+  on Apple platforms now rewrites the URL to the scheme-appropriate form (`mailto:`, `tel:`,
+  `sms:`, `maps:`/`geo:`) BEFORE calling `UIApplication.openURL` / `NSWorkspace.openURL`.
+  Previously the hint was silently ignored — `AppHint.EMAIL + bare HTTPS` would open Safari
+  instead of Mail.app. Incompatible (url, hint) combinations now return
+  `OpenUrlResult.Error(message)` with a clear hint about the required URL scheme.
+  - `AppHint.Custom(packageName)` is now documented as **Android-only**; on iOS / macOS /
+    JVM / JS / wasmJs it silently falls back to `AppHint.DEFAULT` behaviour (no behaviour
+    change vs the previous silent fallback — only KDoc clarification).
+  - Pure-logic `transformUrl()` helper added in commonMain (internal); 20+ unit-test cases
+    cover the rewrite matrix.
+  - Plan: `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/03-open-url-g6-fix.md`
+  - **No public API changes** — BCV baseline unaffected; consumer code requires no migration.
 
 ### Breaking — cmp-remote-config (next release: 4.0.0)
 - **Removed dependency on `cmp-product-tickets`.** `cmp-remote-config` is now standalone.

@@ -4,7 +4,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.composeCompiler)
-    kotlin("android")
 }
 
 android {

@@ -38,6 +38,18 @@ kotlin {
             libs.versions.android.minSdk
                 .get()
                 .toInt()
+
+        withJava()
+
+        withHostTestBuilder {}.configure {}
+
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }
+
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_11
+        }
         androidResources.enable = true
     }
 

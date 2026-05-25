@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider paths for cmp-share. Consumer apps that share images via cmp-share
+  need this declared. Library-side AndroidManifest declares the FileProvider with
+  authority ${applicationId}.cmp-share.fileprovider pointing here.
+-->
+<paths>
+    <cache-path name="cmp-share" path="cmp-share/" />
+</paths>

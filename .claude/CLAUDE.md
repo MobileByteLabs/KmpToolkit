@@ -1,6 +1,7 @@
 # KmpToolkit — Claude Context
 
-This file provides module context for `/lib-sync`, `/sync-product-tickets`, and `/sync-network-monitor` skills.
+This file provides module context for `/lib-sync`, `/sync-product-tickets`, `/sync-network-monitor`,
+`/sync-share`, `/sync-intent-launcher`, and `/sync-app-intents` skills.
 
 ## Rules (always active in this repo)
 
@@ -182,3 +183,96 @@ targets:        9 (Android, iOS, macOS, JVM, JS, WasmJS — Compose platforms on
 - [README](docs/network-monitor/README.md) — Module overview
 - [SETUP](docs/network-monitor/SETUP.md) — Manual integration guide
 - [CLAUDE_AI_SETUP](docs/network-monitor/CLAUDE_AI_SETUP.md) — AI-assisted setup
+
+---
+
+## cmp-share
+
+### Module Identity
+
+```yaml
+artifact:  io.github.mobilebytelabs:cmp-share
+version:   3.2.11
+package:   com.mobilebytelabs.kmptoolkit.share
+supabase:  false
+di:        false   # expect object + extension functions — no Koin module
+nav:       false
+config:    none    # zero-config
+api_tier:  v0.1.0 experimental (@ExperimentalShareApi)
+```
+
+### Quick Sync Commands
+
+```bash
+/sync-share              # Gate 1 Gradle only (zero-config)
+/lib-sync cmp-share      # Same, from framework
+/sync-share --check      # Dry run
+```
+
+### Docs
+
+- [README](docs/share/README.md) — Module overview + API reference
+- [SETUP](docs/share/SETUP.md) — Manual integration guide
+- [CLAUDE_AI_SETUP](docs/share/CLAUDE_AI_SETUP.md) — AI-assisted setup
+
+---
+
+## cmp-intent-launcher
+
+### Module Identity
+
+```yaml
+artifact:  io.github.mobilebytelabs:cmp-intent-launcher
+version:   3.2.11
+package:   com.mobilebytelabs.kmptoolkit.intentlauncher
+supabase:  false
+di:        false   # rememberIntentLauncher() Compose helper — no Koin module
+nav:       false
+config:    none    # zero Gradle config; Activity wiring = developer responsibility
+api_tier:  v0.1.0 experimental (@ExperimentalIntentLauncherApi)
+```
+
+### Quick Sync Commands
+
+```bash
+/sync-intent-launcher              # Gate 1 Gradle only
+/lib-sync cmp-intent-launcher      # Same, from framework
+/sync-intent-launcher --check      # Dry run
+```
+
+### Docs
+
+- [README](docs/intent-launcher/README.md) — Module overview + API reference
+- [SETUP](docs/intent-launcher/SETUP.md) — Manual integration guide (incl. Android Activity wiring)
+- [CLAUDE_AI_SETUP](docs/intent-launcher/CLAUDE_AI_SETUP.md) — AI-assisted setup
+
+---
+
+## cmp-app-intents
+
+### Module Identity
+
+```yaml
+artifact:  io.github.mobilebytelabs:cmp-app-intents
+version:   3.2.11
+package:   com.mobilebytelabs.kmptoolkit.appintents
+supabase:  false
+di:        false   # AppIntents.register() at app startup — no Koin module
+nav:       false
+config:    none    # zero Gradle config; Swift bridge = developer responsibility
+api_tier:  v0.1.0 experimental (@ExperimentalAppIntentsApi)
+```
+
+### Quick Sync Commands
+
+```bash
+/sync-app-intents              # Gate 1 Gradle only
+/lib-sync cmp-app-intents      # Same, from framework
+/sync-app-intents --check      # Dry run
+```
+
+### Docs
+
+- [README](docs/app-intents/README.md) — Module overview + API reference
+- [SETUP](docs/app-intents/SETUP.md) — Manual integration guide (incl. iOS Swift bridge)
+- [CLAUDE_AI_SETUP](docs/app-intents/CLAUDE_AI_SETUP.md) — AI-assisted setup

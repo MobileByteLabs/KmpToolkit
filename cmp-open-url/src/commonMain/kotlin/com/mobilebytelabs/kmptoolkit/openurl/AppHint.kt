@@ -41,7 +41,10 @@ sealed class AppHint {
     /**
      * Android-only: explicitly target an app by its package name.
      *
-     * On non-Android platforms this falls back to [DEFAULT] behaviour silently.
+     * **On iOS / macOS / JVM / JS / wasmJs this falls back to [DEFAULT] behaviour silently**
+     * (the host platform has no concept of "open in this specific package"). Callers on
+     * non-Android platforms get the platform-default URL handler.
+     *
      * If the specified package is not installed on Android, the library retries
      * with [DEFAULT] before returning [OpenUrlResult.NoHandler].
      *

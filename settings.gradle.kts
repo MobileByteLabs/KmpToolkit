@@ -31,6 +31,10 @@ include(":cmp-network-monitor-compose") // Network Monitor Compose — Compose M
 include(":cmp-firebase-analytics")
 // PDF Generator — cross-platform PDF generation (HTML / Markdown / DSL input; multi-output)
 include(":cmp-pdf-generator")
+// Inter-app comms suite (Phase 1 scaffolds; full impl per plan-layer/.../inter-app-comms-suite/)
+include(":cmp-share") // Share — cross-platform share sheet
+include(":cmp-intent-launcher") // Intent Launcher — typed Android-Intent builder + ActivityResult; iOS picker whitelist
+include(":cmp-app-intents") // App Intents — declarative SiriKit Shortcuts + Spotlight (iOS 16+); Android on-device registry
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")
@@ -45,3 +49,14 @@ include(":samples:sample-network-monitor:composeApp")
 include(":samples:sample-network-monitor:androidApp")
 include(":samples:sample-pdf-generator:composeApp")
 include(":samples:sample-pdf-generator:androidApp")
+include(":samples:sample-inter-app-comms:composeApp")
+include(":samples:sample-inter-app-comms:androidApp")
+include(":samples:sample-cmp-share:composeApp")
+include(":samples:sample-cmp-share:androidApp")
+include(":samples:sample-cmp-intent-launcher:composeApp")
+include(":samples:sample-cmp-intent-launcher:androidApp")
+include(":samples:sample-cmp-app-intents:composeApp")
+include(":samples:sample-cmp-app-intents:androidApp")
+// Unified catalog showcasing every cmp-* library in one app (per-module samples kept alongside)
+include(":samples:sample-toolkit:composeApp")
+include(":samples:sample-toolkit:androidApp")
