@@ -31,7 +31,22 @@ plugins {
 // Per Phase 0 TS3: primary API is @Composable rememberIntentLauncher();
 // Android escape hatch ComponentActivity.intentLauncher() extension.
 // (Top-level suspend `intent { }` DROPPED per TS3 — unworkable across platforms.)
-// (tvOS / watchOS / Linux / mingw / wasmWasi excluded per Tier-3 policy.)
+//
+// v0.2 (sub-plan 10) constraint discovery: the Compose Compiler Gradle plugin
+// (alias(libs.plugins.composeCompiler)) is MODULE-LEVEL, not source-set-level —
+// it requires compose.runtime on the classpath for EVERY target. Adding
+// tvOS/watchOS/Linux/mingw targets fails with "The Compose Compiler requires the
+// Compose Runtime to be on the class path". The composeMain intermediate
+// source-set workaround does NOT solve this because the compiler plugin runs
+// before source-set resolution.
+//
+// Honest resolution: cmp-intent-launcher stays at 9 targets in v0.2.
+// To reach 19-target parity in a future v0.3, options are:
+//   (a) Split into cmp-intent-launcher-core (non-Compose, all 19 targets) +
+//       cmp-intent-launcher (current API, depends on -core, 9 targets)
+//   (b) Drop @Composable rememberIntentLauncher() — breaking API change
+// Documented in sub-plan 10 + module README.
+// (tvOS / watchOS / Linux / mingw / wasmWasi excluded per Compose-MP constraint.)
 // Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/
 // ============================================================================
 group = "io.github.mobilebytelabs"

@@ -9,6 +9,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — v0.2 Platform Parity (cmp-share + cmp-app-intents)
+
+**Toolkit version bumped 3.2.11 → 3.3.0.** Two suite modules now ship 19 KMP targets each — matching the target matrix of `cmp-deep-link` / `cmp-open-url` / `cmp-clipboard`.
+
+- **`cmp-share`** adds `tvosX64/Arm64/SimulatorArm64`, `watchosX64/Arm32/Arm64/SimulatorArm64/DeviceArm64`, `linuxX64/Arm64`, `mingwX64` (11 new targets, 19 total). Real implementations:
+  - **Linux**: URL/file share via `xdg-open` subprocess (`xdg-utils` dependency). Single-quote-escaped to prevent shell injection.
+  - **mingw (Windows)**: URL/file share via `cmd /c start`. Double-quote-escaped.
+  - **tvOS**: `UnsupportedPlatform` fallback — Kotlin/Native bindings (as of Kotlin 2.3.10) don't expose `UIPasteboard` for tvOS even though the Objective-C API exists.
+  - **watchOS**: `UnsupportedPlatform` fallback — no share-sheet surface.
+- **`cmp-app-intents`** adds same 11 targets (19 total). Tier-3 platforms get registry-only behavior — `AppIntents.register()` stores config in `AppIntentsRuntime`; `invokeForTesting()` works for dev/test on every platform. Swift bridge `CmpAppIntentBridge.swift` updated with `#if canImport(CoreSpotlight)` guards so the same file compiles for iOS, macOS, tvOS, and watchOS — Spotlight indexing silently skips on tvOS/watchOS (no CoreSpotlight on those platforms).
+- **`cmp-intent-launcher`** stays at 9 targets. **Constraint discovered during Phase 10.A**: the Compose Compiler Gradle plugin is module-level (not source-set-level) and requires `compose.runtime` on every target's classpath. The `composeMain` intermediate source-set workaround fails because the compiler plugin runs before source-set resolution. Future v0.3 path: split into `cmp-intent-launcher-core` (non-Compose, 19 targets) + `cmp-intent-launcher` (current API, depends on -core). Documented in `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/10-platform-parity-v0-2.md`.
+- **wasmWasi** remains excluded — server-side WASM has no DOM, no clipboard, no UI gesture surface (genuine technical impossibility).
+
+### Added — cmp-intent-launcher iOS picker support
+- **iOS picker contracts now route to native UIKit pickers.** `ResultContracts.PickImage`
+  + `PickMultipleImages` → `PHPickerViewController` (iOS 14+); `PickDocument` →
+  `UIDocumentPickerViewController`; `PickContact` → `CNContactPickerViewController`.
+  Suspend-coroutine bridges resume exactly once from the delegate callback (success /
+  cancel / error); a `DelegatePin` singleton holds strong refs while presentations are
+  in flight to defend against ARC dropping the Kotlin/Native delegate shadow.
+- Arbitrary actions still fall back to `onUnsupported` or `IntentResult.Failed(UnsupportedPlatform)`.
+- Plan: `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/09-per-module-samples.md` §G-9.6 follow-up.
+- **No public API changes** — caller code that already used `ResultContracts.PickImage`
+  with an `onUnsupported` fallback now receives real picker results on iOS; the fallback
+  is preserved for non-picker actions.
+
+### Added — cmp-app-intents iOS Spotlight indexing
+- **Searchable intents are now indexed into iOS Spotlight + Siri Suggestions.** The Swift
+  bridge `CmpAppIntentBridge.bootstrap(callbackResolver:)` reads the manifest written by
+  Kotlin's `AppIntents.register(config)`, pushes every `searchable: true` entry into
+  `CSSearchableIndex.defaultSearchableIndex()` with title + contentDescription, and
+  exposes `handleContinue(_:)` to route Spotlight taps back into the Kotlin DSL via
+  `CmpAppIntentsCallback.shared.handler`.
+- Activity prefix `com.mobilebytelabs.kmptoolkit.appintents.<id>` is the user-activity
+  type to declare in your Info.plist `NSUserActivityTypes` array.
+- Real Kotlin↔Swift callback wiring replaces the placeholder `print()` from v0.1.
+  The bridge uses KVC + `NSSelectorFromString("invoke::")` so it stays framework-alias
+  agnostic (works whether your Kotlin/Native framework is published as `kmptoolkit`,
+  `shared`, or any custom name).
+- macOS 10.13+ also benefits — `CoreSpotlight` is available there.
+- Plan: `plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/09-per-module-samples.md` §Resolved deferred items.
+- Migration: existing consumers should replace `CmpAppIntentBridge.shared.loadManifest()`
+  at app launch with `CmpAppIntentBridge.shared.bootstrap { CmpAppIntentsCallback.shared }`.
+
+### Changed — build configuration
+- **`org.gradle.jvmargs` bumped to `-Xmx4096M`** (was 2048M). The lower heap was OOMing
+  wasmJs compilation when 3+ new sample modules with Compose were added to the workspace.
+  Local developer machines and CI both benefit; no downstream changes required.
+- **`compose.desktop.packaging.checkJdkVendor=false`** added to `gradle.properties` to
+  permit `createDistributable` runs on Homebrew JDKs (per JetBrains/compose-multiplatform#3107).
+  CI release pipelines are unaffected — they use vendor-pinned Corretto/Temurin where
+  the flag is a no-op.
+
 ### Added — cmp-pdf-generator (new module)
 - **New module `cmp-pdf-generator`** — cross-platform PDF generation library.
   Coordinates: `io.github.mobilebytelabs:cmp-pdf-generator` (ships at the shared

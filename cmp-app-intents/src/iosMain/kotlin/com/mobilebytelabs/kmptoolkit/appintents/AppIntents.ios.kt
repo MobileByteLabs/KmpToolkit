@@ -26,21 +26,36 @@ import platform.Foundation.create
 import platform.Foundation.writeToURL
 
 /**
- * iOS `AppIntents` — writes manifest JSON to app documents dir for the
- * `CmpAppIntentBridge.swift` consumer file (per ADR-04 ship-source-file pattern) to read
- * at app launch + register `@AppIntent` Swift stubs.
+ * iOS `AppIntents` — split-responsibility design that keeps Kotlin's surface minimal
+ * and pushes platform-rich behaviour (Spotlight indexing, App Shortcuts surfacing)
+ * into the Swift bridge.
  *
- * The Swift bridge calls back into Kotlin via [AppIntentsCallback.shared] —
- * an `@ObjCName`-exposed singleton holding a `handler: (id, params) -> AppIntentResult`.
+ * **Kotlin responsibilities** (this file):
+ * 1. Write `cmp-app-intents-manifest.json` to the app documents directory — single
+ *    source of truth that the Swift bridge reads at app launch (ADR-04 ship-source-file
+ *    pattern).
+ * 2. Expose `AppIntentsCallback.shared` via `@ObjCName` so Swift's per-intent
+ *    `@AppIntent.perform()` body can invoke the Kotlin DSL's `perform` lambda
+ *    through `AppIntentsRuntime.invoke(id, params)`.
+ *
+ * **Swift-bridge responsibilities** (`swift/CmpAppIntentBridge.swift`):
+ * - `loadManifest()` — decode the JSON manifest emitted here.
+ * - `indexSpotlightItems()` — for every `searchable: true` manifest entry, build a
+ *   `CSSearchableItem` (with full title + contentDescription via the native API,
+ *   which K/N cannot surface because those attributes live in NSObject category
+ *   extensions) and push into `CSSearchableIndex.defaultSearchableIndex()`.
+ * - `AppShortcutsProvider` — consumer copies the bundled stub template per intent.
+ *
+ * This separation matches `cmp-deep-link` (Kotlin emits state, Swift consumes via
+ * `@ObjCName` singleton + SwiftUI `.onOpenURL`) and is the canonical pattern for
+ * Apple APIs whose surface K/N cannot reach (category-only properties, SwiftUI
+ * modifiers, AppIntents macros).
  */
 @ExperimentalAppIntentsApi
 public actual object AppIntents {
     public actual fun register(config: AppIntentsConfig) {
         AppIntentsRuntime.register(config)
         AppIntentsCallback.shared.handler = { id, params ->
-            // Synchronous bridge from Swift; we run the suspend block via runBlocking on the
-            // current thread (typically main). For richer async semantics, the Swift bridge
-            // can be evolved to await completion via callback — v0.2 polish.
             kotlinx.coroutines.runBlocking {
                 AppIntentsRuntime.invoke(id, params) ?: AppIntentResult.Failed("Unknown intent: $id")
             }
@@ -68,13 +83,14 @@ public actual object AppIntents {
             }
             data.writeToURL(manifestUrl, atomically = true)
         } catch (_: Throwable) {
-            // Best-effort. Consumer setup docs cover troubleshooting.
+            // Best-effort; manifest persistence is non-fatal for in-process invocation.
         }
     }
 }
 
 /**
  * Singleton callback holder exposed to Swift via Kotlin/Native ObjC interop.
+ *
  * Swift's `CmpAppIntentBridge.swift` calls `handler(id, params)` to route an iOS
  * App Intent invocation into the Kotlin DSL's `perform` lambda.
  *

@@ -23,9 +23,14 @@ plugins {
 // Targets: Android (Intent.ACTION_SEND), iOS (UIActivityViewController),
 // macOS (NSSharingServicePicker), JVM Desktop (clipboard + FileDialog),
 // JS / wasmJs (navigator.share + clipboard fallback).
-// (tvOS / watchOS / Linux / mingw / wasmWasi excluded — Tier-3 exclusion policy
-// locked by Phase 0 spike TS9. iOS 14+ / macOS 11+ baseline per TS1.)
+// tvOS (v0.2): UIPasteboard clipboard-share fallback (no UIActivityViewController).
+// watchOS (v0.2): UIActivityViewController N/A — onUnsupported fallback.
+// Linux (v0.2): xdg-open URL share + xclip text/URL clipboard.
+// mingw (v0.2): ShellExecuteW URL share + Win32 clipboard.
+// (wasmWasi excluded — no DOM, no clipboard, no UI gesture surface.)
+// iOS 14+ / macOS 11+ baseline per TS1.
 // Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/
+// v0.2 sub-plan: 10-platform-parity-v0-2.md
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
@@ -55,6 +60,23 @@ kotlin {
 
     macosX64()
     macosArm64()
+
+    // tvOS (v0.2 — UIPasteboard fallback for text/url; image/file onUnsupported)
+    tvosX64()
+    tvosArm64()
+    tvosSimulatorArm64()
+
+    // watchOS (v0.2 — onUnsupported; no share-sheet surface)
+    watchosX64()
+    watchosArm32()
+    watchosArm64()
+    watchosSimulatorArm64()
+    watchosDeviceArm64()
+
+    // Linux + mingw (v0.2 — xdg-open / ShellExecuteW for URL share; clipboard fallback for text)
+    linuxX64()
+    linuxArm64()
+    mingwX64()
 
     js {
         browser {

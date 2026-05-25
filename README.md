@@ -386,10 +386,33 @@ Supports: Android, iOS, macOS, JVM, JS, WasmJS.
 ./gradlew :samples:sample-network-monitor:composeApp:run
 
 # Android
-./gradlew :samples:sample-clipboard:composeApp:installDebug
-./gradlew :samples:sample-in-app-update:composeApp:installDebug
-./gradlew :samples:sample-network-monitor:composeApp:installDebug
+./gradlew :samples:sample-clipboard:androidApp:installDebug
+./gradlew :samples:sample-in-app-update:androidApp:installDebug
+./gradlew :samples:sample-network-monitor:androidApp:installDebug
 ```
+
+### Inter-app communication suite (Android + iOS + JVM + JS + wasmJs)
+
+Three per-module samples shipped under [PLAN-09 per-module-samples](../../plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/09-per-module-samples.md) — first per-module samples in the toolkit with full 5-platform coverage (Android + iOS + JVM Desktop + JS + wasmJs).
+
+| Sample | Module exercised | Run on Desktop | Run on Android | Run in browser |
+|---|---|---|---|---|
+| [`sample-cmp-share`](samples/sample-cmp-share/README.md) | `cmp-share` (share text/url/image/file/multi) | `:run` | `androidApp:installDebug` | `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` |
+| [`sample-cmp-intent-launcher`](samples/sample-cmp-intent-launcher/README.md) | `cmp-intent-launcher` (Android Intent + ActivityResult) | `:run` | `androidApp:installDebug` | `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` |
+| [`sample-cmp-app-intents`](samples/sample-cmp-app-intents/README.md) | `cmp-app-intents` (declarative SiriKit / on-device registry) | `:run` | `androidApp:installDebug` | `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` |
+
+A combined showcase wiring all three modules at once is also available at [`sample-inter-app-comms`](samples/sample-inter-app-comms/) (Android + iOS only).
+
+#### Web target — Skiko WASM cache warm-up
+
+The first `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` invocation on a fresh
+checkout downloads ~50MB of Skiko WASM assets via the Kotlin/JS gradle plugin. Subsequent
+runs hit the warm cache and complete in seconds.
+
+If you see `OutOfMemoryError: GC overhead limit exceeded` during a `wasmJs` compile,
+confirm `org.gradle.jvmargs=-Xmx4096M` (or higher) is set in `gradle.properties` — the
+repo default is now 4G. If you also see `kotlinStoreYarnLock` contention after adding
+a new web-targeting module, run `./gradlew kotlinUpgradeYarnLock --no-daemon` once.
 
 ## Contributing
 

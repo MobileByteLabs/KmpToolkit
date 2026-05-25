@@ -27,8 +27,12 @@ plugins {
 // Android: on-device runtime registry + BroadcastReceiver (v0.1 scope — Google
 // Assistant integration deferred to v0.2 cmp-app-intents-assistant per TS7).
 // JVM Desktop + JS / wasmJs: no-op + invokeForTesting helper.
-// (tvOS / watchOS / Linux / mingw / wasmWasi excluded per Tier-3 policy.)
+// watchOS: full impl via existing manifest + Swift bridge (watchOS 10+ Shortcuts).
+// tvOS: Siri Suggestions via manifest; CoreSpotlight indexing skipped (iOS/macOS only).
+// Linux / mingw: registry-only + manifest JSON to XDG / APPDATA dir.
+// (wasmWasi excluded — no UI surface available.)
 // iOS 16+ enforced via runtime if #available checks in shipped Swift code (TS1).
+// v0.2 sub-plan: plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/10-platform-parity-v0-2.md
 // Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/
 // ============================================================================
 group = "io.github.mobilebytelabs"
@@ -59,6 +63,23 @@ kotlin {
 
     macosX64()
     macosArm64()
+
+    // tvOS targets (v0.2 — manifest only; Spotlight indexing skipped, no CoreSpotlight on tvOS)
+    tvosX64()
+    tvosArm64()
+    tvosSimulatorArm64()
+
+    // watchOS targets (v0.2 — FULL App Intents impl; watchOS 10+ Shortcuts via Swift bridge)
+    watchosX64()
+    watchosArm32()
+    watchosArm64()
+    watchosSimulatorArm64()
+    watchosDeviceArm64()
+
+    // Linux + mingw (v0.2 — registry-only; manifest JSON to XDG / APPDATA dir)
+    linuxX64()
+    linuxArm64()
+    mingwX64()
 
     js {
         browser {
