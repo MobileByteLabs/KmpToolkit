@@ -66,8 +66,8 @@ kotlin {
             implementation(project(":cmp-share"))
             implementation(project(":cmp-intent-launcher"))
             implementation(project(":cmp-app-intents"))
-            implementation(project(":cmp-product-tickets"))   // JVM target added 2026-05-25
-            implementation(project(":cmp-remote-config"))     // JVM target added 2026-05-25
+            implementation(project(":cmp-product-tickets"))
+            implementation(project(":cmp-remote-config"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
