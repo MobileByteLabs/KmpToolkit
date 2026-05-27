@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.w3c.dom.events.Event
@@ -44,27 +45,33 @@ internal class JsNetworkMonitor(private val config: NetworkMonitorConfig) : Netw
     override val networkChanges: SharedFlow<NetworkChangeEvent> = _networkChanges.asSharedFlow()
 
     private val onlineHandler: (Event) -> Unit = {
-        val info = detectNetworkInfo()
-        when (config.validationStrategy) {
-            ValidationStrategy.NativeOnly -> updateOnline(info)
+        // Defense-in-depth (M-001): even if removeEventListener races, a fired
+        // handler after close() must not touch the cancelled scope.
+        if (!closed && scope.isActive) {
+            val info = detectNetworkInfo()
+            when (config.validationStrategy) {
+                ValidationStrategy.NativeOnly -> updateOnline(info)
 
-            ValidationStrategy.HttpOnly -> {
-                scope.launch {
-                    if (httpHeadCheck()) updateOnline(info) else updateOffline()
+                ValidationStrategy.HttpOnly -> {
+                    scope.launch {
+                        if (httpHeadCheck()) updateOnline(info) else updateOffline()
+                    }
                 }
-            }
 
-            ValidationStrategy.NativeThenHttp -> {
-                updateOnline(info) // optimistic native update
-                scope.launch {
-                    if (!httpHeadCheck()) updateOffline()
+                ValidationStrategy.NativeThenHttp -> {
+                    updateOnline(info) // optimistic native update
+                    scope.launch {
+                        if (!httpHeadCheck()) updateOffline()
+                    }
                 }
             }
         }
     }
 
     private val offlineHandler: (Event) -> Unit = {
-        updateOffline()
+        if (!closed && scope.isActive) {
+            updateOffline()
+        }
     }
 
     init {
@@ -126,9 +133,12 @@ internal class JsNetworkMonitor(private val config: NetworkMonitorConfig) : Netw
     override fun close() {
         if (!closed) {
             closed = true
-            scope.cancel()
+            // M-001 fix: remove listeners BEFORE cancelling the scope. The reverse
+            // order created a window where an event firing between scope.cancel()
+            // and removeEventListener would invoke a handler against a cancelled scope.
             window.removeEventListener("online", onlineHandler)
             window.removeEventListener("offline", offlineHandler)
+            scope.cancel()
         }
     }
 

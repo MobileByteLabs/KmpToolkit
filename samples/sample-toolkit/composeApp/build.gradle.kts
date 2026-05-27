@@ -35,10 +35,14 @@ kotlin {
     }
 
     jvm()
-    js { browser() }
-
-    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-    wasmJs { browser() }
+    // js { browser() } and wasmJs { browser() } targets are intentionally NOT declared:
+    // the catalog consumes :cmp-toast, :cmp-clipboard, :cmp-in-app-update and other
+    // toolkit modules that do not yet expose JS / WasmJs targets. The root
+    // :kotlinNpmInstall task fails to resolve those project dependencies for the JS
+    // variant, blocking jsNodeTest / wasmJsNodeTest for sibling modules. Restore
+    // these targets only after every :cmp-* module declared in commonMain.dependencies
+    // below exposes a matching JS / WasmJs target. Tracked: PLAN
+    // cmp-network-monitor-hardening / Phase 04 T0.
 
     sourceSets {
         commonMain.dependencies {
@@ -52,7 +56,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.navigation.compose)
 
-            // Toolkit libraries available on every catalog platform (Android + iOS + Desktop + JS + wasmJs)
+            // Toolkit libraries available on every catalog platform (Android + iOS + Desktop)
             implementation(project(":cmp-clipboard"))
             implementation(project(":cmp-toast"))
             implementation(project(":cmp-in-app-update"))

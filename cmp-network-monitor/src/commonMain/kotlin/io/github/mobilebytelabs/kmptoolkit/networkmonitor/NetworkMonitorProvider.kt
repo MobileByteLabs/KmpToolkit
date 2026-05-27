@@ -15,7 +15,11 @@ import kotlinx.coroutines.launch
  * Singleton lifecycle manager for [NetworkMonitor].
  *
  * Provides a process-wide singleton pattern for apps that need a single shared monitor.
- * Thread-safe via [Mutex] for KMP compatibility across all platforms.
+ *
+ * NOT thread-safe. `install()` and `reset()` should be serialized by the caller — in
+ * practice this happens naturally because both are app-startup / app-shutdown operations
+ * invoked from a single thread. Reads via `get()` / `getOrNull()` / `version` / `currentStatus`
+ * are safe to call from any thread once installation has settled.
  *
  * Usage:
  * ```kotlin
@@ -34,6 +38,19 @@ object NetworkMonitorProvider {
     private var instance: NetworkMonitor? = null
     private var installCount: Int = 0
 
+    private val _version = MutableStateFlow(0)
+
+    /**
+     * Generation counter for the currently installed singleton.
+     *
+     * Increments exactly once on each successful [install] that creates a NEW instance
+     * (redundant installs that return the cached instance do NOT bump it), and once on
+     * every [reset]. Designed for reactive consumers — primarily Compose's
+     * `rememberNetworkMonitor` — that need to drop a stale [NetworkMonitor] reference
+     * when the singleton is reset or re-installed.
+     */
+    val version: StateFlow<Int> = _version.asStateFlow()
+
     /**
      * Install a [NetworkMonitor] singleton with the given [config].
      * If already installed, returns the existing instance (ignores new config).
@@ -49,6 +66,7 @@ object NetworkMonitorProvider {
         val monitor = createNetworkMonitor(config)
         instance = monitor
         installCount = 1
+        _version.value += 1
         return monitor
     }
 
@@ -74,11 +92,16 @@ object NetworkMonitorProvider {
 
     /**
      * Close and remove the current singleton. Next [install] will create a fresh instance.
+     *
+     * No-op when no singleton is installed (in particular: [version] does NOT advance on
+     * a no-op reset, so reactive Compose consumers won't see a spurious recomposition).
      */
     fun reset() {
+        if (instance == null) return
         instance?.close()
         instance = null
         installCount = 0
+        _version.value += 1
     }
 }
 
