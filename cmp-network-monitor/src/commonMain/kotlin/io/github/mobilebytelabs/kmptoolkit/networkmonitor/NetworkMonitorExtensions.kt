@@ -151,10 +151,7 @@ fun NetworkMonitor.debouncedNetworkStatus(timeoutMs: Long = 300L): Flow<NetworkS
  * @param timeoutMs Debounce window in milliseconds. Default 300ms handles most handoffs.
  */
 @OptIn(FlowPreview::class)
-fun NetworkMonitor.isOnlineDebouncedState(
-    scope: CoroutineScope,
-    timeoutMs: Long = 300L,
-): StateFlow<Boolean> = isOnline
+fun NetworkMonitor.isOnlineDebouncedState(scope: CoroutineScope, timeoutMs: Long = 300L): StateFlow<Boolean> = isOnline
     .debounce(timeoutMs)
     .distinctUntilChanged()
     .stateIn(scope, SharingStarted.Eagerly, isOnline.value)

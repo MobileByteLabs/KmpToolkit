@@ -57,10 +57,7 @@ private val LocalNetworkMonitorOrNull: ProvidableCompositionLocal<NetworkMonitor
  * ```
  */
 @Composable
-fun ProvideNetworkMonitor(
-    monitor: NetworkMonitor,
-    content: @Composable () -> Unit,
-) {
+fun ProvideNetworkMonitor(monitor: NetworkMonitor, content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalNetworkMonitor provides monitor,
         LocalNetworkMonitorOrNull provides monitor,
@@ -83,9 +80,7 @@ fun ProvideNetworkMonitor(
  * full advantage of this helper.
  */
 @Composable
-fun rememberOrLocalNetworkMonitor(
-    config: NetworkMonitorConfig = NetworkMonitorConfig(),
-): NetworkMonitor {
+fun rememberOrLocalNetworkMonitor(config: NetworkMonitorConfig = NetworkMonitorConfig()): NetworkMonitor {
     val fromLocal = LocalNetworkMonitorOrNull.current
     return fromLocal ?: rememberNetworkMonitor(config)
 }
