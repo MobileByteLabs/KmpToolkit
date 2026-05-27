@@ -28,6 +28,10 @@ import io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitor
  * @param backgroundColor Banner background color.
  * @param contentColor Banner text color.
  * @param modifier Modifier for the outer container.
+ * @param debounceMs Optional debounce window in milliseconds applied to the
+ * underlying connectivity state. When `<= 0L` (default), behaviour is identical
+ * to the pre-debounce version. When `> 0L`, transient flicker (e.g. WiFi <->
+ * Cellular handoff) is suppressed, preventing the banner from flashing in/out.
  */
 @Composable
 fun ConnectivityBanner(
@@ -36,8 +40,9 @@ fun ConnectivityBanner(
     message: String = "No internet connection",
     backgroundColor: Color = MaterialTheme.colorScheme.error,
     contentColor: Color = MaterialTheme.colorScheme.onError,
+    debounceMs: Long = 0L,
 ) {
-    val isOnline by monitor.collectIsOnlineAsState()
+    val isOnline by monitor.collectIsOnlineAsState(debounceMs)
 
     AnimatedVisibility(
         visible = !isOnline,

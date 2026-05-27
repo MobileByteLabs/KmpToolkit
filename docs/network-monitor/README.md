@@ -2,6 +2,23 @@
 
 Reactive network connectivity monitoring for **Kotlin Multiplatform** — StateFlow-based, all 21 KMP targets.
 
+## What's new in v3.3.0
+
+Source-compatible release — no required code changes. Highlights:
+
+- **HIGH-severity teardown / cold-start race fixes** (M-001 JS/WasmJs `close()` ordering; M-002 Android `NetworkCallback` events dropped during cold-start seed).
+- **Debounced StateFlow helpers** — `isOnlineDebouncedState(scope, timeoutMs)` and `networkStatusDebouncedState(scope, timeoutMs)` for late-subscriber UIs (cold-Flow `isOnlineDebounced` / `debouncedNetworkStatus` retained, unchanged).
+- **Compose `debounceMs` opt-in** — `ConnectivityBanner`, `NetworkAwareContent`, `collectIsOnlineAsState`, `collectNetworkStatusAsState`, `collectNetworkQualityAsState` now accept `debounceMs: Long = 0L` (default `0L` preserves behaviour).
+- **Reset-aware `rememberNetworkMonitor()`** — keys `remember` on `NetworkMonitorProvider.version` so composables drop stale closed references after `NetworkMonitorProvider.reset()`.
+- **`ProvideNetworkMonitor` + `rememberOrLocalNetworkMonitor`** — subtree-scoped monitor injection with singleton fallback.
+- **First per-platform test sourcesets** — `jvmTest`, `appleTest`, `jsTest`, `wasmJsTest` (M-006); plus four `commonTest` files covering M-002/M-003/M-004 patterns.
+
+See:
+- [`cmp-network-monitor/MIGRATION.md`](../../cmp-network-monitor/MIGRATION.md) — 3.2.x → 3.3.0 migration guide (before/after snippets, opt-in checklist)
+- [`cmp-network-monitor/CHANGELOG.md`](../../cmp-network-monitor/CHANGELOG.md) — full per-change notes
+- [`cmp-network-monitor-compose/README.md`](../../cmp-network-monitor-compose/README.md) — Compose-specific API surface
+- [`cmp-network-monitor/TESTING.md`](../../cmp-network-monitor/TESTING.md) — per-platform test matrix
+
 ## Documentation
 
 | Document | Description |

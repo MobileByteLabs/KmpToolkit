@@ -7,12 +7,15 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -133,6 +136,46 @@ fun NetworkMonitor.isOnlineDebounced(timeoutMs: Long = 300L): Flow<Boolean> =
 @OptIn(FlowPreview::class)
 fun NetworkMonitor.debouncedNetworkStatus(timeoutMs: Long = 300L): Flow<NetworkStatus> =
     networkStatus.debounce(timeoutMs).distinctUntilChanged()
+
+/**
+ * Debounced online state as a hot [StateFlow] seeded with the current [isOnline] value.
+ *
+ * Unlike [isOnlineDebounced] (cold [Flow]), late subscribers immediately observe the
+ * currently-settled value via [StateFlow.value]. The flow filters out rapid WiFi <->
+ * Cellular handoff flicker via [debounce] + [distinctUntilChanged].
+ *
+ * The hot flow is shared eagerly while [scope] is active; callers MUST cancel [scope]
+ * (or pass a lifecycle-bound scope such as `viewModelScope`) to avoid leaks.
+ *
+ * @param scope Coroutine scope that hosts the shared upstream collector.
+ * @param timeoutMs Debounce window in milliseconds. Default 300ms handles most handoffs.
+ */
+@OptIn(FlowPreview::class)
+fun NetworkMonitor.isOnlineDebouncedState(
+    scope: CoroutineScope,
+    timeoutMs: Long = 300L,
+): StateFlow<Boolean> = isOnline
+    .debounce(timeoutMs)
+    .distinctUntilChanged()
+    .stateIn(scope, SharingStarted.Eagerly, isOnline.value)
+
+/**
+ * Debounced network status as a hot [StateFlow] seeded with the current [networkStatus] value.
+ *
+ * Same semantics as [isOnlineDebouncedState] but exposes the full [NetworkStatus]
+ * (Available / Unavailable / CaptivePortal).
+ *
+ * @param scope Coroutine scope that hosts the shared upstream collector.
+ * @param timeoutMs Debounce window in milliseconds.
+ */
+@OptIn(FlowPreview::class)
+fun NetworkMonitor.networkStatusDebouncedState(
+    scope: CoroutineScope,
+    timeoutMs: Long = 300L,
+): StateFlow<NetworkStatus> = networkStatus
+    .debounce(timeoutMs)
+    .distinctUntilChanged()
+    .stateIn(scope, SharingStarted.Eagerly, networkStatus.value)
 
 /**
  * Flow of [NetworkQuality] derived from current network status.

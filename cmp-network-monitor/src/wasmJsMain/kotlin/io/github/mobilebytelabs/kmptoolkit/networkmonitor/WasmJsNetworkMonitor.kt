@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.js.ExperimentalWasmJsInterop
 
@@ -79,12 +80,18 @@ internal class WasmJsNetworkMonitor(private val config: NetworkMonitorConfig) : 
     override val networkChanges: SharedFlow<NetworkChangeEvent> = _networkChanges.asSharedFlow()
 
     private val onlineJsHandler: JsEventHandler = jsRegisterOnline {
-        val info = NetworkInfo(type = NetworkType.Unknown)
-        handleNativeOnline(info)
+        // Defense-in-depth (M-001 mirror): post-close events must not touch
+        // the cancelled scope. closed-flag + scope.isActive double-check.
+        if (!closed && scope.isActive) {
+            val info = NetworkInfo(type = NetworkType.Unknown)
+            handleNativeOnline(info)
+        }
     }
 
     private val offlineJsHandler: JsEventHandler = jsRegisterOffline {
-        updateOffline()
+        if (!closed && scope.isActive) {
+            updateOffline()
+        }
     }
 
     init {
@@ -153,9 +160,12 @@ internal class WasmJsNetworkMonitor(private val config: NetworkMonitorConfig) : 
     override fun close() {
         if (!closed) {
             closed = true
-            scope.cancel()
+            // M-001 mirror: unregister listeners FIRST, then cancel the scope.
+            // The reverse order created a window where a JS event firing between
+            // scope.cancel() and unregister would invoke a handler on the cancelled scope.
             jsUnregisterOnline(onlineJsHandler)
             jsUnregisterOffline(offlineJsHandler)
+            scope.cancel()
         }
     }
 

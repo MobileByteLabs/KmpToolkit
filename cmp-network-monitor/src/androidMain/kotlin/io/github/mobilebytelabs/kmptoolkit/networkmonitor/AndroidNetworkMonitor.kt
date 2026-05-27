@@ -8,6 +8,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.HttpURLConnection
 import java.net.URI
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Android [NetworkMonitor] backed by [ConnectivityManager] and [NetworkRequest].
@@ -55,40 +55,52 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
     override val networkChanges: SharedFlow<NetworkChangeEvent> = _networkChanges.asSharedFlow()
 
     private var closed = false
-    private val callbackReady = AtomicBoolean(false)
+
+    /**
+     * Gate for callback events fired before [seedInitialState] completes.
+     * Callbacks queue on this deferred via [scope].launch so the first event
+     * after construction is not silently dropped (M-002 fix).
+     */
+    private val seedComplete = CompletableDeferred<Unit>()
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            if (!callbackReady.get()) return
-            val caps = connectivityManager.getNetworkCapabilities(network)
-            val info = caps.toNetworkInfo()
-            handleNativeOnline(info)
+            scope.launch {
+                seedComplete.await()
+                val caps = connectivityManager.getNetworkCapabilities(network)
+                val info = caps.toNetworkInfo()
+                handleNativeOnline(info)
+            }
         }
 
         override fun onLost(network: Network) {
-            if (!callbackReady.get()) return
-            // Check if there's still an active network
-            val activeNetwork = connectivityManager.activeNetwork
-            if (activeNetwork == null) {
-                updateOffline()
+            scope.launch {
+                seedComplete.await()
+                // Check if there's still an active network
+                val activeNetwork = connectivityManager.activeNetwork
+                if (activeNetwork == null) {
+                    updateOffline()
+                }
             }
         }
 
         override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-            if (!callbackReady.get()) return
-            val newInfo = networkCapabilities.toNetworkInfo()
-            // Under memory pressure, skip bandwidth-only updates (T102-T103)
-            if (suppressBandwidthUpdates) {
-                val current = _networkStatus.value
-                if (current is NetworkStatus.Available &&
-                    current.info.type == newInfo.type &&
-                    current.info.isMetered == newInfo.isMetered
-                ) {
-                    // Only bandwidth changed — suppress to reduce allocations
-                    return
+            scope.launch {
+                seedComplete.await()
+                val newInfo = networkCapabilities.toNetworkInfo()
+                // Under memory pressure, skip bandwidth-only updates (T102-T103)
+                if (suppressBandwidthUpdates) {
+                    val current = _networkStatus.value
+                    if (current is NetworkStatus.Available &&
+                        current.info.type == newInfo.type &&
+                        current.info.isMetered == newInfo.isMetered
+                    ) {
+                        // Only bandwidth changed — suppress to reduce allocations
+                        return@launch
+                    }
                 }
+                handleNativeOnline(newInfo)
             }
-            handleNativeOnline(newInfo)
         }
     }
 
@@ -107,7 +119,8 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
     }
 
     init {
-        // Register callback first, then seed — callback ignores events until seed completes
+        // Register callback first, then seed — callback events fired before seed
+        // completes are queued on `seedComplete` (M-002) rather than dropped.
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
@@ -119,9 +132,15 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         // Register memory pressure callback (T102)
         context.applicationContext.registerComponentCallbacks(memoryCallback)
 
-        // Seed initial state, then allow callback events
-        seedInitialState()
-        callbackReady.set(true)
+        // Seed initial state, then release the gate so queued callback events drain.
+        // try/finally guarantees the gate releases even if seedInitialState() throws —
+        // otherwise queued callbacks would leak as permanently-suspended continuations
+        // until close() cancels the scope (M-002 defensive).
+        try {
+            seedInitialState()
+        } finally {
+            seedComplete.complete(Unit)
+        }
     }
 
     private fun seedInitialState() {
