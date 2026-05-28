@@ -214,11 +214,14 @@ tasks.register("generateShortcutsXml") {
             logger.lifecycle("cmpAppIntents.generateShortcuts = false — skipping")
             return@doLast
         }
-        val outDir = ext.shortcutsOutputDir
-            ?: error("cmpAppIntents.shortcutsOutputDir is required when generateShortcuts = true")
+        val outDir =
+            ext.shortcutsOutputDir
+                ?: error("cmpAppIntents.shortcutsOutputDir is required when generateShortcuts = true")
         val manifestJson = file("${layout.buildDirectory.get()}/cmp-app-intents/manifest.json")
         if (!manifestJson.exists()) {
-            logger.warn("cmp-app-intents manifest.json not found at ${manifestJson.absolutePath} — consumer must emit it via bootstrap task")
+            logger.warn(
+                "cmp-app-intents manifest.json not found at ${manifestJson.absolutePath} — consumer must emit it via bootstrap task",
+            )
             return@doLast
         }
         outDir.mkdirs()
@@ -227,22 +230,23 @@ tasks.register("generateShortcutsXml") {
         // ManifestEntry data class). For v0.4 codegen, the XML structure is:
         //   <shortcuts><capability android:name="actions.intent.{BII}">...</capability>...</shortcuts>
         // where BII defaults to OPEN_APP_FEATURE per AssistantBii.resolveBii() unless overridden.
-        val xml = buildString {
-            appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
-            appendLine("""<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">""")
-            // Naive JSON parse — for production, consumer-emitted JSON is structured per ManifestEntry
-            val json = manifestJson.readText()
-            // Extract intent ids via regex (the JSON shape has `"id":"..."` per entry)
-            Regex(""""id"\s*:\s*"([^"]+)"""").findAll(json).forEach { match ->
-                val intentId = match.groupValues[1]
-                appendLine("""  <capability android:name="actions.intent.OPEN_APP_FEATURE">""")
-                appendLine("""    <intent android:action="android.intent.action.VIEW">""")
-                appendLine("""      <url-template android:value="cmp-app-intent://$intentId" />""")
-                appendLine("""    </intent>""")
-                appendLine("""  </capability>""")
+        val xml =
+            buildString {
+                appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
+                appendLine("""<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">""")
+                // Naive JSON parse — for production, consumer-emitted JSON is structured per ManifestEntry
+                val json = manifestJson.readText()
+                // Extract intent ids via regex (the JSON shape has `"id":"..."` per entry)
+                Regex(""""id"\s*:\s*"([^"]+)"""").findAll(json).forEach { match ->
+                    val intentId = match.groupValues[1]
+                    appendLine("""  <capability android:name="actions.intent.OPEN_APP_FEATURE">""")
+                    appendLine("""    <intent android:action="android.intent.action.VIEW">""")
+                    appendLine("""      <url-template android:value="cmp-app-intent://$intentId" />""")
+                    appendLine("""    </intent>""")
+                    appendLine("""  </capability>""")
+                }
+                appendLine("""</shortcuts>""")
             }
-            appendLine("""</shortcuts>""")
-        }
         outDir.resolve("cmp_app_intents_shortcuts.xml").writeText(xml)
         logger.lifecycle("Wrote ${outDir.resolve("cmp_app_intents_shortcuts.xml")}")
     }
@@ -257,16 +261,23 @@ tasks.register("generateSwiftIntents") {
             logger.lifecycle("cmpAppIntents.generateSwift = false — skipping")
             return@doLast
         }
-        val outDir = ext.swiftOutputDir
-            ?: error("cmpAppIntents.swiftOutputDir is required when generateSwift = true")
+        val outDir =
+            ext.swiftOutputDir
+                ?: error("cmpAppIntents.swiftOutputDir is required when generateSwift = true")
         val manifestJson = file("${layout.buildDirectory.get()}/cmp-app-intents/manifest.json")
         if (!manifestJson.exists()) {
-            logger.warn("cmp-app-intents manifest.json not found at ${manifestJson.absolutePath} — consumer must emit it via bootstrap task")
+            logger.warn(
+                "cmp-app-intents manifest.json not found at ${manifestJson.absolutePath} — consumer must emit it via bootstrap task",
+            )
             return@doLast
         }
         outDir.mkdirs()
         val templatePath = file("swift/templates/AppIntentStub.swift.template")
-        val template = if (templatePath.exists()) templatePath.readText() else """
+        val template =
+            if (templatePath.exists()) {
+                templatePath.readText()
+            } else {
+                """
             |import AppIntents
             |
             |@available(iOS 16.0, macOS 13.0, watchOS 10.0, *)
@@ -280,17 +291,20 @@ tasks.register("generateSwiftIntents") {
             |        return .result()
             |    }
             |}
-        """.trimMargin()
+                """.trimMargin()
+            }
         val json = manifestJson.readText()
         var emitted = 0
         Regex(""""id"\s*:\s*"([^"]+)"\s*,\s*"title"\s*:\s*"([^"]+)"\s*,\s*"description"\s*:\s*"([^"]+)"""")
-            .findAll(json).forEach { match ->
+            .findAll(json)
+            .forEach { match ->
                 val (intentId, title, description) = match.destructured
                 val capitalized = intentId.replaceFirstChar { it.uppercase() }
-                val body = template
-                    .replace("\${INTENT_ID}", capitalized)
-                    .replace("\${INTENT_TITLE}", title)
-                    .replace("\${INTENT_DESCRIPTION}", description)
+                val body =
+                    template
+                        .replace("\${INTENT_ID}", capitalized)
+                        .replace("\${INTENT_TITLE}", title)
+                        .replace("\${INTENT_DESCRIPTION}", description)
                 outDir.resolve("${capitalized}AppIntent.swift").writeText(body)
                 emitted++
             }

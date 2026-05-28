@@ -43,8 +43,14 @@ kotlin {
 
     androidLibrary {
         namespace = "com.mobilebytelabs.kmptoolkit.appintents.compose"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        compileSdk =
+            libs.versions.android.compileSdk
+                .get()
+                .toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
         withJava()
         withHostTestBuilder {}.configure {}
         withDeviceTestBuilder { sourceSetTreeName = "test" }
@@ -94,7 +100,7 @@ mavenPublishing {
         name = "CMP App Intents Compose"
         description =
             "Compose Multiplatform extensions for cmp-app-intents — AppIntentsRegistration() Composable + " +
-                "AppIntentsRegistry() Material 3 dev/debug UI. Add alongside cmp-app-intents to use Composable APIs."
+            "AppIntentsRegistry() Material 3 dev/debug UI. Add alongside cmp-app-intents to use Composable APIs."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
         licenses {
@@ -105,7 +111,11 @@ mavenPublishing {
             }
         }
         developers {
-            developer { id = "MobileByteLabs"; name = "MobileByteLabs"; url = "https://github.com/MobileByteLabs" }
+            developer {
+                id = "MobileByteLabs"
+                name = "MobileByteLabs"
+                url = "https://github.com/MobileByteLabs"
+            }
         }
         scm {
             url = "https://github.com/MobileByteLabs/KmpToolkit/"

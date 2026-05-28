@@ -63,9 +63,11 @@ public actual object SystemIntents {
             }
             when {
                 dismissed -> IntentResult.Cancelled
+
                 selected != null -> IntentResult.Ok(
                     IntentData(uri = selected!!.toURI().toString(), mimeType = mimeType),
                 )
+
                 else -> IntentResult.Failed(IntentError.Unknown("JFileChooser returned APPROVE with null file"))
             }
         }

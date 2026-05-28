@@ -45,7 +45,7 @@ public actual object AppIntents {
             val moduleDir = "$xdgDataHome/cmp-app-intents"
             val appsDir = "$xdgDataHome/applications"
             // mkdir -p (ignore errors — directory may already exist)
-            mkdir(moduleDir, 0b111111111u)  // 0777 octal
+            mkdir(moduleDir, 0b111111111u) // 0777 octal
             mkdir(appsDir, 0b111111111u)
             // Write manifest JSON
             writeText("$moduleDir/manifest.json", config.serializeManifest())
@@ -65,7 +65,7 @@ public actual object AppIntents {
         appendLine("Name=${intent.title}")
         appendLine("Comment=${intent.description}")
         appendLine("Exec=xdg-open cmp-app-intent://${intent.id}")
-        appendLine("NoDisplay=true")  // hide from main menu; surface only via action handler
+        appendLine("NoDisplay=true") // hide from main menu; surface only via action handler
         appendLine("Actions=${intent.id}")
         appendLine()
         appendLine("[Desktop Action ${intent.id}]")

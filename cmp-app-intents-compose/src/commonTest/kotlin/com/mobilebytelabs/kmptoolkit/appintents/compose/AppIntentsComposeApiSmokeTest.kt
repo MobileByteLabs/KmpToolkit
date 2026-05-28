@@ -13,11 +13,11 @@ import com.mobilebytelabs.kmptoolkit.appintents.AppIntentResult
 import com.mobilebytelabs.kmptoolkit.appintents.AppIntents
 import com.mobilebytelabs.kmptoolkit.appintents.ExperimentalAppIntentsApi
 import com.mobilebytelabs.kmptoolkit.appintents.appIntents
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.runBlocking
 
 /**
  * Smoke tests for cmp-app-intents-compose v1.0 public API.

@@ -46,8 +46,14 @@ kotlin {
 
     androidLibrary {
         namespace = "com.mobilebytelabs.kmptoolkit.share.compose"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        compileSdk =
+            libs.versions.android.compileSdk
+                .get()
+                .toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
         withJava()
         withHostTestBuilder {}.configure {}
         withDeviceTestBuilder { sourceSetTreeName = "test" }
@@ -97,7 +103,7 @@ mavenPublishing {
         name = "CMP Share Compose"
         description =
             "Compose Multiplatform extensions for cmp-share — rememberShareLauncher(), ShareSheet(), " +
-                "ShareButton(). Material 3 styled opinionated UX. Add alongside cmp-share to use Composable APIs."
+            "ShareButton(). Material 3 styled opinionated UX. Add alongside cmp-share to use Composable APIs."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
         licenses {
@@ -108,7 +114,11 @@ mavenPublishing {
             }
         }
         developers {
-            developer { id = "MobileByteLabs"; name = "MobileByteLabs"; url = "https://github.com/MobileByteLabs" }
+            developer {
+                id = "MobileByteLabs"
+                name = "MobileByteLabs"
+                url = "https://github.com/MobileByteLabs"
+            }
         }
         scm {
             url = "https://github.com/MobileByteLabs/KmpToolkit/"

@@ -60,8 +60,7 @@ public fun AppIntentsRegistration(config: AppIntentsConfig) {
  */
 @Composable
 @ExperimentalAppIntentsApi
-public fun rememberRegisteredAppIntents(config: AppIntentsConfig): AppIntentsConfig =
-    remember(config) {
-        AppIntents.register(config)
-        config
-    }
+public fun rememberRegisteredAppIntents(config: AppIntentsConfig): AppIntentsConfig = remember(config) {
+    AppIntents.register(config)
+    config
+}

@@ -35,7 +35,9 @@ import platform.objc.objc_getClass
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
         is SharePayload.Text -> dispatchToBridgeOrFail("setPasteboardString")
+
         is SharePayload.Url -> dispatchToBridgeOrFail("setPasteboardURL")
+
         // ADR-09 #1: tvOS lacks share-sheet for binary payloads (no UIActivityViewController on tvOS)
         is SharePayload.Image, is SharePayload.File, is SharePayload.Multi ->
             ShareResult.Failed(ShareError.UnsupportedPlatform)

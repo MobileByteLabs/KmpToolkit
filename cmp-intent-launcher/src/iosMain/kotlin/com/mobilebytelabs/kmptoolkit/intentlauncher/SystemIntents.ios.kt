@@ -137,9 +137,9 @@ private object SystemIntentsDelegatePin {
     }
 }
 
-private class SystemIntentsDocumentPickerDelegate(
-    private val onComplete: (exportedURL: String?) -> Unit,
-) : NSObject(), UIDocumentPickerDelegateProtocol {
+private class SystemIntentsDocumentPickerDelegate(private val onComplete: (exportedURL: String?) -> Unit) :
+    NSObject(),
+    UIDocumentPickerDelegateProtocol {
 
     override fun documentPicker(controller: UIDocumentPickerViewController, didPickDocumentAtURL: NSURL) {
         SystemIntentsDelegatePin.release(this)

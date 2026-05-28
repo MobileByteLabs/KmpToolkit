@@ -38,8 +38,11 @@ public actual object SystemIntents {
                             } else {
                                 IntentResult.Ok(IntentData(uri = "file-system-access:$value", mimeType = mimeType))
                             }
+
                             "cancelled" -> IntentResult.Cancelled
+
                             "unsupported" -> IntentResult.Failed(IntentError.UnsupportedPlatform)
+
                             else -> IntentResult.Failed(IntentError.Unknown(value ?: "showSaveFilePicker error"))
                         },
                     )

@@ -64,8 +64,16 @@ public actual object Share {
     private fun tryNativeDispatch(payload: SharePayload, options: ShareOptions): ShareResult? {
         val target = when (payload) {
             is SharePayload.Url -> payload.href
-            is SharePayload.File -> if (payload.uri.startsWith("file://") || payload.uri.contains("://")) payload.uri else "file://${payload.uri}"
-            else -> return null  // Text/Image/Multi fall through to clipboard
+
+            is SharePayload.File -> if (payload.uri.startsWith("file://") ||
+                payload.uri.contains("://")
+            ) {
+                payload.uri
+            } else {
+                "file://${payload.uri}"
+            }
+
+            else -> return null // Text/Image/Multi fall through to clipboard
         }
         val osName = System.getProperty("os.name").lowercase()
         val cmd: List<String> = when {
@@ -77,9 +85,9 @@ public actual object Share {
         return try {
             val process = ProcessBuilder(cmd).redirectErrorStream(true).start()
             val exit = process.waitFor()
-            if (exit == 0) ShareResult.Completed else null  // null = fall through to clipboard
+            if (exit == 0) ShareResult.Completed else null // null = fall through to clipboard
         } catch (e: Throwable) {
-            null  // native dispatcher unavailable; fall through
+            null // native dispatcher unavailable; fall through
         }
     }
 

@@ -46,7 +46,8 @@ public actual object SystemIntents {
     }
 
     public actual suspend fun createDocument(suggestedName: String, mimeType: String): IntentResult {
-        val cmd = "zenity --file-selection --save --confirm-overwrite --filename='${suggestedName.shellEscape()}' 2>/dev/null"
+        val cmd = "zenity --file-selection --save --confirm-overwrite " +
+            "--filename='${suggestedName.shellEscape()}' 2>/dev/null"
         val pipe = popen(cmd, "r") ?: return IntentResult.Failed(IntentError.Unknown("popen failed"))
         val picked = memScoped {
             val buf = allocArray<kotlinx.cinterop.ByteVar>(4096)

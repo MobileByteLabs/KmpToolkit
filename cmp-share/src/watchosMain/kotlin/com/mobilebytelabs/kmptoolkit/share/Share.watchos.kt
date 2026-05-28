@@ -69,7 +69,11 @@ public actual object Share {
         val session = WCSession.defaultSession
         if (!session.isReachable()) return ShareResult.Failed(ShareError.NoHandler)
         val docsDir = NSFileManager.defaultManager.URLForDirectory(
-            NSDocumentDirectory, NSUserDomainMask, null, true, null,
+            NSDocumentDirectory,
+            NSUserDomainMask,
+            null,
+            true,
+            null,
         ) ?: return ShareResult.Failed(ShareError.NoHandler)
         val ext = filename?.substringAfterLast('.', "bin") ?: mimeType.substringAfter('/', "bin")
         val tmpUrl = docsDir.URLByAppendingPathComponent("cmp-share-${NSUUID().UUIDString}.$ext")
@@ -91,7 +95,12 @@ public actual object Share {
         val session = WCSession.defaultSession
         if (!session.isReachable()) return ShareResult.Failed(ShareError.NoHandler)
         val nsUrl = NSURL.URLWithString(uri) ?: NSURL.fileURLWithPath(uri)
-        val metadata: Map<Any?, Any?> = mapOf("kind" to "share", "type" to "file", "mimeType" to mimeType, "filename" to (filename ?: ""))
+        val metadata: Map<Any?, Any?> = mapOf(
+            "kind" to "share",
+            "type" to "file",
+            "mimeType" to mimeType,
+            "filename" to (filename ?: ""),
+        )
         session.transferFile(nsUrl, metadata = metadata)
         return ShareResult.Completed
     }
@@ -100,10 +109,20 @@ public actual object Share {
     private fun multiShare(multi: SharePayload.Multi): ShareResult {
         for (item in multi.items) {
             val r: ShareResult = when (item) {
-                is SharePayload.Text -> handoffUserInfo(mapOf("kind" to "share", "type" to "text", "value" to item.content))
+                is SharePayload.Text -> handoffUserInfo(
+                    mapOf(
+                        "kind" to "share",
+                        "type" to "text",
+                        "value" to item.content,
+                    ),
+                )
+
                 is SharePayload.Url -> handoffUserInfo(mapOf("kind" to "share", "type" to "url", "value" to item.href))
+
                 is SharePayload.Image -> handoffFileFromBytes(item.bytes, item.mimeType, item.filename)
+
                 is SharePayload.File -> handoffFileFromUri(item.uri, item.mimeType, item.filename)
+
                 is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
             }
             if (r is ShareResult.Completed) return r
