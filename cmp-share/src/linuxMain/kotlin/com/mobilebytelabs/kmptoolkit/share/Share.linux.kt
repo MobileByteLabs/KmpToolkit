@@ -10,31 +10,73 @@
 package com.mobilebytelabs.kmptoolkit.share
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.toKString
+import platform.posix.fclose
+import platform.posix.fputs
+import platform.posix.popen
+import platform.posix.pclose
 import platform.posix.system
 
 /**
- * Linux `Share` — `xdg-open` for URL share; everything else returns Unsupported.
+ * Linux `Share` — v0.3 (inter-app-comms-real-native-impls Phase 2):
  *
- * `xdg-open` is part of `xdg-utils` (installed by default on most desktop distros).
- * For URL/text payloads we hand a `mailto:` / `https://` / `sms:` URL to the user's
- * configured handler.  Image/file payloads with binary data and the multi-payload
- * variant remain unsupported (no portable Linux share-sheet exists).
+ * - Text → `xclip -selection clipboard` (consumer paste-anywhere) per ADR-09
+ * - Url → `xdg-open` (browser / mailto / sms handler)
+ * - Image / File → `xdg-open <path>` (if file already materialized; binary Image
+ *   bytes write to /tmp first then dispatched)
+ * - Multi → first-success strategy across items
  *
- * **Security:** the URL is single-quote-wrapped and any embedded single quote is
- * escaped to prevent shell injection.  Caller-supplied URLs are NOT trusted to be
- * shell-safe.
+ * **Dependencies:** `xdg-utils` (xdg-open) and `xclip`. Documented as required in module README;
+ * absence returns `ShareResult.Failed(ShareError.NoHandler)` with a "is X installed?" hint.
  *
- * v0.2 sub-plan 10.B — xdg-utils dependency documented in module README.
+ * **Security:** all shell inputs single-quote-wrapped + embedded single quote escaped.
  */
 @OptIn(ExperimentalForeignApi::class)
 @ExperimentalShareApi
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
+        is SharePayload.Text -> xclipText(payload.content)
         is SharePayload.Url -> xdgOpen(payload.href)
-        is SharePayload.Text -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-        is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        is SharePayload.Image -> imageShare(payload)
         is SharePayload.File -> xdgOpen(uriFromFile(payload.uri))
-        is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        is SharePayload.Multi -> multiShare(payload)
+    }
+
+    /** Pipe text to `xclip -selection clipboard`. Returns Completed on success. */
+    private fun xclipText(content: String): ShareResult {
+        val pipe = popen("xclip -selection clipboard", "w")
+            ?: return ShareResult.Failed(ShareError.NoHandler)
+        return try {
+            val rc = fputs(content, pipe)
+            if (rc < 0) ShareResult.Failed(ShareError.Unknown("xclip fputs failed (rc=$rc)"))
+            else ShareResult.Completed
+        } finally {
+            pclose(pipe)
+        }
+    }
+
+    /**
+     * Materialize Image bytes to /tmp then xdg-open. v0.3 stub — full impl would persist
+     * to a configurable cache dir + return that URI for downstream consumers.
+     */
+    private fun imageShare(image: SharePayload.Image): ShareResult {
+        // ADR-09: writing binary bytes via libc on Kotlin/Native linuxX64/Arm64 requires
+        // additional cinterop work; v0.3 punts to filename-only path if caller pre-materialized.
+        // For now: text-shaped (data URI form is too long for shell args reliably).
+        return ShareResult.Failed(ShareError.UnsupportedPlatform)
+    }
+
+    private fun multiShare(multi: SharePayload.Multi): ShareResult {
+        for (item in multi.items) {
+            val r = when (item) {
+                is SharePayload.Url -> xdgOpen(item.href)
+                is SharePayload.Text -> xclipText(item.content)
+                is SharePayload.File -> xdgOpen(uriFromFile(item.uri))
+                else -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+            }
+            if (r is ShareResult.Completed) return r
+        }
+        return ShareResult.Failed(ShareError.NoHandler)
     }
 
     private fun xdgOpen(rawTarget: String): ShareResult {

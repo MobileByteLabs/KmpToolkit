@@ -9,7 +9,6 @@
  */
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
-import androidx.compose.runtime.Composable
 import kotlin.reflect.KClass
 
 /**
@@ -121,32 +120,19 @@ public class IntentBuilder internal constructor() {
 }
 
 // -----------------------------------------------------------------------------
-// Public entry point — Composable-scoped per ADR-03
+// Public entry point — Compose-free core (v0.3 split per inter-app-comms-real-native-impls Phase 1)
 // -----------------------------------------------------------------------------
+//
+// BREAKING (v0.3): `@Composable rememberIntentLauncher()` moved to a separate
+// `cmp-intent-launcher-compose` adapter module so this core module can reach all 19
+// KMP targets (Compose Compiler plugin is module-level and required compose.runtime
+// on every target classpath, blocking tvOS/watchOS/Linux/mingw).
+//
+// Consumers using Compose: add `io.github.mobilebytelabs:cmp-intent-launcher-compose`
+// alongside this dep. Other consumers: call `ComponentActivity.intentLauncher()`
+// directly (Android) or construct `IntentLauncher` via the platform actual ctor.
 
 @ExperimentalIntentLauncherApi
 public expect class IntentLauncher {
     public suspend fun launch(block: IntentBuilder.() -> Unit): IntentResult
 }
-
-/**
- * Compose-scoped intent launcher.
- *
- * Per-platform binding (see SPEC + ADR-03):
- * - **Android**: wraps `androidx.activity.compose.rememberLauncherForActivityResult`;
- *   lifecycle-bound to the enclosing Composable.
- * - **iOS**: resolves the top `UIViewController` via key-window traversal; holds a
- *   `UIDocumentPickerDelegate` / `PHPickerViewControllerDelegate` for picker contracts.
- * - **macOS**: anchors to key window's contentView; uses `NSOpenPanel` for picker contracts.
- * - **JVM Desktop**: uses AWT `FileDialog` (LOAD mode) for picker contracts; runs on
- *   `Dispatchers.IO` internally because AWT FileDialog blocks the calling thread.
- * - **JS / wasmJs**: creates and remembers a hidden `<input type=file>` DOM element.
- *   **HARD CONSTRAINT (Phase 0 TS6)**: `.launch()` MUST be called from within a user-gesture
- *   handler call stack (Composable `onClick`, key press, touch). Otherwise the browser blocks
- *   `<input>.click()` and the launcher returns `IntentResult.Failed(IntentError.UserGestureMissing)`.
- *
- * Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/05-cmp-intent-launcher.md
- */
-@ExperimentalIntentLauncherApi
-@Composable
-public expect fun rememberIntentLauncher(): IntentLauncher

@@ -76,7 +76,14 @@ kotlin {
     // Linux + mingw (v0.2 — xdg-open / ShellExecuteW for URL share; clipboard fallback for text)
     linuxX64()
     linuxArm64()
-    mingwX64()
+    mingwX64 {
+        // SPIKE Phase 0 S0.A — revert if verdict FAIL
+        compilations.getByName("main").cinterops {
+            create("win32clipboard") {
+                defFile = file("src/mingwMain/cinterop/win32-clipboard.def")
+            }
+        }
+    }
 
     js {
         browser {

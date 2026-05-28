@@ -9,8 +9,6 @@
  */
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.FileDialog
@@ -26,7 +24,7 @@ import java.awt.Frame
  * AWT FileDialog blocks the calling thread; we `withContext(Dispatchers.IO)`.
  */
 @ExperimentalIntentLauncherApi
-public actual class IntentLauncher internal constructor() {
+public actual class IntentLauncher public constructor() {
     public actual suspend fun launch(block: IntentBuilder.() -> Unit): IntentResult {
         val builder = IntentBuilder().apply(block)
         val contract = builder.resultContract
@@ -56,6 +54,3 @@ public actual class IntentLauncher internal constructor() {
     }
 }
 
-@ExperimentalIntentLauncherApi
-@Composable
-public actual fun rememberIntentLauncher(): IntentLauncher = remember { IntentLauncher() }

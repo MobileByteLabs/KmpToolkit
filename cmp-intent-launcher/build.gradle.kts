@@ -13,8 +13,6 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
     alias(libs.plugins.vanniktech.mavenPublish)
 }
 
@@ -32,22 +30,13 @@ plugins {
 // Android escape hatch ComponentActivity.intentLauncher() extension.
 // (Top-level suspend `intent { }` DROPPED per TS3 — unworkable across platforms.)
 //
-// v0.2 (sub-plan 10) constraint discovery: the Compose Compiler Gradle plugin
-// (alias(libs.plugins.composeCompiler)) is MODULE-LEVEL, not source-set-level —
-// it requires compose.runtime on the classpath for EVERY target. Adding
-// tvOS/watchOS/Linux/mingw targets fails with "The Compose Compiler requires the
-// Compose Runtime to be on the class path". The composeMain intermediate
-// source-set workaround does NOT solve this because the compiler plugin runs
-// before source-set resolution.
-//
-// Honest resolution: cmp-intent-launcher stays at 9 targets in v0.2.
-// To reach 19-target parity in a future v0.3, options are:
-//   (a) Split into cmp-intent-launcher-core (non-Compose, all 19 targets) +
-//       cmp-intent-launcher (current API, depends on -core, 9 targets)
-//   (b) Drop @Composable rememberIntentLauncher() — breaking API change
-// Documented in sub-plan 10 + module README.
-// (tvOS / watchOS / Linux / mingw / wasmWasi excluded per Compose-MP constraint.)
-// Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/
+// v0.3 RESOLUTION (inter-app-comms-real-native-impls Phase 1): the Compose-Compiler
+// module-level constraint is resolved by SPLITTING this module:
+//   - cmp-intent-launcher (this file) — Compose-free core, 19 KMP targets
+//   - cmp-intent-launcher-compose — holds @Composable rememberIntentLauncher(), 9 targets
+// BREAKING: consumers of `rememberIntentLauncher()` must add `cmp-intent-launcher-compose`
+// dep alongside this one. Migration: just add the dep — same import path, same API.
+// Plan: plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-real-native-impls/
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
@@ -78,6 +67,23 @@ kotlin {
     macosX64()
     macosArm64()
 
+    // v0.3 expansion — Compose-free core reaches 19 KMP targets.
+    // Stub actuals (UnsupportedPlatform) for the new ones; real impls land in
+    // Phase 3 of inter-app-comms-real-native-impls.
+    tvosX64()
+    tvosArm64()
+    tvosSimulatorArm64()
+
+    watchosX64()
+    watchosArm32()
+    watchosArm64()
+    watchosSimulatorArm64()
+    watchosDeviceArm64()
+
+    linuxX64()
+    linuxArm64()
+    mingwX64()
+
     js {
         browser {
             testTask {
@@ -99,7 +105,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
-            implementation(compose.runtime)
         }
 
         commonTest.dependencies {
@@ -109,7 +114,8 @@ kotlin {
 
         androidMain.dependencies {
             implementation(libs.androidx.core)
-            implementation(libs.androidx.activity.compose)
+            // androidx.activity provides ComponentActivity + registerForActivityResult (non-Compose path used by intentLauncher() extension)
+            implementation("androidx.activity:activity:1.10.1")
             implementation(libs.kotlinx.coroutines.android)
         }
 

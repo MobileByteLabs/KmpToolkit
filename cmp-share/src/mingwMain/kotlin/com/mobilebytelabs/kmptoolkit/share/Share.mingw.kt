@@ -33,10 +33,47 @@ import platform.posix.system
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
         is SharePayload.Url -> winStart(payload.href)
-        is SharePayload.Text -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        // v0.3 (Phase 2 T5): `clip.exe` is a Windows built-in (since XP) — copies stdin to clipboard
+        is SharePayload.Text -> winClipText(payload.content)
+        // ADR-09: Win32 clipboard CF_DIB binary write requires GlobalAlloc/SetClipboardData cinterop
+        // marshalling; spike .def at cinterop/win32-clipboard.def proves binding generation; the
+        // Kotlin/Native pointer round-trip for binary data deferred to v0.4.
         is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
         is SharePayload.File -> winStart(payload.uri)
-        is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        is SharePayload.Multi -> multiShare(payload)
+    }
+
+    /** Pipe text into the Windows built-in `clip.exe` utility. Returns Completed on rc==0. */
+    private fun winClipText(content: String): ShareResult {
+        // Escape embedded characters that `cmd /c echo ... | clip` would interpret.
+        // Use `echo|set/p=` trick to avoid trailing newline.
+        val escaped = content
+            .replace("^", "^^")
+            .replace("&", "^&")
+            .replace("|", "^|")
+            .replace("<", "^<")
+            .replace(">", "^>")
+            .replace("\"", "\\\"")
+        val cmd = "cmd /c \"echo|set/p=\"$escaped\" | clip\""
+        val rc = system(cmd)
+        return if (rc == 0) {
+            ShareResult.Completed
+        } else {
+            ShareResult.Failed(ShareError.Unknown("clip.exe exit=$rc"))
+        }
+    }
+
+    private fun multiShare(multi: SharePayload.Multi): ShareResult {
+        for (item in multi.items) {
+            val r = when (item) {
+                is SharePayload.Url -> winStart(item.href)
+                is SharePayload.Text -> winClipText(item.content)
+                is SharePayload.File -> winStart(item.uri)
+                else -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+            }
+            if (r is ShareResult.Completed) return r
+        }
+        return ShareResult.Failed(ShareError.NoHandler)
     }
 
     private fun winStart(rawTarget: String): ShareResult {

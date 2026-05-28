@@ -58,6 +58,14 @@ public sealed class AppIntentResult {
 public class AppIntentBuilder internal constructor(internal val id: String) {
     public var title: String = ""
     public var description: String = ""
+    /**
+     * Optional Android 2026 Built-in Intent identifier (e.g., `actions.intent.OPEN_APP_FEATURE`,
+     * `actions.intent.GET_THING`). When null, `AssistantBii.resolveBii(def)` picks a default
+     * based on intent shape (`GET_THING` for searchable, `OPEN_APP_FEATURE` otherwise).
+     * Consumed by Phase 4 generateShortcutsXml Gradle task to emit `res/xml/cmp_app_intents_shortcuts.xml`
+     * capability blocks per [SPIKE_FINDINGS_V0_3.md] S0.B PIVOT verdict.
+     */
+    public var bii: String? = null
     internal val parameters: MutableList<ParamDef> = mutableListOf()
     internal var perform: (suspend (Map<String, Any>) -> AppIntentResult)? = null
     internal var searchable: Boolean = false
@@ -88,6 +96,7 @@ public class AppIntentsBuilder internal constructor() {
                 id = id,
                 title = builder.title,
                 description = builder.description,
+                bii = builder.bii,
                 parameters = builder.parameters.toList(),
                 searchable = builder.searchable,
                 searchableCategory = builder.searchableCategory,
@@ -113,6 +122,8 @@ public class AppIntentDef internal constructor(
     public val id: String,
     public val title: String,
     public val description: String,
+    /** 2026 BII identifier (e.g., actions.intent.OPEN_APP_FEATURE); null → AssistantBii picks default. */
+    public val bii: String?,
     public val parameters: List<ParamDef>,
     public val searchable: Boolean,
     public val searchableCategory: String?,

@@ -12,12 +12,7 @@ package com.mobilebytelabs.kmptoolkit.intentlauncher
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -29,7 +24,8 @@ import kotlinx.coroutines.CompletableDeferred
  * [intentLauncher] in [IntentLauncherActivityExtensions.kt].
  */
 @ExperimentalIntentLauncherApi
-public actual class IntentLauncher internal constructor(
+public actual class IntentLauncher
+public constructor(
     private val launcher: ActivityResultLauncher<Intent>,
     private val pending: () -> CompletableDeferred<IntentResult>?,
     private val setPending: (CompletableDeferred<IntentResult>?) -> Unit,
@@ -47,8 +43,9 @@ public actual class IntentLauncher internal constructor(
         }
     }
 
-    internal companion object {
-        internal fun buildIntent(builder: IntentBuilder): Intent {
+    public companion object {
+        // public for cross-module use by cmp-intent-launcher-compose adapter (v0.3 Phase 1 split)
+        public fun buildIntent(builder: IntentBuilder): Intent {
             val intent = Intent()
             builder.action?.let { intent.action = it }
             builder.data?.let { intent.data = Uri.parse(it) }
@@ -60,7 +57,7 @@ public actual class IntentLauncher internal constructor(
             return intent
         }
 
-        internal fun applyExtras(intent: Intent, extras: Map<String, Any?>) {
+        public fun applyExtras(intent: Intent, extras: Map<String, Any?>) {
             for ((key, value) in extras) {
                 when (value) {
                     null -> { /* skip */ }
@@ -89,7 +86,7 @@ public actual class IntentLauncher internal constructor(
             }
         }
 
-        internal fun parseActivityResult(resultCode: Int, data: Intent?): IntentResult {
+        public fun parseActivityResult(resultCode: Int, data: Intent?): IntentResult {
             if (resultCode == Activity.RESULT_CANCELED) return IntentResult.Cancelled
             val intentData = if (data != null) {
                 IntentData(
@@ -107,22 +104,6 @@ public actual class IntentLauncher internal constructor(
     }
 }
 
-@ExperimentalIntentLauncherApi
-@Composable
-public actual fun rememberIntentLauncher(): IntentLauncher {
-    var pending: CompletableDeferred<IntentResult>? = null
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        val parsed = IntentLauncher.parseActivityResult(result.resultCode, result.data)
-        pending?.complete(parsed)
-        pending = null
-    }
-    return remember(launcher) {
-        IntentLauncher(
-            launcher = launcher,
-            pending = { pending },
-            setPending = { pending = it },
-        )
-    }
-}
+// Note: prefer `ComponentActivity.intentLauncher()` extension (existing) for non-Compose Android,
+// or add `cmp-intent-launcher-compose` dep + use `rememberIntentLauncher()` from a Composable.
+// Direct ctor invocation is supported but advanced (caller must wire ActivityResultLauncher lifecycle).
