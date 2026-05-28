@@ -38,8 +38,8 @@ class SystemIntentsContractTest {
     fun intentResult_okData_carriesUriAndMimeType() {
         val sample = IntentResult.Ok(IntentData(uri = "file:///tmp/x.pdf", mimeType = "application/pdf"))
         assertIs<IntentResult.Ok>(sample)
-        assertNotNull(sample.data)
-        assertNotNull(sample.data!!.uri)
+        val data = assertNotNull(sample.data)
+        assertNotNull(data.uri)
     }
 
     @Test

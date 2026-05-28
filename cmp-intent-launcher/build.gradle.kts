@@ -183,3 +183,12 @@ mavenPublishing {
         }
     }
 }
+
+// ============================================================================
+// Test JVM stability — force headless mode so AWT-touching tests
+// (SystemIntentsJvmTest.createDocument_headless_returnsFailedNotThrows) behave the
+// same on developer laptops (display present) as on CI macOS-arm64 runners.
+// ============================================================================
+tasks.withType<Test>().configureEach {
+    systemProperty("java.awt.headless", "true")
+}

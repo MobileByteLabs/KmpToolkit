@@ -38,8 +38,11 @@ class SystemIntentsJvmTest {
             return@runTest
         }
         val result = SystemIntents.createDocument("sample.pdf", "application/pdf")
-        assertIs<IntentResult.Failed>(result)
-        assertNotNull(result.cause)
+        // On headless JVM, the impl detects GraphicsEnvironment.isHeadless() early
+        // and returns Failed(Unknown(...)) without invoking JFileChooser. The test
+        // asserts only the contract — never throws + returns a Failed result.
+        val failed = assertIs<IntentResult.Failed>(result)
+        assertNotNull(failed.cause)
     }
 
     @Test
