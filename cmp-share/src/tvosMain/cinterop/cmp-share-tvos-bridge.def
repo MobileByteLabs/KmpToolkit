@@ -1,0 +1,45 @@
+# =============================================================================
+# cmp-share-tvos-bridge.def — Cinterop to consumer-shipped CmpShareTvosBridge.swift
+# =============================================================================
+# Phase 2 of inter-app-comms-compose-completeness (v0.4).
+# Closes ADR-09 #1 — tvOS Kotlin → Swift dispatch via language=Objective-C
+# cinterop (not dynamic objc_msgSend which v0.3 PROVED fails on K/N).
+#
+# Phase 0 S1.C PROVISIONAL PASS — uses standard K/N ObjC interop pattern
+# documented at https://kotlinlang.org/docs/native-objc-interop.html;
+# cmp-deep-link ships a similar ship-source-file pattern in production.
+#
+# Consumer wiring:
+#   1. Drop cmp-share/swift/CmpShareTvosBridge.swift into your tvOS app's
+#      Xcode target (already shipped in v0.3).
+#   2. Build — K/N resolves the @objc class at link time via the ObjC runtime.
+#   3. Call Share.text(...) / Share.url(...) from your Kotlin code; the tvOS
+#      actual dispatches to CmpShareTvosBridge.shared automatically.
+
+language = Objective-C
+package = com.mobilebytelabs.kmptoolkit.share.tvosbridge
+modules = Foundation UIKit
+
+---
+
+// The Swift class CmpShareTvosBridge declares:
+//   @objc public class CmpShareTvosBridge: NSObject
+//     @objc public static let shared = CmpShareTvosBridge()
+//     @objc public func setPasteboardString(_ value: String) -> Bool
+//     @objc public func setPasteboardURL(_ url: String) -> Bool
+//
+// K/N generates Kotlin bindings:
+//   CmpShareTvosBridge.shared() -> CmpShareTvosBridge
+//   CmpShareTvosBridge.setPasteboardString(value: NSString): Boolean
+//   CmpShareTvosBridge.setPasteboardURL(url: NSString): Boolean
+//
+// Since K/N can't pre-import a consumer-shipped Swift class at .def time
+// (the Swift class exists in the consumer's app target, not in this library),
+// this .def is intentionally minimal — the ObjC runtime resolves the class
+// at app launch when both the K/N module AND the consumer's CmpShareTvosBridge.swift
+// have been linked together.
+//
+// At Kotlin call sites, use:
+//   import platform.objc.objc_getClass
+//   val cls = objc_getClass("CmpShareTvosBridge")  // resolves at runtime
+//   ...

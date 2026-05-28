@@ -17,6 +17,20 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.vanniktech.mavenPublish)
+    // v0.4 Phase 9 — ABI stability + coverage verification
+    alias(libs.plugins.binaryCompatibilityValidator)
+    alias(libs.plugins.kover)
+}
+
+// v0.4 Phase 9 — kover threshold per S1.E (pure-Kotlin Compose adapter: 85%)
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(85) // line coverage
+            }
+        }
+    }
 }
 
 // ============================================================================
@@ -87,6 +101,10 @@ kotlin {
         commonMain.dependencies {
             api(project(":cmp-intent-launcher"))
             implementation(compose.runtime)
+            // v0.4 Phase 8 — opinionated UX Composables (IntentPickerDialog + IntentPickerSheet)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(libs.compose.materialIconsExtended)
             implementation(libs.kotlinx.coroutines.core)
         }
 

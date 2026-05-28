@@ -19,12 +19,17 @@ import platform.posix.popen
 import platform.posix.system
 
 /**
- * Linux `IntentLauncher` — v0.3 (inter-app-comms-real-native-impls Phase 3 T6):
+ * Linux `IntentLauncher` — v0.3 (inter-app-comms-real-native-impls Phase 3 T6) +
+ * v0.4 KDoc refresh per Phase 3 of inter-app-comms-compose-completeness:
  *
  * - PickImage / PickDocument / PickMultipleImages → `zenity --file-selection` subprocess
  *   (zenity is part of GNOME utilities; documented dep in module README)
  * - Arbitrary ACTION_VIEW → `xdg-open` (handles http/https/mailto/file URIs)
- * - PickContact → `UnsupportedPlatform` per ADR-09 (Linux has no canonical contact-picker)
+ * - PickContact → `UnsupportedPlatform` per **ADR-09 #7 WONTFIX (architectural)**:
+ *   Linux has no canonical OS-level contact-picker API. GNOME Evolution / KDE Contacts are
+ *   app-specific; libfolks is a library (not a UI); there is no `xdg-pick-contact` equivalent
+ *   to `xdg-open`. This is an architectural OS limitation, not deferred work — no v0.5/v1.x
+ *   plan to close it without a custom GTK/Qt contact-picker module.
  */
 @OptIn(ExperimentalForeignApi::class)
 @ExperimentalIntentLauncherApi

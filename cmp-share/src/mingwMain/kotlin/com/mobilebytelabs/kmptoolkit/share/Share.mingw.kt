@@ -7,10 +7,25 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package com.mobilebytelabs.kmptoolkit.share
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.memcpy
+import kotlinx.cinterop.usePinned
 import platform.posix.system
+import win32clipboard.CF_DIB
+import win32clipboard.CloseClipboard
+import win32clipboard.EmptyClipboard
+import win32clipboard.GMEM_MOVEABLE
+import win32clipboard.OpenClipboard
+import win32clipboard.SetClipboardData
+import win32clipboard.spike_alloc_global
+import win32clipboard.spike_lock_global
+import win32clipboard.spike_unlock_global
 
 /**
  * mingw (Windows) `Share` — `cmd /c start` for URL share; everything else Unsupported.
@@ -37,10 +52,12 @@ public actual object Share {
         // v0.3 (Phase 2 T5): `clip.exe` is a Windows built-in (since XP) — copies stdin to clipboard
         is SharePayload.Text -> winClipText(payload.content)
 
-        // ADR-09: Win32 clipboard CF_DIB binary write requires GlobalAlloc/SetClipboardData cinterop
-        // marshalling; spike .def at cinterop/win32-clipboard.def proves binding generation; the
-        // Kotlin/Native pointer round-trip for binary data deferred to v0.4.
-        is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+        // v0.4 (inter-app-comms-compose-completeness Phase 2 — closes ADR-09 #3):
+        // CF_DIB binary clipboard write via Win32 cinterop (win32-clipboard.def from v0.3 spike).
+        // Image.bytes is expected to be in DIB/BMP format minus the 14-byte BITMAPFILEHEADER.
+        // Note: caller responsibility to strip the BMP file header before passing — most image
+        // libraries (Skia, ImageIO) provide DIB-format export directly.
+        is SharePayload.Image -> winClipboardImageDib(payload.bytes)
 
         is SharePayload.File -> winStart(payload.uri)
 
@@ -78,6 +95,32 @@ public actual object Share {
             if (r is ShareResult.Completed) return r
         }
         return ShareResult.Failed(ShareError.NoHandler)
+    }
+
+    /**
+     * Write image bytes (DIB format) to Win32 clipboard as CF_DIB.
+     * Caller bytes MUST be DIB (BITMAPINFOHEADER + pixel data) — NOT a full BMP file (no file header).
+     * Returns Completed on Win32 success; NoHandler if OpenClipboard fails.
+     */
+    private fun winClipboardImageDib(bytes: ByteArray): ShareResult {
+        if (OpenClipboard(null) == 0) {
+            return ShareResult.Failed(ShareError.NoHandler)
+        }
+        return try {
+            EmptyClipboard()
+            val h = spike_alloc_global(bytes.size.convert())
+                ?: return ShareResult.Failed(ShareError.Unknown("GlobalAlloc failed"))
+            val locked = spike_lock_global(h)
+                ?: return ShareResult.Failed(ShareError.Unknown("GlobalLock failed"))
+            bytes.usePinned { pinned ->
+                memcpy(locked, pinned.addressOf(0), bytes.size.convert())
+            }
+            spike_unlock_global(h)
+            SetClipboardData(CF_DIB.convert(), h)
+            ShareResult.Completed
+        } finally {
+            CloseClipboard()
+        }
     }
 
     private fun winStart(rawTarget: String): ShareResult {

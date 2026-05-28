@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  cmp-intent-launcher AndroidManifest.
+
+  - IntentLauncherInitProvider: zero-config Application context auto-init for SystemIntents.
+  - CreateDocumentProxyActivity: invisible Activity used by SystemIntents.createDocument()
+    so a `ACTION_CREATE_DOCUMENT` SAF round-trip can run without an in-Composable
+    ActivityResultLauncher. Translucent theme so it never flashes UI.
+
+  The lifecycle-bound IntentLauncher (rememberLauncherForActivityResult) needs neither —
+  only the lifecycle-free SystemIntents.* entry points do.
+
+  Consumer apps inherit these via manifest-merger. No consumer-side declaration needed.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="com.mobilebytelabs.kmptoolkit.intentlauncher.IntentLauncherInitProvider"
+            android:authorities="${applicationId}.cmp-intent-launcher.init"
+            android:exported="false"
+            android:initOrder="100" />
+
+        <activity
+            android:name="com.mobilebytelabs.kmptoolkit.intentlauncher.CreateDocumentProxyActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="standard" />
+    </application>
+</manifest>

@@ -13,11 +13,14 @@ import platform.Foundation.NSURL
 import platform.WatchKit.WKExtension
 
 /**
- * watchOS `IntentLauncher` — v0.3 (inter-app-comms-real-native-impls Phase 3 T5):
+ * watchOS `IntentLauncher` — v0.3 + v0.4 KDoc refresh:
  *
  * - Arbitrary http/https/mailto URL → `WKExtension.sharedExtension.openSystemURL` (real impl)
- * - All picker contracts → `UnsupportedPlatform` per ADR-09 (watchOS has no PHPicker /
- *   UIDocumentPicker / CNContactPicker)
+ * - All picker contracts → **ADR-09 #6 WONTFIX (architectural)**: watchOS has no native
+ *   picker surface (no Photos.framework, no UIDocumentPicker, no CNContactPicker on watchOS).
+ *   This is an architectural OS limitation, not deferred work. Consumers who need picker UX
+ *   on watchOS must use WCSession.transferUserInfo to delegate to the paired iPhone (similar
+ *   to the cmp-share watchOS pattern), or use WKInterfacePicker for in-app selection only.
  */
 @ExperimentalIntentLauncherApi
 public actual class IntentLauncher public constructor() {

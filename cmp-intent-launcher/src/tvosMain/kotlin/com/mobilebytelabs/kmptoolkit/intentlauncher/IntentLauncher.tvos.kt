@@ -10,9 +10,14 @@
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
 /**
- * tvOS `IntentLauncher` — v0.3 Phase 1 stub. Real impl lands in Phase 3 of
- * inter-app-comms-real-native-impls (subset of ResultContracts supported on tvOS;
- * everything else exits via UnsupportedPlatform anchored to ADR-09).
+ * tvOS `IntentLauncher` — **ADR-09 #5 WONTFIX (architectural)** per v0.4 docs refresh.
+ *
+ * tvOS lacks PHPicker, UIDocumentPicker, AND CNContactPicker — Apple has not shipped these
+ * UIKit APIs to tvOS at the K/N binding layer (or at the underlying iOS framework layer for
+ * non-photo pickers). This is an architectural OS limitation, NOT deferred work. The arbitrary
+ * URL launch path (`UIApplication.openURL`) is also gated by tvOS-specific availability.
+ *
+ * No v0.5/v1.x plan to close this without Apple shipping the underlying UIKit APIs to tvOS.
  */
 @ExperimentalIntentLauncherApi
 public actual class IntentLauncher public constructor() {

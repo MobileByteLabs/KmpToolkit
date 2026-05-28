@@ -7,26 +7,68 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
+@file:OptIn(
+    kotlin.experimental.ExperimentalObjCName::class,
+    kotlinx.cinterop.ExperimentalForeignApi::class,
+    kotlinx.cinterop.BetaInteropApi::class,
+)
+
 package com.mobilebytelabs.kmptoolkit.appintents
 
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
+import platform.Foundation.NSData
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
+import platform.Foundation.NSUserDomainMask
+import platform.Foundation.create
+import platform.Foundation.writeToURL
+
 /**
- * watchOS `AppIntents` — FULL impl via existing manifest + Swift bridge.
+ * watchOS `AppIntents` — v0.4 (inter-app-comms-compose-completeness Phase 4 — closes ADR-09 #11):
  *
- * watchOS 10+ supports App Intents natively (Shortcuts on Apple Watch). The same
- * `CmpAppIntentBridge.swift` works — manifest JSON written, Swift consumes it at
- * launch, `AppShortcutsProvider` registration works as on iOS.
+ * Manifest write to NSDocumentDirectory + AppIntentsCallback Swift bridge handoff — same pattern
+ * as iOS. watchOS 10+ supports App Intents (Shortcuts on Apple Watch); the same
+ * `CmpAppIntentBridge.swift` consumes the manifest at launch.
  *
- * `CoreSpotlight.framework` is NOT available on watchOS; the Swift bridge skips
- * indexing via `#if canImport(CoreSpotlight)` guards.
- *
- * Real implementation (Phase 10.C) — for v0.2 scaffolding this is registry-only.
+ * **CoreSpotlight is NOT available on watchOS** — the Swift bridge handles this via
+ * `#if canImport(CoreSpotlight)` guards (already shipped at v0.3); registration succeeds but
+ * Spotlight indexing silently no-ops on this platform.
  */
 @ExperimentalAppIntentsApi
 public actual object AppIntents {
     public actual fun register(config: AppIntentsConfig) {
         AppIntentsRuntime.register(config)
+        AppIntentsCallback.shared.handler = { id, params ->
+            kotlinx.coroutines.runBlocking {
+                AppIntentsRuntime.invoke(id, params) ?: AppIntentResult.Failed("Unknown intent: $id")
+            }
+        }
+        writeManifest(config.serializeManifest())
     }
 
     public actual suspend fun invokeForTesting(id: String, params: Map<String, Any>): AppIntentResult? =
         AppIntentsRuntime.invoke(id, params)
+
+    private fun writeManifest(json: String) {
+        try {
+            val fm = NSFileManager.defaultManager
+            val docsUrl: NSURL = fm.URLForDirectory(
+                directory = NSDocumentDirectory,
+                inDomain = NSUserDomainMask,
+                appropriateForURL = null,
+                create = true,
+                error = null,
+            ) ?: return
+            val manifestUrl = docsUrl.URLByAppendingPathComponent("cmp-app-intents-manifest.json") ?: return
+            val bytes = json.encodeToByteArray()
+            val data: NSData = bytes.usePinned { pinned ->
+                NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
+            }
+            data.writeToURL(manifestUrl, atomically = true)
+        } catch (_: Throwable) {
+            // Best-effort — swallow file-system errors at register() time
+        }
+    }
 }

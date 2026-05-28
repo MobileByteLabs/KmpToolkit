@@ -14,6 +14,20 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
+    // v0.4 Phase 9 — ABI stability + coverage verification
+    alias(libs.plugins.binaryCompatibilityValidator)
+    alias(libs.plugins.kover)
+}
+
+// v0.4 Phase 9 — kover threshold per S1.E (cinterop bridge module: 80%)
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(80) // line coverage
+            }
+        }
+    }
 }
 
 // ============================================================================
@@ -82,7 +96,14 @@ kotlin {
 
     linuxX64()
     linuxArm64()
-    mingwX64()
+    mingwX64 {
+        // v0.4 Phase 3 — closes ADR-09 #8: GetOpenFileNameW Win32 cinterop for picker contracts
+        compilations.getByName("main").cinterops {
+            create("win32pickers") {
+                defFile = file("src/mingwMain/cinterop/win32-pickers.def")
+            }
+        }
+    }
 
     js {
         browser {
@@ -115,7 +136,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.core)
             // androidx.activity provides ComponentActivity + registerForActivityResult (non-Compose path used by intentLauncher() extension)
-            implementation("androidx.activity:activity:1.10.1")
+            implementation(libs.androidx.activity)
             implementation(libs.kotlinx.coroutines.android)
         }
 

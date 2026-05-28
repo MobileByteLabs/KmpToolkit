@@ -14,6 +14,20 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
+    // v0.4 Phase 9 — ABI stability + coverage verification
+    alias(libs.plugins.binaryCompatibilityValidator)
+    alias(libs.plugins.kover)
+}
+
+// v0.4 Phase 9 — kover threshold per S1.E (cinterop-heavy module: 75%)
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(75) // line coverage
+            }
+        }
+    }
 }
 
 // ============================================================================

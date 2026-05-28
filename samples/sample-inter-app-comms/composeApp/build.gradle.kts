@@ -50,6 +50,10 @@ kotlin {
             implementation(project(":cmp-share"))
             implementation(project(":cmp-intent-launcher"))
             implementation(project(":cmp-app-intents"))
+            // v0.4 Phase 10 — add compose adapter modules for Compose UI demos
+            implementation(project(":cmp-share-compose"))
+            implementation(project(":cmp-intent-launcher-compose"))
+            implementation(project(":cmp-app-intents-compose"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
