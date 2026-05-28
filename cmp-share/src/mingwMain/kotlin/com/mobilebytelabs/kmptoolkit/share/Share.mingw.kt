@@ -33,13 +33,17 @@ import platform.posix.system
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
         is SharePayload.Url -> winStart(payload.href)
+
         // v0.3 (Phase 2 T5): `clip.exe` is a Windows built-in (since XP) — copies stdin to clipboard
         is SharePayload.Text -> winClipText(payload.content)
+
         // ADR-09: Win32 clipboard CF_DIB binary write requires GlobalAlloc/SetClipboardData cinterop
         // marshalling; spike .def at cinterop/win32-clipboard.def proves binding generation; the
         // Kotlin/Native pointer round-trip for binary data deferred to v0.4.
         is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+
         is SharePayload.File -> winStart(payload.uri)
+
         is SharePayload.Multi -> multiShare(payload)
     }
 

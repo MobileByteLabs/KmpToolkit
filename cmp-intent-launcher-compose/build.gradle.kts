@@ -111,8 +111,8 @@ mavenPublishing {
         name = "CMP Intent Launcher Compose"
         description =
             "Compose Multiplatform extensions for cmp-intent-launcher — @Composable rememberIntentLauncher() " +
-                "with Android rememberLauncherForActivityResult bridge. Add alongside cmp-intent-launcher to keep " +
-                "Composable usage; core module now reaches 19 KMP targets without this dep."
+            "with Android rememberLauncherForActivityResult bridge. Add alongside cmp-intent-launcher to keep " +
+            "Composable usage; core module now reaches 19 KMP targets without this dep."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

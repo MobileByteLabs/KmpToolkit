@@ -58,6 +58,7 @@ public sealed class AppIntentResult {
 public class AppIntentBuilder internal constructor(internal val id: String) {
     public var title: String = ""
     public var description: String = ""
+
     /**
      * Optional Android 2026 Built-in Intent identifier (e.g., `actions.intent.OPEN_APP_FEATURE`,
      * `actions.intent.GET_THING`). When null, `AssistantBii.resolveBii(def)` picks a default

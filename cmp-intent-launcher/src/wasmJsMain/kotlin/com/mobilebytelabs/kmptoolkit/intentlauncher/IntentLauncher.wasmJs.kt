@@ -39,38 +39,37 @@ public actual class IntentLauncher public constructor() {
                 multiple = contract == ResultContracts.PickMultipleImages,
                 mimeHint = builder.type,
             )
+
             // ADR-09: wasmJs has no canonical contact picker
             ResultContracts.PickContact -> IntentResult.Failed(IntentError.UnsupportedPlatform)
+
             else -> builder.onUnsupportedHandler?.invoke()
                 ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
         }
     }
 
-    private suspend fun openFileInput(
-        accept: String,
-        multiple: Boolean,
-        mimeHint: String?,
-    ): IntentResult = suspendCancellableCoroutine { cont ->
-        try {
-            pickFileViaInput(accept, multiple) { firstUri: JsString? ->
-                if (!cont.isActive) return@pickFileViaInput
-                val uri = firstUri?.toString()
-                if (uri.isNullOrBlank()) {
-                    cont.resume(IntentResult.Cancelled)
+    private suspend fun openFileInput(accept: String, multiple: Boolean, mimeHint: String?): IntentResult =
+        suspendCancellableCoroutine { cont ->
+            try {
+                pickFileViaInput(accept, multiple) { firstUri: JsString? ->
+                    if (!cont.isActive) return@pickFileViaInput
+                    val uri = firstUri?.toString()
+                    if (uri.isNullOrBlank()) {
+                        cont.resume(IntentResult.Cancelled)
+                    } else {
+                        cont.resume(IntentResult.Ok(IntentData(uri = uri, mimeType = mimeHint)))
+                    }
+                }
+            } catch (t: Throwable) {
+                // NotAllowedError = user-gesture violation
+                val msg = t.message ?: "wasmJs picker error"
+                if (msg.contains("NotAllowed", ignoreCase = true)) {
+                    cont.resume(IntentResult.Failed(IntentError.UserGestureMissing))
                 } else {
-                    cont.resume(IntentResult.Ok(IntentData(uri = uri, mimeType = mimeHint)))
+                    cont.resume(IntentResult.Failed(IntentError.Unknown(msg)))
                 }
             }
-        } catch (t: Throwable) {
-            // NotAllowedError = user-gesture violation
-            val msg = t.message ?: "wasmJs picker error"
-            if (msg.contains("NotAllowed", ignoreCase = true)) {
-                cont.resume(IntentResult.Failed(IntentError.UserGestureMissing))
-            } else {
-                cont.resume(IntentResult.Failed(IntentError.Unknown(msg)))
-            }
         }
-    }
 }
 
 /**
@@ -94,8 +93,4 @@ public actual class IntentLauncher public constructor() {
     }
     """,
 )
-private external fun pickFileViaInput(
-    accept: String,
-    multiple: Boolean,
-    onResult: (JsString?) -> Unit,
-)
+private external fun pickFileViaInput(accept: String, multiple: Boolean, onResult: (JsString?) -> Unit)

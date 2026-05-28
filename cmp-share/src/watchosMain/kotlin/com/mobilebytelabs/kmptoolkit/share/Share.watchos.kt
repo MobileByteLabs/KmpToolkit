@@ -28,7 +28,9 @@ import platform.WatchConnectivity.WCSession
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
         is SharePayload.Text -> handoffToIPhone(mapOf("kind" to "share", "type" to "text", "value" to payload.content))
+
         is SharePayload.Url -> handoffToIPhone(mapOf("kind" to "share", "type" to "url", "value" to payload.href))
+
         // ADR-09: WCSession dict-payload only; binary transfer is companion-app territory
         is SharePayload.Image, is SharePayload.File, is SharePayload.Multi ->
             ShareResult.Failed(ShareError.UnsupportedPlatform)

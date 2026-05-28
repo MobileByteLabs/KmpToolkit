@@ -53,4 +53,3 @@ public actual class IntentLauncher public constructor() {
         }
     }
 }
-

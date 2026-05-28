@@ -13,8 +13,8 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.toKString
 import platform.posix.fclose
 import platform.posix.fputs
-import platform.posix.popen
 import platform.posix.pclose
+import platform.posix.popen
 import platform.posix.system
 
 /**
@@ -48,8 +48,11 @@ public actual object Share {
             ?: return ShareResult.Failed(ShareError.NoHandler)
         return try {
             val rc = fputs(content, pipe)
-            if (rc < 0) ShareResult.Failed(ShareError.Unknown("xclip fputs failed (rc=$rc)"))
-            else ShareResult.Completed
+            if (rc < 0) {
+                ShareResult.Failed(ShareError.Unknown("xclip fputs failed (rc=$rc)"))
+            } else {
+                ShareResult.Completed
+            }
         } finally {
             pclose(pipe)
         }

@@ -28,11 +28,10 @@ package com.mobilebytelabs.kmptoolkit.appintents
 public object AssistantBii {
 
     /** Resolve the BII identifier for an intent definition; defers to [defaultBiiForIntent] when caller hasn't set one. */
-    public fun resolveBii(def: AppIntentDef): String =
-        def.bii ?: defaultBiiForIntent(def)
+    public fun resolveBii(def: AppIntentDef): String = def.bii ?: defaultBiiForIntent(def)
 
     private fun defaultBiiForIntent(def: AppIntentDef): String = when {
         def.searchable -> "actions.intent.GET_THING"
-        else           -> "actions.intent.OPEN_APP_FEATURE"
+        else -> "actions.intent.OPEN_APP_FEATURE"
     }
 }

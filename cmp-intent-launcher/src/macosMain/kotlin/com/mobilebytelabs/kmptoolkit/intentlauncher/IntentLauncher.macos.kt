@@ -31,13 +31,17 @@ public actual class IntentLauncher public constructor() {
         return when (builder.resultContract) {
             ResultContracts.PickImage,
             ResultContracts.PickMultipleImages,
-            ResultContracts.PickDocument -> openPanel(
+            ResultContracts.PickDocument,
+            -> openPanel(
                 builder,
                 multi = builder.resultContract == ResultContracts.PickMultipleImages,
             )
+
             // ADR-09: CNContactPicker requires AppKit delegate bridging deferred to v0.4
             ResultContracts.PickContact -> IntentResult.Failed(IntentError.UnsupportedPlatform)
+
             null -> arbitraryUrlIntent(builder)
+
             else -> builder.onUnsupportedHandler?.invoke()
                 ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
         }
@@ -65,6 +69,12 @@ public actual class IntentLauncher public constructor() {
         val uriStr = builder.data ?: return IntentResult.Failed(IntentError.NoHandler)
         val url = NSURL.URLWithString(uriStr) ?: return IntentResult.Failed(IntentError.NoHandler)
         val ok = NSWorkspace.sharedWorkspace.openURL(url)
-        return if (ok) IntentResult.Ok(IntentData(uri = uriStr, mimeType = builder.type)) else IntentResult.Failed(IntentError.NoHandler)
+        return if (ok) {
+            IntentResult.Ok(
+                IntentData(uri = uriStr, mimeType = builder.type),
+            )
+        } else {
+            IntentResult.Failed(IntentError.NoHandler)
+        }
     }
 }

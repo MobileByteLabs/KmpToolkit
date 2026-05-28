@@ -33,11 +33,16 @@ public actual class IntentLauncher public constructor() {
         val builder = IntentBuilder().apply(block)
         return when (val contract = builder.resultContract) {
             ResultContracts.PickImage,
-            ResultContracts.PickDocument -> zenityFilePicker(multiple = false)
+            ResultContracts.PickDocument,
+            -> zenityFilePicker(multiple = false)
+
             ResultContracts.PickMultipleImages -> zenityFilePicker(multiple = true)
+
             // ADR-09: Linux has no canonical contact-picker API
             ResultContracts.PickContact -> IntentResult.Failed(IntentError.UnsupportedPlatform)
+
             null -> arbitraryUrl(builder)
+
             else -> builder.onUnsupportedHandler?.invoke()
                 ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
         }
@@ -69,6 +74,12 @@ public actual class IntentLauncher public constructor() {
         val uri = builder.data ?: return IntentResult.Failed(IntentError.NoHandler)
         val escaped = uri.replace("'", "'\\''")
         val rc = system("xdg-open '$escaped' >/dev/null 2>&1")
-        return if (rc == 0) IntentResult.Ok(IntentData(uri = uri, mimeType = builder.type)) else IntentResult.Failed(IntentError.NoHandler)
+        return if (rc ==
+            0
+        ) {
+            IntentResult.Ok(IntentData(uri = uri, mimeType = builder.type))
+        } else {
+            IntentResult.Failed(IntentError.NoHandler)
+        }
     }
 }

@@ -34,7 +34,8 @@ include(":cmp-pdf-generator")
 // Inter-app comms suite (Phase 1 scaffolds; full impl per plan-layer/.../inter-app-comms-suite/)
 include(":cmp-share") // Share — cross-platform share sheet
 include(":cmp-intent-launcher") // Intent Launcher — typed Android-Intent builder + ActivityResult; iOS picker whitelist
-include(":cmp-intent-launcher-compose") // Intent Launcher Compose — @Composable rememberIntentLauncher() adapter (extracted v0.3)
+// Intent Launcher Compose — @Composable rememberIntentLauncher() adapter (extracted v0.3)
+include(":cmp-intent-launcher-compose")
 include(":cmp-app-intents") // App Intents — SiriKit Shortcuts + Spotlight (iOS 16+); Android on-device registry
 
 // Sample applications
