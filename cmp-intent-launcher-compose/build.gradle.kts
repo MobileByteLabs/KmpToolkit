@@ -17,20 +17,9 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.vanniktech.mavenPublish)
-    // v0.4 Phase 9 — ABI stability + coverage verification
+    // v0.4 Phase 9 — ABI stability (kover deferred — incompatible with
+    // androidLibrary {} block in Kover 0.9.1; re-enable when Kover lands plugin support.)
     alias(libs.plugins.binaryCompatibilityValidator)
-    alias(libs.plugins.kover)
-}
-
-// v0.4 Phase 9 — kover threshold per S1.E (pure-Kotlin Compose adapter: 85%)
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(85) // line coverage
-            }
-        }
-    }
 }
 
 // ============================================================================

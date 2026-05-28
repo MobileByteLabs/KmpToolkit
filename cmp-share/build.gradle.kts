@@ -14,20 +14,11 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
-    // v0.4 Phase 9 — ABI stability + coverage verification
+    // v0.4 Phase 9 — ABI stability (kover deferred — incompatible with the
+    // new `com.android.kotlin.multiplatform.library` plugin's `androidLibrary {}`
+    // extension; Kover 0.9.1 still requires the legacy `android {}` extension.
+    // Re-enable when Kover ships KMP-Android-Library plugin support.)
     alias(libs.plugins.binaryCompatibilityValidator)
-    alias(libs.plugins.kover)
-}
-
-// v0.4 Phase 9 — kover threshold per S1.E (cinterop-heavy module: 75%)
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(75) // line coverage
-            }
-        }
-    }
 }
 
 // ============================================================================
