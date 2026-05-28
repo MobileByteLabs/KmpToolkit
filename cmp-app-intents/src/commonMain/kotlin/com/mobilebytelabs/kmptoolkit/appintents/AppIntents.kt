@@ -140,11 +140,11 @@ public data class ParamDef(val name: String, val type: ParamType, val isRequired
 // -----------------------------------------------------------------------------
 
 @ExperimentalAppIntentsApi
-internal object AppIntentsRuntime {
+public object AppIntentsRuntime {
     private var registered: AppIntentsConfig? = null
     private val handlers: MutableMap<String, suspend (Map<String, Any>) -> AppIntentResult> = mutableMapOf()
 
-    fun register(config: AppIntentsConfig) {
+    public fun register(config: AppIntentsConfig) {
         registered = config
         handlers.clear()
         for (def in config.intents) {
@@ -152,9 +152,9 @@ internal object AppIntentsRuntime {
         }
     }
 
-    fun current(): AppIntentsConfig? = registered
+    public fun current(): AppIntentsConfig? = registered
 
-    suspend fun invoke(id: String, params: Map<String, Any>): AppIntentResult? = handlers[id]?.invoke(params)
+    public suspend fun invoke(id: String, params: Map<String, Any>): AppIntentResult? = handlers[id]?.invoke(params)
 }
 
 // -----------------------------------------------------------------------------

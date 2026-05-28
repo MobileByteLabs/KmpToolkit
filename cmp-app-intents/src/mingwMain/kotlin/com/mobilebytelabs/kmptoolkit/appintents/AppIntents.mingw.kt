@@ -49,7 +49,8 @@ public actual object AppIntents {
             val appData = getenv("APPDATA")?.toKString()
                 ?: "${getenv("USERPROFILE")?.toKString() ?: "."}\\AppData\\Roaming"
             val moduleDir = "$appData\\cmp-app-intents"
-            mkdir(moduleDir, 0b111111111u)
+            // POSIX mkdir on mingw is the Windows _mkdir variant — single arg, no mode.
+            mkdir(moduleDir)
             writeText("$moduleDir\\manifest.json", config.serializeManifest())
             // Start Menu shortcut emission via Win32 IShellLinkW COM cinterop deferred until
             // v0.4 Phase 9 G-10 verifies the COM lifecycle on Windows CI. For v0.4 ship, the

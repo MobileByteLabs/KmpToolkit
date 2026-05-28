@@ -7,49 +7,49 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
-
 package com.mobilebytelabs.kmptoolkit.share
 
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.usePinned
-import platform.Foundation.NSData
-import platform.Foundation.NSDocumentDirectory
-import platform.Foundation.NSFileManager
-import platform.Foundation.NSURL
-import platform.Foundation.NSUUID
-import platform.Foundation.NSUserDomainMask
-import platform.Foundation.dataWithBytes
-import platform.Foundation.writeToURL
 import platform.WatchConnectivity.WCSession
 
 /**
- * watchOS `Share` — v0.4 (inter-app-comms-compose-completeness Phase 2 — closes ADR-09 #2):
+ * watchOS `Share` — v0.4 status: Text/Url via `WCSession.transferUserInfo` handoff.
+ * Binary payloads (Image / File / Multi-with-binary) → `UnsupportedPlatform`.
  *
- * - Text/Url → `WCSession.transferUserInfo` Handoff to paired iPhone (dict payload). Companion
- *   app on iOS handles the userInfo dictionary `{kind: "share", type, value}` and presents
- *   the native UIActivityViewController.
- * - **NEW v0.4** Image → write bytes to NSDocumentDirectory tmp file then `WCSession.transferFile()`
- *   with metadata dict (companion-app receiver dispatches based on metadata.kind).
- * - **NEW v0.4** File → directly transfer via `WCSession.transferFile()` (caller-provided URI).
- * - **NEW v0.4** Multi → per-item dispatch via first-success strategy.
+ * **Why not full binary handoff via `transferFile`**: writing the temp file requires
+ * either `NSData.dataWithBytes(bytes, length)` or POSIX `fwrite` — both have
+ * `NSUInteger` / `size_t` parameter shapes that resolve to different bit widths on
+ * `watchosArm32` (32-bit) vs `watchosArm64` / `watchosSimulatorArm64` / `watchosDeviceArm64`
+ * (64-bit). K/N's strict expect/actual matching refuses to compile when a single
+ * watchOS source set targets both bit widths. Consolidating to a single watchOS
+ * arch (drop `watchosArm32` from build.gradle.kts targets) would unblock the binary
+ * path; that's a build-config decision deferred to a v0.5 review of legacy-Apple-Watch
+ * support.
  *
- * **Companion-app receiver protocol** (consumer's iOS app must implement):
- *   - WCSessionDelegate.session:didReceiveUserInfo: → handle dict payload (Text/Url)
- *   - WCSessionDelegate.session:didReceiveFile: → handle file payload (Image/File); read
- *     `file.metadata["kind"]` to dispatch to UIActivityViewController.
+ * Text + Url paths use `WCSession.transferUserInfo(dict)` which only takes Kotlin
+ * primitive types → no bit-width interop. Companion iOS app handles the userInfo
+ * dictionary `{kind: "share", type, value}` and presents `UIActivityViewController`.
  *
- * Behavior when WCSession unavailable (no paired iPhone, session not activated):
- * returns `ShareResult.Failed(ShareError.NoHandler)`.
+ * Behavior when WCSession unavailable: returns `ShareResult.Failed(ShareError.NoHandler)`.
+ *
+ * ADR-09 #2 audit refresh: closed for Text/Url; binary deferred to v0.5
+ * (Q: drop watchosArm32 or wrap binary calls behind per-arch source sets?).
  */
 @ExperimentalShareApi
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
-        is SharePayload.Text -> handoffUserInfo(mapOf("kind" to "share", "type" to "text", "value" to payload.content))
-        is SharePayload.Url -> handoffUserInfo(mapOf("kind" to "share", "type" to "url", "value" to payload.href))
-        is SharePayload.Image -> handoffFileFromBytes(payload.bytes, payload.mimeType, payload.filename)
-        is SharePayload.File -> handoffFileFromUri(payload.uri, payload.mimeType, payload.filename)
-        is SharePayload.Multi -> multiShare(payload)
+        is SharePayload.Text -> handoffUserInfo(
+            mapOf("kind" to "share", "type" to "text", "value" to payload.content),
+        )
+
+        is SharePayload.Url -> handoffUserInfo(
+            mapOf("kind" to "share", "type" to "url", "value" to payload.href),
+        )
+
+        is SharePayload.Image,
+        is SharePayload.File,
+        -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+
+        is SharePayload.Multi -> multiShareTextOnly(payload)
     }
 
     /** Send a dict-shaped userInfo to paired iPhone via WCSession.transferUserInfo. */
@@ -62,71 +62,42 @@ public actual object Share {
     }
 
     /**
-     * Materialize Image bytes to NSDocumentDirectory tmp file then transferFile() to paired iPhone.
-     * The companion app's WCSessionDelegate.session:didReceiveFile: receives the file URL + metadata.
+     * Multi-payload handler — text/url items dispatch normally; binary items inside
+     * Multi return UnsupportedPlatform (same rationale as the top-level Image/File case).
+     * First-success strategy across text/url items.
      */
-    private fun handoffFileFromBytes(bytes: ByteArray, mimeType: String, filename: String?): ShareResult {
-        val session = WCSession.defaultSession
-        if (!session.isReachable()) return ShareResult.Failed(ShareError.NoHandler)
-        val docsDir = NSFileManager.defaultManager.URLForDirectory(
-            NSDocumentDirectory,
-            NSUserDomainMask,
-            null,
-            true,
-            null,
-        ) ?: return ShareResult.Failed(ShareError.NoHandler)
-        val ext = filename?.substringAfterLast('.', "bin") ?: mimeType.substringAfter('/', "bin")
-        val tmpUrl = docsDir.URLByAppendingPathComponent("cmp-share-${NSUUID().UUIDString}.$ext")
-            ?: return ShareResult.Failed(ShareError.NoHandler)
-        // Write bytes to tmpUrl
-        val data: NSData = bytes.usePinned { pinned ->
-            NSData.dataWithBytes(pinned.addressOf(0), bytes.size.toULong())
-        }
-        if (!data.writeToURL(tmpUrl, atomically = true)) {
-            return ShareResult.Failed(ShareError.Unknown("watchOS tmp file write failed"))
-        }
-        val metadata: Map<Any?, Any?> = mapOf("kind" to "share", "type" to "image", "mimeType" to mimeType)
-        session.transferFile(tmpUrl, metadata = metadata)
-        return ShareResult.Completed
-    }
-
-    /** Transfer a caller-provided file URI to paired iPhone via transferFile(). */
-    private fun handoffFileFromUri(uri: String, mimeType: String, filename: String?): ShareResult {
-        val session = WCSession.defaultSession
-        if (!session.isReachable()) return ShareResult.Failed(ShareError.NoHandler)
-        val nsUrl = NSURL.URLWithString(uri) ?: NSURL.fileURLWithPath(uri)
-        val metadata: Map<Any?, Any?> = mapOf(
-            "kind" to "share",
-            "type" to "file",
-            "mimeType" to mimeType,
-            "filename" to (filename ?: ""),
-        )
-        session.transferFile(nsUrl, metadata = metadata)
-        return ShareResult.Completed
-    }
-
-    /** Per-item first-success strategy. */
-    private fun multiShare(multi: SharePayload.Multi): ShareResult {
+    private fun multiShareTextOnly(multi: SharePayload.Multi): ShareResult {
+        var sawText = false
         for (item in multi.items) {
-            val r: ShareResult = when (item) {
-                is SharePayload.Text -> handoffUserInfo(
-                    mapOf(
-                        "kind" to "share",
-                        "type" to "text",
-                        "value" to item.content,
-                    ),
-                )
+            when (item) {
+                is SharePayload.Text -> {
+                    sawText = true
+                    val r = handoffUserInfo(
+                        mapOf("kind" to "share", "type" to "text", "value" to item.content),
+                    )
+                    if (r is ShareResult.Completed) return r
+                }
 
-                is SharePayload.Url -> handoffUserInfo(mapOf("kind" to "share", "type" to "url", "value" to item.href))
+                is SharePayload.Url -> {
+                    sawText = true
+                    val r = handoffUserInfo(
+                        mapOf("kind" to "share", "type" to "url", "value" to item.href),
+                    )
+                    if (r is ShareResult.Completed) return r
+                }
 
-                is SharePayload.Image -> handoffFileFromBytes(item.bytes, item.mimeType, item.filename)
-
-                is SharePayload.File -> handoffFileFromUri(item.uri, item.mimeType, item.filename)
-
-                is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+                is SharePayload.Image,
+                is SharePayload.File,
+                is SharePayload.Multi,
+                -> { /* skip — binary or nested multi not supported on watchOS at v0.4 */ }
             }
-            if (r is ShareResult.Completed) return r
         }
-        return ShareResult.Failed(ShareError.NoHandler)
+        return if (sawText) {
+            ShareResult.Failed(
+                ShareError.NoHandler,
+            )
+        } else {
+            ShareResult.Failed(ShareError.UnsupportedPlatform)
+        }
     }
 }

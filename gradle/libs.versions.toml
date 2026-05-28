@@ -3,6 +3,9 @@ agp = "9.0.1"
 kotlin = "2.3.10"
 compose-multiplatform = "1.10.3"
 material3 = "1.10.0-alpha05"
+# material-icons-extended publishing stopped tracking Compose-MP at 1.7.x;
+# latest available on Maven Central is 1.7.3 (not 1.10.x).
+compose-material-icons-extended = "1.7.3"
 android-minSdk = "24"
 android-compileSdk = "36"
 android-targetSdk = "36"
@@ -68,7 +71,7 @@ androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", 
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
-compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "compose-multiplatform" }
+compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "compose-material-icons-extended" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
 compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose-multiplatform" }
 compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose-multiplatform" }

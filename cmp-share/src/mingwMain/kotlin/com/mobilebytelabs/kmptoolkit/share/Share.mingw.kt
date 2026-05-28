@@ -7,131 +7,75 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-
 package com.mobilebytelabs.kmptoolkit.share
 
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.convert
-import kotlinx.cinterop.memcpy
-import kotlinx.cinterop.usePinned
 import platform.posix.system
-import win32clipboard.CF_DIB
-import win32clipboard.CloseClipboard
-import win32clipboard.EmptyClipboard
-import win32clipboard.GMEM_MOVEABLE
-import win32clipboard.OpenClipboard
-import win32clipboard.SetClipboardData
-import win32clipboard.spike_alloc_global
-import win32clipboard.spike_lock_global
-import win32clipboard.spike_unlock_global
 
 /**
- * mingw (Windows) `Share` — `cmd /c start` for URL share; everything else Unsupported.
+ * mingw (Windows) `Share` — `cmd /c start` for URL share + `cmd /c "echo TEXT | clip"`
+ * for text. Image / File / Multi binary payloads → `UnsupportedPlatform`.
  *
- * `start` resolves the URL/file against the Windows registry and launches the
- * configured handler (Edge for http, mailto: handler for mailto:, default opener
- * for files).  This is the closest Win32-portable equivalent of `xdg-open`
- * without taking a shell32.dll cinterop dependency.
+ * **Win32 cinterop status**: `win32-clipboard.def` (CF_DIB binary clipboard, Phase 2
+ * ADR-09 #3 closure) compiles → klib successfully on macOS-arm64 K/N hosts but the
+ * generated bindings do NOT expose the Win32 SDK types (`OpenClipboard`, `CF_DIB`,
+ * `SetClipboardData`, etc.) as Kotlin symbols — K/N cinterop's parser drops the SDK
+ * struct types when run on a non-Windows host (only `static inline` helper functions
+ * end up in the klib).
  *
- * Note: image/file binary payloads and Multi remain Unsupported. Win32 clipboard
- * (OpenClipboard / SetClipboardData) is a v0.3 candidate — needs Win32 cinterop.
+ * Real binary-clipboard round-trip needs either:
+ * 1. A Windows CI host running the cinterop step (where `windows.h` resolves natively)
+ * 2. A cinterop wrapper layer that exposes clipboard state through helper functions
+ *    only, never as SDK struct refs (rewrite the .def to be Win32-SDK-opaque)
  *
- * **Security:** the URL is double-quote-wrapped (Windows uses double quotes for
- * cmd args) and embedded double quotes are escaped to prevent injection.
+ * Both deferred to post-v0.4. ADR-09 #3 audit-log updated: WONTFIX-PROVISIONAL remains
+ * in effect; `win32-clipboard.def` ships as a future-use artifact.
  *
- * v0.2 sub-plan 10.B.
+ * **Security:** URL is double-quote-wrapped + embedded quotes escaped to prevent
+ * cmd injection.
  */
-@OptIn(ExperimentalForeignApi::class)
 @ExperimentalShareApi
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
         is SharePayload.Url -> winStart(payload.href)
 
-        // v0.3 (Phase 2 T5): `clip.exe` is a Windows built-in (since XP) — copies stdin to clipboard
         is SharePayload.Text -> winClipText(payload.content)
 
-        // v0.4 (inter-app-comms-compose-completeness Phase 2 — closes ADR-09 #3):
-        // CF_DIB binary clipboard write via Win32 cinterop (win32-clipboard.def from v0.3 spike).
-        // Image.bytes is expected to be in DIB/BMP format minus the 14-byte BITMAPFILEHEADER.
-        // Note: caller responsibility to strip the BMP file header before passing — most image
-        // libraries (Skia, ImageIO) provide DIB-format export directly.
-        is SharePayload.Image -> winClipboardImageDib(payload.bytes)
+        is SharePayload.Image,
+        is SharePayload.File,
+        -> ShareResult.Failed(ShareError.UnsupportedPlatform)
 
-        is SharePayload.File -> winStart(payload.uri)
-
-        is SharePayload.Multi -> multiShare(payload)
+        is SharePayload.Multi -> multi(payload)
     }
 
-    /** Pipe text into the Windows built-in `clip.exe` utility. Returns Completed on rc==0. */
-    private fun winClipText(content: String): ShareResult {
-        // Escape embedded characters that `cmd /c echo ... | clip` would interpret.
-        // Use `echo|set/p=` trick to avoid trailing newline.
-        val escaped = content
-            .replace("^", "^^")
-            .replace("&", "^&")
-            .replace("|", "^|")
-            .replace("<", "^<")
-            .replace(">", "^>")
-            .replace("\"", "\\\"")
-        val cmd = "cmd /c \"echo|set/p=\"$escaped\" | clip\""
-        val rc = system(cmd)
-        return if (rc == 0) {
-            ShareResult.Completed
-        } else {
-            ShareResult.Failed(ShareError.Unknown("clip.exe exit=$rc"))
+    /** Dispatch URL via Windows shell resolver (`start ""` consumes a title arg). */
+    private fun winStart(href: String): ShareResult {
+        val escaped = href.replace("\"", "\\\"")
+        val rc = system("cmd /c start \"\" \"$escaped\"")
+        return if (rc == 0) ShareResult.Completed else ShareResult.Failed(ShareError.Unknown("cmd start exit=$rc"))
+    }
+
+    /** Copy text to clipboard via Windows built-in `clip.exe` (since Windows XP). */
+    private fun winClipText(text: String): ShareResult {
+        // Newlines in text would break the single-line command — replace with a placeholder
+        // and re-emit via echo's `^M` continuation? Simpler: only single-line text copied;
+        // multi-line falls back to NoHandler. Production consumers wanting binary-safe
+        // clipboard should ship their own clip-replacement.
+        if (text.contains('\n') || text.contains('"')) {
+            return ShareResult.Failed(ShareError.Unknown("clip.exe path limited to single-line non-quoted text"))
         }
+        val rc = system("cmd /c \"echo $text | clip\"")
+        return if (rc == 0) ShareResult.Completed else ShareResult.Failed(ShareError.Unknown("clip exit=$rc"))
     }
 
-    private fun multiShare(multi: SharePayload.Multi): ShareResult {
+    private fun multi(multi: SharePayload.Multi): ShareResult {
         for (item in multi.items) {
             val r = when (item) {
-                is SharePayload.Url -> winStart(item.href)
                 is SharePayload.Text -> winClipText(item.content)
-                is SharePayload.File -> winStart(item.uri)
+                is SharePayload.Url -> winStart(item.href)
                 else -> ShareResult.Failed(ShareError.UnsupportedPlatform)
             }
             if (r is ShareResult.Completed) return r
         }
         return ShareResult.Failed(ShareError.NoHandler)
-    }
-
-    /**
-     * Write image bytes (DIB format) to Win32 clipboard as CF_DIB.
-     * Caller bytes MUST be DIB (BITMAPINFOHEADER + pixel data) — NOT a full BMP file (no file header).
-     * Returns Completed on Win32 success; NoHandler if OpenClipboard fails.
-     */
-    private fun winClipboardImageDib(bytes: ByteArray): ShareResult {
-        if (OpenClipboard(null) == 0) {
-            return ShareResult.Failed(ShareError.NoHandler)
-        }
-        return try {
-            EmptyClipboard()
-            val h = spike_alloc_global(bytes.size.convert())
-                ?: return ShareResult.Failed(ShareError.Unknown("GlobalAlloc failed"))
-            val locked = spike_lock_global(h)
-                ?: return ShareResult.Failed(ShareError.Unknown("GlobalLock failed"))
-            bytes.usePinned { pinned ->
-                memcpy(locked, pinned.addressOf(0), bytes.size.convert())
-            }
-            spike_unlock_global(h)
-            SetClipboardData(CF_DIB.convert(), h)
-            ShareResult.Completed
-        } finally {
-            CloseClipboard()
-        }
-    }
-
-    private fun winStart(rawTarget: String): ShareResult {
-        val target = rawTarget.replace("\"", "\\\"")
-        // `start` needs an empty title arg ("") when the target is quoted.
-        val cmd = "cmd /c start \"\" \"$target\""
-        val rc = system(cmd)
-        return if (rc == 0) {
-            ShareResult.Completed
-        } else {
-            ShareResult.Failed(ShareError.Unknown("cmd start exit=$rc"))
-        }
     }
 }

@@ -76,7 +76,9 @@ public actual object SystemIntents {
         }
         var opts = { suggestedName: suggestedName };
         if (mimeType && mimeType !== '*/*') {
-            opts.types = [{ description: 'Document', accept: { [mimeType]: [] } }];
+            var acceptObj = {};
+            acceptObj[mimeType] = [];
+            opts.types = [{ description: 'Document', accept: acceptObj }];
         }
         window.showSaveFilePicker(opts).then(function(handle){
             onResult('ok', handle.name || suggestedName);

@@ -7,66 +7,35 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
-@file:OptIn(
-    kotlin.experimental.ExperimentalObjCName::class,
-    kotlinx.cinterop.ExperimentalForeignApi::class,
-    kotlinx.cinterop.BetaInteropApi::class,
-)
-
 package com.mobilebytelabs.kmptoolkit.appintents
 
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.usePinned
-import platform.Foundation.NSData
-import platform.Foundation.NSDocumentDirectory
-import platform.Foundation.NSFileManager
-import platform.Foundation.NSURL
-import platform.Foundation.NSUserDomainMask
-import platform.Foundation.create
-import platform.Foundation.writeToURL
-
 /**
- * tvOS `AppIntents` — v0.4 (inter-app-comms-compose-completeness Phase 4 — closes ADR-09 #11):
+ * tvOS `AppIntents` — runtime-registry only.
  *
- * Manifest write to NSDocumentDirectory + AppIntentsCallback Swift bridge handoff — same pattern
- * as iOS. tvOS 14+ supports a subset of App Intents (Siri Suggestions on Apple TV); the Swift
- * bridge's `#if canImport(CoreSpotlight)` guard means CSSearchableIndex calls silently no-op
- * (CoreSpotlight is not available on tvOS) while manifest registration + App Shortcuts continues
- * to work where the OS permits.
+ * Manifest-write + AppIntentsCallback Swift-bridge dispatch are intentionally NOT
+ * implemented on tvOS at this layer:
+ *
+ * - `AppIntentsCallback` (the ObjC-bridged singleton consumed by `CmpAppIntentBridge.swift`)
+ *   is defined in iosMain + macosMain only; tvOS Swift bridge would need its own
+ *   delivery mechanism (tvOS App Intents have limited reach vs iOS — no CoreSpotlight,
+ *   no Siri Suggestions on appletvOS<14, no AppShortcutsProvider).
+ * - The manifest-write to `NSDocumentDirectory` hits a watchosArm32-equivalent NSInteger
+ *   bit-width conflict in some Apple platforms (separate issue from tvOS), so we keep
+ *   tvOS aligned with watchOS = runtime-registry only.
+ *
+ * Consumers wanting full tvOS App Intents integration ship their own Swift bridge that
+ * calls `AppIntentsRuntime.invoke(id, params)` directly via `@ObjCName` exports from
+ * a per-app appleMain bridge file.
+ *
+ * ADR-09 #11 audit refresh: tvOS = runtime-only at v0.4; full manifest + Swift dispatch
+ * follow-up post-v0.4 once the appleMain consolidation lands.
  */
 @ExperimentalAppIntentsApi
 public actual object AppIntents {
     public actual fun register(config: AppIntentsConfig) {
         AppIntentsRuntime.register(config)
-        AppIntentsCallback.shared.handler = { id, params ->
-            kotlinx.coroutines.runBlocking {
-                AppIntentsRuntime.invoke(id, params) ?: AppIntentResult.Failed("Unknown intent: $id")
-            }
-        }
-        writeManifest(config.serializeManifest())
     }
 
     public actual suspend fun invokeForTesting(id: String, params: Map<String, Any>): AppIntentResult? =
         AppIntentsRuntime.invoke(id, params)
-
-    private fun writeManifest(json: String) {
-        try {
-            val fm = NSFileManager.defaultManager
-            val docsUrl: NSURL = fm.URLForDirectory(
-                directory = NSDocumentDirectory,
-                inDomain = NSUserDomainMask,
-                appropriateForURL = null,
-                create = true,
-                error = null,
-            ) ?: return
-            val manifestUrl = docsUrl.URLByAppendingPathComponent("cmp-app-intents-manifest.json") ?: return
-            val bytes = json.encodeToByteArray()
-            val data: NSData = bytes.usePinned { pinned ->
-                NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
-            }
-            data.writeToURL(manifestUrl, atomically = true)
-        } catch (_: Throwable) {
-            // Best-effort
-        }
-    }
 }
