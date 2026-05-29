@@ -1,380 +1,131 @@
 # KMP Toolkit
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-clipboard)](https://central.sonatype.com/search?q=io.github.mobilebytelabs)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-clipboard?label=Maven%20Central&color=blue)](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs)
 [![CI](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/KmpToolkit/actions/workflows/gradle.yml)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.10-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A collection of production-ready Kotlin Multiplatform libraries — one dependency per feature, works out of the box on every platform.
+A collection of production-ready **Kotlin Multiplatform** libraries — one dependency per feature, works out of the box on every platform.
+
+📖 **Full usage docs:** **[Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki)** · 🚀 **[Releases](https://github.com/MobileByteLabs/KmpToolkit/releases)** · 📦 **[Maven Central](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs)**
 
 ## Modules
 
-| Module | Artifact | Description | Version |
-|--------|----------|-------------|:-------:|
-| [cmp-clipboard](#cmp-clipboard) | `io.github.mobilebytelabs:cmp-clipboard` | Copy, paste, observe, monitor, URL detect | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-bubble](#cmp-bubble) | `io.github.mobilebytelabs:cmp-bubble` | Floating UI, bubbles, and notifications | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-toast](#cmp-toast) | `io.github.mobilebytelabs:cmp-toast` | Toast / Snackbar for Compose Multiplatform | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-open-url](#cmp-open-url) | `io.github.mobilebytelabs:cmp-open-url` | Open URLs — browser, email, maps, phone, SMS | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-deep-link](#cmp-deep-link) | `io.github.mobilebytelabs:cmp-deep-link` | Deep link handling across all KMP targets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-in-app-update](#cmp-in-app-update) | `io.github.mobilebytelabs:cmp-in-app-update` | In-app update checking (GitHub / App Store / Play) | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-remote-config](#cmp-remote-config) | `io.github.mobilebytelabs:cmp-remote-config` | Remote config and feature flags | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-product-tickets](#cmp-product-tickets) | `io.github.mobilebytelabs:cmp-product-tickets` | In-app feedback and support tickets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-network-monitor](#cmp-network-monitor) | `io.github.mobilebytelabs:cmp-network-monitor` | Reactive network connectivity monitoring — all 21 KMP targets | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-network-monitor-compose](#cmp-network-monitor-compose) | `io.github.mobilebytelabs:cmp-network-monitor-compose` | Compose Multiplatform extensions for network monitoring | ![](https://img.shields.io/badge/-3.2.1-brightgreen) |
-| [cmp-pdf-generator](cmp-pdf-generator/README.md) | `io.github.mobilebytelabs:cmp-pdf-generator` | Cross-platform PDF generation — HTML, Markdown, DSL → File / ByteArray / URI / Share / Print | ![](https://img.shields.io/badge/-3.2.8-brightgreen) |
-| [cmp-share](cmp-share/README.md) | `io.github.mobilebytelabs:cmp-share` | Cross-platform share sheet — text / URL / image / file / multi via Android Intent.ACTION_SEND, iOS UAVC, JVM clipboard, JS navigator.share | ![](https://img.shields.io/badge/-0.1.0-orange) |
-| [cmp-intent-launcher](cmp-intent-launcher/README.md) | `io.github.mobilebytelabs:cmp-intent-launcher` | Typed Android-Intent builder + ActivityResult — picker contracts cross-platform; full Intent + extras on Android | ![](https://img.shields.io/badge/-0.1.0-orange) |
-| [cmp-app-intents](cmp-app-intents/README.md) | `io.github.mobilebytelabs:cmp-app-intents` | Declarative App Intents DSL — SiriKit Shortcuts + Spotlight (iOS 16+); Android on-device registry (Assistant integration v0.2) | ![](https://img.shields.io/badge/-0.1.0-orange) |
+All modules ship together at the unified `kmptoolkit.version`. Click a module to open its Wiki page (install + usage + per-platform behaviour).
+
+| Module | Artifact | Description | Latest |
+|--------|----------|-------------|:------:|
+| [cmp-clipboard](https://github.com/MobileByteLabs/KmpToolkit/wiki/Clipboard) | `io.github.mobilebytelabs:cmp-clipboard` | Copy, paste, observe, monitor, URL detect | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-clipboard?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-clipboard) |
+| [cmp-bubble](https://github.com/MobileByteLabs/KmpToolkit/wiki/Bubble) | `io.github.mobilebytelabs:cmp-bubble` | Floating UI, bubbles, and notifications | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-bubble?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-bubble) |
+| [cmp-toast](https://github.com/MobileByteLabs/KmpToolkit/wiki/Toast) | `io.github.mobilebytelabs:cmp-toast` | Toast / Snackbar for Compose Multiplatform | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-toast?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-toast) |
+| [cmp-open-url](https://github.com/MobileByteLabs/KmpToolkit/wiki/Open-URL) | `io.github.mobilebytelabs:cmp-open-url` | Open URLs — browser, email, maps, phone, SMS | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-open-url?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-open-url) |
+| [cmp-deep-link](https://github.com/MobileByteLabs/KmpToolkit/wiki/Deep-Link) | `io.github.mobilebytelabs:cmp-deep-link` | Deep link handling across all KMP targets | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-deep-link?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-deep-link) |
+| [cmp-in-app-update](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Update) | `io.github.mobilebytelabs:cmp-in-app-update` | In-app update checking (GitHub / App Store / Play) | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-in-app-update?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-in-app-update) |
+| [cmp-remote-config](https://github.com/MobileByteLabs/KmpToolkit/wiki/Remote-Config) | `io.github.mobilebytelabs:cmp-remote-config` | Remote config and feature flags | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-remote-config?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-remote-config) |
+| [cmp-product-tickets](https://github.com/MobileByteLabs/KmpToolkit/wiki/Product-Tickets) | `io.github.mobilebytelabs:cmp-product-tickets` | In-app feedback and support tickets | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-product-tickets?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-product-tickets) |
+| [cmp-network-monitor](https://github.com/MobileByteLabs/KmpToolkit/wiki/Network-Monitor) | `io.github.mobilebytelabs:cmp-network-monitor` | Reactive network connectivity — all 21 KMP targets | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-network-monitor?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-network-monitor) |
+| [cmp-network-monitor-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/Network-Monitor-Compose) | `io.github.mobilebytelabs:cmp-network-monitor-compose` | Compose extensions for network monitoring | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-network-monitor-compose?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-network-monitor-compose) |
+| [cmp-pdf-generator](https://github.com/MobileByteLabs/KmpToolkit/wiki/PDF-Generator) | `io.github.mobilebytelabs:cmp-pdf-generator` | Cross-platform PDF generation (HTML / Markdown / DSL → File / Bytes / URI / Share / Print) | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-pdf-generator?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-pdf-generator) |
+| [cmp-firebase-analytics](https://github.com/MobileByteLabs/KmpToolkit/wiki/Firebase-Analytics) | `io.github.mobilebytelabs:cmp-firebase-analytics` | Firebase Analytics + performance tracking | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-firebase-analytics?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-firebase-analytics) |
+| [cmp-share](https://github.com/MobileByteLabs/KmpToolkit/wiki/Share) | `io.github.mobilebytelabs:cmp-share` | Cross-platform share sheet — text / URL / image / file / multi | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-share?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-share) |
+| [cmp-share-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/Share-Compose) | `io.github.mobilebytelabs:cmp-share-compose` | `@Composable rememberShareLauncher()` + Material 3 ShareSheet / ShareButton | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-share-compose?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-share-compose) |
+| [cmp-intent-launcher](https://github.com/MobileByteLabs/KmpToolkit/wiki/Intent-Launcher) | `io.github.mobilebytelabs:cmp-intent-launcher` | Typed Android-Intent builder + ActivityResult contracts + lifecycle-free SystemIntents | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-intent-launcher?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-intent-launcher) |
+| [cmp-intent-launcher-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/Intent-Launcher-Compose) | `io.github.mobilebytelabs:cmp-intent-launcher-compose` | `@Composable rememberIntentLauncher()` + IntentPickerDialog / Sheet | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-intent-launcher-compose?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-intent-launcher-compose) |
+| [cmp-app-intents](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Intents) | `io.github.mobilebytelabs:cmp-app-intents` | Declarative App Intents DSL — SiriKit Shortcuts + Android Assistant BIIs | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-app-intents?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-app-intents) |
+| [cmp-app-intents-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Intents-Compose) | `io.github.mobilebytelabs:cmp-app-intents-compose` | `@Composable AppIntentsRegistration` + Material 3 AppIntentsRegistry | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-app-intents-compose?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-app-intents-compose) |
+
+Each module is completely independent — add only what your project needs.
 
 ## Installation
 
-All modules are published to Maven Central. Add only what you need:
+All modules are published to Maven Central at the unified `kmptoolkit.version` shown in the badges above. Pick one of the install patterns:
+
+### Version Catalog (recommended)
+
+```toml
+# gradle/libs.versions.toml
+[versions]
+kmptoolkit = "LATEST"  # see Maven Central badge in the Modules table above
+
+[libraries]
+cmp-clipboard       = { module = "io.github.mobilebytelabs:cmp-clipboard",       version.ref = "kmptoolkit" }
+cmp-bubble          = { module = "io.github.mobilebytelabs:cmp-bubble",          version.ref = "kmptoolkit" }
+cmp-toast           = { module = "io.github.mobilebytelabs:cmp-toast",           version.ref = "kmptoolkit" }
+cmp-open-url        = { module = "io.github.mobilebytelabs:cmp-open-url",        version.ref = "kmptoolkit" }
+cmp-deep-link       = { module = "io.github.mobilebytelabs:cmp-deep-link",       version.ref = "kmptoolkit" }
+cmp-in-app-update   = { module = "io.github.mobilebytelabs:cmp-in-app-update",   version.ref = "kmptoolkit" }
+cmp-remote-config   = { module = "io.github.mobilebytelabs:cmp-remote-config",   version.ref = "kmptoolkit" }
+cmp-product-tickets = { module = "io.github.mobilebytelabs:cmp-product-tickets", version.ref = "kmptoolkit" }
+cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version.ref = "kmptoolkit" }
+cmp-pdf-generator   = { module = "io.github.mobilebytelabs:cmp-pdf-generator",   version.ref = "kmptoolkit" }
+cmp-share           = { module = "io.github.mobilebytelabs:cmp-share",           version.ref = "kmptoolkit" }
+cmp-intent-launcher = { module = "io.github.mobilebytelabs:cmp-intent-launcher", version.ref = "kmptoolkit" }
+cmp-app-intents     = { module = "io.github.mobilebytelabs:cmp-app-intents",     version.ref = "kmptoolkit" }
+# Compose adapter modules (optional)
+cmp-share-compose            = { module = "io.github.mobilebytelabs:cmp-share-compose",            version.ref = "kmptoolkit" }
+cmp-intent-launcher-compose  = { module = "io.github.mobilebytelabs:cmp-intent-launcher-compose",  version.ref = "kmptoolkit" }
+cmp-app-intents-compose      = { module = "io.github.mobilebytelabs:cmp-app-intents-compose",      version.ref = "kmptoolkit" }
+cmp-network-monitor-compose  = { module = "io.github.mobilebytelabs:cmp-network-monitor-compose",  version.ref = "kmptoolkit" }
+```
 
 ```kotlin
 // build.gradle.kts
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            val kmptoolkit = "3.2.1"
+            implementation(libs.cmp.clipboard)
+            implementation(libs.cmp.toast)
+            // ... add only what you need
+        }
+    }
+}
+```
 
+### Direct dependency
+
+```kotlin
+// build.gradle.kts
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            val kmptoolkit = "LATEST"  // see Maven Central badge above
             implementation("io.github.mobilebytelabs:cmp-clipboard:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-bubble:$kmptoolkit")
             implementation("io.github.mobilebytelabs:cmp-toast:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-open-url:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-deep-link:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-in-app-update:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-remote-config:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-product-tickets:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-network-monitor:$kmptoolkit")
-            // Optional: Compose extensions for network monitoring
-            implementation("io.github.mobilebytelabs:cmp-network-monitor-compose:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-pdf-generator:$kmptoolkit")
-            // Inter-app communication suite (v0.1 experimental)
-            implementation("io.github.mobilebytelabs:cmp-share:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-intent-launcher:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-app-intents:$kmptoolkit")
+            // ... add only what you need
         }
     }
 }
 ```
 
-Each module is completely independent — import only what your project needs.
-
----
-
-## cmp-clipboard
-
-Cross-platform clipboard utilities — copy, paste, observe, monitor, and URL detection.
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.clipboard.*
-
-val clipboard = ClipboardManager(ClipboardManagerConfig.Full)
-clipboard.start()
-
-// Read & write
-clipboard.copy("Hello!")
-val text = clipboard.pasteAsync()
-
-// Observe changes
-clipboard.content.collect { println("Clipboard: $it") }
-
-// Clipboard history
-clipboard.history.collect { entries -> println("${entries.size} items") }
-
-// URL detection (Instagram, TikTok, YouTube, etc.)
-clipboard.urlDetections.collect { det -> println("${det.matcher.name}: ${det.url}") }
-
-clipboard.stop()
-```
-
-**Clipboard Monitor** — continuous background monitoring with social media URL detection:
-
-```kotlin
-val monitor = createClipboardMonitor()
-SocialMediaUrlMatchers.all().forEach { monitor.addUrlMatcher(it) }
-monitor.start(ClipboardMonitorConfig.SocialMediaDownloader)
-
-monitor.urlDetections.collect { detection ->
-    println("${detection.matcher.name}: ${detection.url}")
-}
-```
-
-10 built-in URL matchers: Instagram, TikTok, YouTube, Twitter/X, Facebook, Snapchat, Pinterest, Reddit, LinkedIn, Threads.
-
----
-
-## cmp-bubble
-
-Cross-platform floating UI, bubbles, and notifications.
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.bubble.*
-
-val bubble = createBubble()
-
-bubble.show(
-    title = "Download Complete",
-    message = "video.mp4 saved",
-    actions = listOf(
-        BubbleAction("Open") { openFile() },
-        BubbleAction("Share") { shareFile() }
-    )
-)
-```
-
-| Platform | Implementation |
-|----------|---------------|
-| Android 10+ | Bubbles API |
-| Android <10 | Notification fallback |
-| iOS / macOS | UNUserNotificationCenter banners |
-| JVM | System tray |
-| JS / Wasm | Browser Notification API |
-
----
-
-## cmp-toast
-
-Toast and Snackbar for Compose Multiplatform — zero setup.
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.toast.*
-
-@Composable
-fun MyScreen() {
-    val toastState = rememberToastHostState()
-    val scope = rememberCoroutineScope()
-
-    Box(Modifier.fillMaxSize()) {
-        Button(onClick = {
-            scope.launch {
-                toastState.showToast(
-                    message = "Saved!",
-                    duration = ToastDuration.SHORT,
-                    style = ToastStyle.SUCCESS
-                )
-            }
-        }) { Text("Save") }
-
-        ToastHost(hostState = toastState)
-    }
-}
-```
-
-Durations: `SHORT` · `MEDIUM` · `LONG` · `INDEFINITE`
-Styles: `DEFAULT` · `SUCCESS` · `ERROR` · `WARNING` · `INFO`
-Positions: `TOP` · `CENTER` · `BOTTOM`
-
----
-
-## cmp-open-url
-
-Open any URL cross-platform — browser, email, maps, phone, SMS, or custom schemes.
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.openurl.*
-
-UrlOpener.open("https://example.com")
-UrlOpener.open("mailto:hello@example.com")
-UrlOpener.open("tel:+1234567890")
-UrlOpener.open("geo:37.7749,-122.4194")
-UrlOpener.open("sms:+1234567890")
-```
-
-Works on Android, iOS, macOS, JVM, JS, Wasm — no platform configuration needed.
-
----
-
-## cmp-deep-link
-
-Unified deep link handling across all KMP targets. Receives, parses, and routes deep links with a type-safe DSL.
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.deeplink.*
-
-// Receive links
-DeepLinkHandler.incoming.collect { link ->
-    println("${link.scheme}://${link.host}${link.path}")
-}
-
-// Type-safe route matching
-val parser = deepLinkParser {
-    route<ProductRoute>("/product/{id}")
-    route<ProfileRoute>("/user/{username}")
-}
-
-val match: ProductRoute? = parser.parse(deepLink)
-```
-
-**Platform setup** (one-time, consumer app):
-
-| Platform | Setup |
-|----------|-------|
-| Android | `ComponentActivity.handleDeepLinkIntent()` extension |
-| iOS | AppDelegate `openURL` / SwiftUI `.onOpenURL` |
-| macOS | AppKit URL event handler |
-| JVM | `DeepLinkHandler.handleLaunchArgs(args)` |
-| JS / Wasm | `DeepLinkHandler.initBrowser()` — auto-listens to `hashchange` + `popstate` |
-
----
-
-## cmp-in-app-update
-
-Check for app updates from GitHub Releases, App Store, Play Store, or a custom backend.
-
-```kotlin
-import com.mobilebytelabs.kmptoolkit.appupdate.*
-
-val config = AppUpdateConfig.builder()
-    .github(owner = "YourOrg", repo = "YourApp")
-    .build()
-
-when (val result = AppUpdate.checkForUpdate(config)) {
-    is UpdateResult.Success -> {
-        if (result.updateInfo.isAvailable) {
-            println("New version: ${result.updateInfo.latestVersion}")
-        }
-    }
-    is UpdateResult.Error -> println("Error: ${result.message}")
-    is UpdateResult.NotSupported -> println("Not supported")
-}
-```
-
----
-
-## cmp-remote-config
-
-Remote configuration and feature flags for KMP apps.
-
-```kotlin
-import com.mobilebytelabs.remoteconfig.*
-
-RemoteConfig.init(RemoteConfigConfig(url = "https://your-config-endpoint"))
-
-val isFeatureEnabled: Boolean = RemoteConfig.getBoolean("new_feature", default = false)
-val apiUrl: String = RemoteConfig.getString("api_url", default = "https://api.example.com")
-
-// Observe changes
-RemoteConfig.values.collect { config -> /* update UI */ }
-```
-
----
-
-## cmp-product-tickets
-
-In-app feedback and support ticket system backed by Supabase — drop-in Compose UI included.
-
-```kotlin
-import com.mobilebytelabs.producttickets.config.ProductTicketsConfig
-import com.mobilebytelabs.producttickets.di.productTicketsModule
-
-// Initialize (once, at app start)
-ProductTicketsConfig.init(
-    supabaseUrl = "https://your-project.supabase.co",
-    supabaseAnonKey = "your-anon-key",
-    userId = currentUserId  // optional
-)
-
-// Koin DI
-startKoin { modules(productTicketsModule) }
-```
-
-Navigation (Compose):
-
-```kotlin
-productTicketsDestination(
-    onBackClick = { navController.popBackStack() },
-    onNavigateToCreateTicket = { type -> navController.navigateToCreateTicket(type) },
-    onNavigateToTicketDetail = { id -> navController.navigateToTicketDetail(id) }
-)
-createTicketDestination(onBackClick = { navController.popBackStack() })
-ticketDetailDestination(onBackClick = { navController.popBackStack() })
-```
-
----
-
-## cmp-network-monitor
-
-Reactive network connectivity monitoring for **all 21 KMP targets** — push-based on mobile, adaptive polling on desktop/native.
-
-```kotlin
-import io.github.mobilebytelabs.kmptoolkit.networkmonitor.*
-
-val monitor = createNetworkMonitor()
-
-// Observe connectivity
-monitor.isOnline.collect { online -> updateUI(online) }
-
-// Rich status (Available / Unavailable / CaptivePortal)
-monitor.networkStatus.collect { status ->
-    when (status) {
-        is NetworkStatus.Available -> println("Online via ${status.info.type}")
-        is NetworkStatus.CaptivePortal -> showLoginPrompt(status.redirectUrl)
-        is NetworkStatus.Unavailable -> showOfflineBanner()
-    }
-}
-
-// Extensions
-monitor.requireOnline()                         // throws if offline
-monitor.ensureOnline()                          // suspends until online
-monitor.ifOnline { api.fetchData() }            // conditional execution
-monitor.retryOnReconnect(maxRetries = 3) { api.upload(payload) }
-```
-
-| Platform | API | Type |
-|----------|-----|------|
-| Android | ConnectivityManager + NetworkCallback | Push |
-| iOS/macOS/tvOS/watchOS | NWPathMonitor | Push |
-| JVM | NetworkInterface + HTTP HEAD + Adaptive Polling | Poll |
-| JS / WasmJS | navigator.onLine + events | Push |
-| Linux | /sys/class/net + Adaptive Polling | Poll |
-| Windows (MinGW) | Winsock2 + Adaptive Polling | Poll |
-
-See [docs/network-monitor/](docs/network-monitor/) for full setup guide.
-
----
-
-## cmp-network-monitor-compose
-
-Compose Multiplatform extensions for `cmp-network-monitor` — auto UI switching, offline banners, and CompositionLocal support.
-
-```kotlin
-import io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.*
-
-// Auto-switch between online/offline UI
-NetworkAwareContent(
-    onlineContent = { MainContent() },
-    offlineContent = { OfflinePlaceholder() },
-    captivePortalContent = { portal -> CaptivePortalBanner(portal.redirectUrl) },
-)
-
-// Animated offline banner
-ConnectivityBanner()
-
-// Scoped monitor with auto-cleanup
-val monitor = rememberScopedNetworkMonitor()
-val isOnline by monitor.collectIsOnlineAsState()
-```
-
-Supports: Android, iOS, macOS, JVM, JS, WasmJS.
-
----
+> 💡 Replace `LATEST` with the version shown in the [Maven Central badge](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs) at the top of this README — single source of truth, no manual update on this file when a new release ships.
 
 ## Platform Support
 
-| Platform | clipboard | bubble | toast | open-url | deep-link | in-app-update | remote-config | product-tickets | network-monitor | network-monitor-compose |
-|----------|:---------:|:------:|:-----:|:--------:|:---------:|:-------------:|:-------------:|:---------------:|:---------------:|:----------------------:|
-| Android | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| iOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| macOS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| JVM | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| JS | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
-| Wasm | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
-| Linux | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Windows | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| tvOS | — | — | — | — | — | — | — | — | ✅ | ❌ |
-| watchOS | — | — | — | — | — | — | — | — | ✅ | ❌ |
-| WasmWASI | — | — | — | — | — | — | — | — | ✅ | ❌ |
+The toolkit targets every platform Kotlin Multiplatform supports. Per-module coverage varies — see each module's Wiki page for the authoritative matrix. Quick reference:
+
+| Platform | Targets | Modules with full coverage |
+|---|---|---|
+| **Android** | `androidTarget` | All |
+| **iOS** | `iosX64`, `iosArm64`, `iosSimulatorArm64` | All |
+| **macOS** | `macosX64`, `macosArm64` | All except *bubble*, *product-tickets* |
+| **JVM Desktop** | `jvm` | All |
+| **JS** | `js` (browser + node) | All except *bubble*, *toast*, *in-app-update*, *product-tickets* |
+| **wasmJs** | `wasmJs` (browser + node) | All except *bubble*, *toast*, *in-app-update*, *product-tickets* |
+| **Linux** | `linuxX64`, `linuxArm64` | *clipboard*, *open-url*, *deep-link*, *in-app-update*, *remote-config*, *network-monitor*, *share*, *intent-launcher*, *app-intents* |
+| **Windows** | `mingwX64` | Same as Linux |
+| **tvOS / watchOS** | `tvosX64/Arm64/SimulatorArm64`, `watchosX64/Arm32/Arm64/SimulatorArm64/DeviceArm64` | *network-monitor*, *share* (limited), *app-intents* (manifest-only) |
+
+📊 **Full per-module × per-target matrix:** [Wiki › Platform Matrix](https://github.com/MobileByteLabs/KmpToolkit/wiki/Platform-Matrix) · [docs/inter-app-comms/CAPABILITY_MATRIX.md](docs/inter-app-comms/CAPABILITY_MATRIX.md)
+
+## Inter-App Comms Suite (v0.4)
+
+Three modules ship together as the **inter-app communication** suite — all share the same Compose-MP adapter pattern (core + `-compose` adapter):
+
+- **[cmp-share](https://github.com/MobileByteLabs/KmpToolkit/wiki/Share)** + **[cmp-share-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/Share-Compose)** — share sheets via OS-native dispatch
+- **[cmp-intent-launcher](https://github.com/MobileByteLabs/KmpToolkit/wiki/Intent-Launcher)** + **[cmp-intent-launcher-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/Intent-Launcher-Compose)** — typed `Intent` builder + lifecycle-free `SystemIntents` (settings + save dialog) + Composable launchers
+- **[cmp-app-intents](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Intents)** + **[cmp-app-intents-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Intents-Compose)** — declarative App Intents DSL (SiriKit + Assistant BIIs)
+
+Architecture docs: [docs/inter-app-comms/CAPABILITY_MATRIX.md](docs/inter-app-comms/CAPABILITY_MATRIX.md) · [ADR-09 (platform-impl-exits)](cmp-app-intents/adrs/ADR-09-platform-impl-exits.md)
 
 ## Sample Apps
 
@@ -387,46 +138,26 @@ Supports: Android, iOS, macOS, JVM, JS, WasmJS.
 
 # Android
 ./gradlew :samples:sample-clipboard:androidApp:installDebug
-./gradlew :samples:sample-in-app-update:androidApp:installDebug
 ./gradlew :samples:sample-network-monitor:androidApp:installDebug
+
+# Inter-app comms — all 5 platforms (Android, iOS, JVM, JS, wasmJs)
+./gradlew :samples:sample-cmp-share:composeApp:run
+./gradlew :samples:sample-cmp-intent-launcher:composeApp:jsBrowserDevelopmentRun
+./gradlew :samples:sample-inter-app-comms:composeApp:run
 ```
 
-### Inter-app communication suite (Android + iOS + JVM + JS + wasmJs)
+The full sample matrix (one sample per module + a combined inter-app-comms showcase) lives under [`samples/`](samples/).
 
-Three per-module samples shipped under [PLAN-09 per-module-samples](../../plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-suite/09-per-module-samples.md) — first per-module samples in the toolkit with full 5-platform coverage (Android + iOS + JVM Desktop + JS + wasmJs).
-
-| Sample | Module exercised | Run on Desktop | Run on Android | Run in browser |
-|---|---|---|---|---|
-| [`sample-cmp-share`](samples/sample-cmp-share/README.md) | `cmp-share` (share text/url/image/file/multi) | `:run` | `androidApp:installDebug` | `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` |
-| [`sample-cmp-intent-launcher`](samples/sample-cmp-intent-launcher/README.md) | `cmp-intent-launcher` (Android Intent + ActivityResult) | `:run` | `androidApp:installDebug` | `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` |
-| [`sample-cmp-app-intents`](samples/sample-cmp-app-intents/README.md) | `cmp-app-intents` (declarative SiriKit / on-device registry) | `:run` | `androidApp:installDebug` | `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` |
-
-A combined showcase wiring all three modules at once is also available at [`sample-inter-app-comms`](samples/sample-inter-app-comms/) (Android + iOS only).
-
-#### Web target — Skiko WASM cache warm-up
-
-The first `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` invocation on a fresh
-checkout downloads ~50MB of Skiko WASM assets via the Kotlin/JS gradle plugin. Subsequent
-runs hit the warm cache and complete in seconds.
-
-If you see `OutOfMemoryError: GC overhead limit exceeded` during a `wasmJs` compile,
-confirm `org.gradle.jvmargs=-Xmx4096M` (or higher) is set in `gradle.properties` — the
-repo default is now 4G. If you also see `kotlinStoreYarnLock` contention after adding
-a new web-targeting module, run `./gradlew kotlinUpgradeYarnLock --no-daemon` once.
+> **First-run note (web targets):** `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` downloads ~50MB of Skiko WASM assets on a cold cache. Subsequent runs are fast. If you hit `OutOfMemoryError: GC overhead limit exceeded`, ensure `org.gradle.jvmargs=-Xmx4096M` in `gradle.properties` (the repo default).
 
 ## Contributing
 
-1. Copy `cmp-library` as a template: `cp -r cmp-library cmp-your-feature`
-2. Follow `cmp-library/TEMPLATE_README.md`
-3. Add the module to `settings.gradle.kts`
-4. Add a sample app under `samples/`
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
+New module template lives at [`cmp-library/`](cmp-library/) — copy + rename + add to `settings.gradle.kts` + ship a sample under `samples/`. Full walkthrough: [Wiki › Adding New Features](https://github.com/MobileByteLabs/KmpToolkit/wiki/Adding-New-Features) · [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
 ```
-Copyright 2025 MobileByteLabs
+Copyright 2026 MobileByteLabs
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
