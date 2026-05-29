@@ -99,8 +99,11 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
         nw_path_monitor_set_queue(monitor, queue)
         nw_path_monitor_set_update_handler(monitor) { path ->
             val status = nw_path_get_status(path)
-            val isSatisfied = status == nw_path_status_satisfied ||
-                status == nw_path_status_satisfiable
+            // nw_path_status_satisfied = Apple confirmed the path can send/receive data
+            // (analogous to NET_CAPABILITY_VALIDATED on Android).
+            // nw_path_status_satisfiable = path is NOT active but could be on-demand
+            // (e.g. cellular in low-data mode, on-demand VPN) — treat as offline.
+            val isSatisfied = status == nw_path_status_satisfied
 
             if (isSatisfied) {
                 val type = when {

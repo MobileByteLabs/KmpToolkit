@@ -123,6 +123,15 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         // completes are queued on `seedComplete` (M-002) rather than dropped.
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .apply {
+                // API 23+: require Android's own validation probe to pass before
+                // reporting online. Aligns with the system "No internet connection"
+                // notification. Pre-API-23: no VALIDATED capability exists — fall
+                // back to INTERNET-only (existing behaviour on very old devices).
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                }
+            }
             .build()
 
         // Android 14+ (API 34): registerNetworkCallback with Handler is deprecated
@@ -146,7 +155,15 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
     private fun seedInitialState() {
         val activeNetwork = connectivityManager.activeNetwork
         val caps = activeNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
-        if (activeNetwork != null && caps != null) {
+        // On API 23+, mirror the NetworkRequest gate: only go online if the network
+        // has passed Android's own internet validation probe. Pre-API-23 falls back
+        // to trusting the native callback (INTERNET capability present = online).
+        val isValidated = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+        } else {
+            caps != null
+        }
+        if (activeNetwork != null && caps != null && isValidated) {
             val info = caps.toNetworkInfo()
             handleNativeOnline(info)
         } else {
