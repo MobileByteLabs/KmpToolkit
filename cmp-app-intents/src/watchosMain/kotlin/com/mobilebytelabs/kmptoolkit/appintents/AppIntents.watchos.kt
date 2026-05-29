@@ -10,16 +10,25 @@
 package com.mobilebytelabs.kmptoolkit.appintents
 
 /**
- * watchOS `AppIntents` — FULL impl via existing manifest + Swift bridge.
+ * watchOS `AppIntents` — runtime-registry only.
  *
- * watchOS 10+ supports App Intents natively (Shortcuts on Apple Watch). The same
- * `CmpAppIntentBridge.swift` works — manifest JSON written, Swift consumes it at
- * launch, `AppShortcutsProvider` registration works as on iOS.
+ * Manifest-write + AppIntentsCallback Swift-bridge dispatch are intentionally NOT
+ * implemented on watchOS at this layer:
  *
- * `CoreSpotlight.framework` is NOT available on watchOS; the Swift bridge skips
- * indexing via `#if canImport(CoreSpotlight)` guards.
+ * - `AppIntentsCallback` (the ObjC-bridged singleton consumed by `CmpAppIntentBridge.swift`)
+ *   is defined in iosMain + macosMain only.
+ * - `NSFileManager.URLForDirectory(NSDocumentDirectory, NSUserDomainMask, ...)` triggers
+ *   K/N expect-actual bit-width errors when `watchosArm32` is one of the declared targets
+ *   (NSUInteger is 32-bit on armv7k / 64-bit elsewhere). Keeping watchOS at runtime-only
+ *   sidesteps the issue without dropping the watchosArm32 target.
  *
- * Real implementation (Phase 10.C) — for v0.2 scaffolding this is registry-only.
+ * Consumers wanting full watchOS App Intents integration ship their own Swift bridge that
+ * calls `AppIntentsRuntime.invoke(id, params)` directly via `@ObjCName` exports from
+ * a per-app appleMain bridge file. The runtime-registry side still works — `register()`
+ * captures intents in memory + `invokeForTesting` is callable for in-app verification.
+ *
+ * ADR-09 #11 audit refresh: watchOS = runtime-only at v0.4; full manifest + Swift dispatch
+ * follow-up post-v0.4 once the appleMain consolidation lands.
  */
 @ExperimentalAppIntentsApi
 public actual object AppIntents {

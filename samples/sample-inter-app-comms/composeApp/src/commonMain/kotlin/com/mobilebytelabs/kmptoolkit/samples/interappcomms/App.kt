@@ -51,6 +51,14 @@ import com.mobilebytelabs.kmptoolkit.share.ShareResult
 import com.mobilebytelabs.kmptoolkit.share.image
 import com.mobilebytelabs.kmptoolkit.share.text
 import com.mobilebytelabs.kmptoolkit.share.url
+// v0.4 Phase 10 — opinionated Composables from the new compose adapter modules
+import com.mobilebytelabs.kmptoolkit.share.SharePayload
+import com.mobilebytelabs.kmptoolkit.share.compose.ShareButton
+import com.mobilebytelabs.kmptoolkit.share.compose.ShareSheet
+import com.mobilebytelabs.kmptoolkit.intentlauncher.compose.IntentPickerDialog
+import com.mobilebytelabs.kmptoolkit.intentlauncher.compose.IntentPickerSheet
+import com.mobilebytelabs.kmptoolkit.appintents.compose.AppIntentsRegistration
+import com.mobilebytelabs.kmptoolkit.appintents.compose.AppIntentsRegistry
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +81,8 @@ fun SampleInterAppCommsApp() {
                         Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Share") })
                         Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Intent") })
                         Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("AppIntents") })
+                        // v0.4 Phase 10 — Compose UX tab showcasing opinionated Composables
+                        Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Compose UX") })
                     }
 
                     Column(
@@ -86,6 +96,7 @@ fun SampleInterAppCommsApp() {
                             0 -> ShareTab(onStatus = { status = it })
                             1 -> IntentTab(onStatus = { status = it })
                             2 -> AppIntentsTab(onStatus = { status = it })
+                            3 -> ComposeUxTab(onStatus = { status = it })
                         }
                         Spacer(Modifier.height(24.dp))
                         Text("Status: $status", style = MaterialTheme.typography.bodyMedium)
@@ -248,4 +259,98 @@ private fun AppIntentsTab(onStatus: (String) -> Unit) {
         },
         modifier = Modifier.fillMaxWidth(),
     ) { Text("Test-invoke greet(name=\"World\")") }
+}
+
+// =============================================================================
+// v0.4 Phase 10 — Compose UX tab demonstrating the opinionated Composables
+// from cmp-share-compose, cmp-intent-launcher-compose, cmp-app-intents-compose
+// =============================================================================
+
+@Composable
+private fun ComposeUxTab(onStatus: (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+
+    // ShareSheet state
+    var showShareSheet by remember { mutableStateOf(false) }
+    if (showShareSheet) {
+        ShareSheet(
+            payload = SharePayload.Url("https://github.com/MobileByteLabs/KmpToolkit"),
+            onDismiss = { showShareSheet = false },
+            onResult = { result -> onStatus("ShareSheet → $result") },
+        )
+    }
+
+    // IntentPickerDialog state
+    var showPickerDialog by remember { mutableStateOf(false) }
+    if (showPickerDialog) {
+        IntentPickerDialog(
+            contract = ResultContracts.PickImage,
+            onResult = { uri -> onStatus("IntentPickerDialog → $uri") },
+            onDismiss = { showPickerDialog = false },
+        )
+    }
+
+    // IntentPickerSheet state
+    var showPickerSheet by remember { mutableStateOf(false) }
+    if (showPickerSheet) {
+        IntentPickerSheet(
+            contract = ResultContracts.PickDocument,
+            onResult = { uri -> onStatus("IntentPickerSheet → $uri") },
+            onDismiss = { showPickerSheet = false },
+        )
+    }
+
+    // AppIntentsRegistration — lifecycle-bound at composition
+    val appIntentsConfig = remember {
+        appIntents {
+            intent("composeUxIntent") {
+                title = "Compose UX Intent"
+                description = "Registered via AppIntentsRegistration Composable"
+                perform { _ -> AppIntentResult.Dialog("Compose UX invoked") }
+            }
+        }
+    }
+    AppIntentsRegistration(appIntentsConfig)
+
+    Text(
+        "Compose UX Composables (v0.4) — drop-in styled UX backed by the imperative cmp-* APIs.",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+
+    Text(
+        "ShareSheet — Material 3 modal bottom sheet with payload preview + Share button",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    Button(onClick = { showShareSheet = true }, modifier = Modifier.fillMaxWidth()) {
+        Text("Open ShareSheet (URL)")
+    }
+
+    Text(
+        "ShareButton — Material 3 IconButton wrapping Share.share()",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    ShareButton(
+        payload = SharePayload.Text("Hello from cmp-share-compose v1.0"),
+        onResult = { result -> onStatus("ShareButton → $result") },
+    )
+
+    Text(
+        "IntentPickerDialog / IntentPickerSheet — Material 3 picker scaffolds",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    Button(onClick = { showPickerDialog = true }, modifier = Modifier.fillMaxWidth()) {
+        Text("Open IntentPickerDialog (PickImage)")
+    }
+    OutlinedButton(onClick = { showPickerSheet = true }, modifier = Modifier.fillMaxWidth()) {
+        Text("Open IntentPickerSheet (PickDocument)")
+    }
+
+    Text(
+        "AppIntentsRegistry — Material 3 LazyColumn dev/debug UI",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    AppIntentsRegistry(
+        modifier = Modifier.fillMaxWidth(),
+        onInvokeResult = { id, result -> onStatus("Registry invoke $id → $result") },
+    )
 }

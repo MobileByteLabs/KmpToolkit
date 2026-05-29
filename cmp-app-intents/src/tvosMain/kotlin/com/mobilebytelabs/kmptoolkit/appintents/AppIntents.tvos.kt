@@ -10,14 +10,25 @@
 package com.mobilebytelabs.kmptoolkit.appintents
 
 /**
- * tvOS `AppIntents` — manifest JSON only; Siri Suggestions partial support.
+ * tvOS `AppIntents` — runtime-registry only.
  *
- * tvOS 14+ supports App Intents for Siri Suggestions on Apple TV, but lacks
- * `CoreSpotlight.framework` (no `CSSearchableIndex`). The Swift bridge skips
- * indexing on tvOS; the manifest JSON is still written so consumer Swift code
- * can register `AppShortcutsProvider` entries.
+ * Manifest-write + AppIntentsCallback Swift-bridge dispatch are intentionally NOT
+ * implemented on tvOS at this layer:
  *
- * Real implementation (Phase 10.C) — for v0.2 scaffolding this is registry-only.
+ * - `AppIntentsCallback` (the ObjC-bridged singleton consumed by `CmpAppIntentBridge.swift`)
+ *   is defined in iosMain + macosMain only; tvOS Swift bridge would need its own
+ *   delivery mechanism (tvOS App Intents have limited reach vs iOS — no CoreSpotlight,
+ *   no Siri Suggestions on appletvOS<14, no AppShortcutsProvider).
+ * - The manifest-write to `NSDocumentDirectory` hits a watchosArm32-equivalent NSInteger
+ *   bit-width conflict in some Apple platforms (separate issue from tvOS), so we keep
+ *   tvOS aligned with watchOS = runtime-registry only.
+ *
+ * Consumers wanting full tvOS App Intents integration ship their own Swift bridge that
+ * calls `AppIntentsRuntime.invoke(id, params)` directly via `@ObjCName` exports from
+ * a per-app appleMain bridge file.
+ *
+ * ADR-09 #11 audit refresh: tvOS = runtime-only at v0.4; full manifest + Swift dispatch
+ * follow-up post-v0.4 once the appleMain consolidation lands.
  */
 @ExperimentalAppIntentsApi
 public actual object AppIntents {

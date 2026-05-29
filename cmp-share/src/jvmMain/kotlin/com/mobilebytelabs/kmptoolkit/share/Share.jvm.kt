@@ -37,6 +37,13 @@ public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult =
         withContext(Dispatchers.IO) {
             try {
+                // v0.4 (Phase 2 — closes ADR-09 #4): OS-detect native-path branching.
+                // Attempts native handlers first (xdg-open on Linux for Url/File; open on macOS;
+                // cmd /c start on Windows). Falls back to AWT clipboard for unsupported OS or
+                // Image/text payloads. Native paths use ProcessBuilder (zero new dep — no JNA).
+                val nativePathResult = tryNativeDispatch(payload, options)
+                if (nativePathResult != null) return@withContext nativePathResult
+                // Fallback to existing AWT clipboard impl
                 when (payload) {
                     is SharePayload.Text -> writeClipboardText(payload.content)
                     is SharePayload.Url -> writeClipboardText(payload.href)
@@ -48,6 +55,41 @@ public actual object Share {
                 ShareResult.Failed(ShareError.Unknown(e.message ?: "JVM share error"))
             }
         }
+
+    /**
+     * OS-detect native dispatch — returns null to fall through to clipboard fallback.
+     * macOS → `open` subprocess; Linux → `xdg-open` subprocess; Windows → `cmd /c start` subprocess.
+     * Only handles Url + File payloads (which native OS handlers can launch); Text/Image still go to clipboard.
+     */
+    private fun tryNativeDispatch(payload: SharePayload, options: ShareOptions): ShareResult? {
+        val target = when (payload) {
+            is SharePayload.Url -> payload.href
+
+            is SharePayload.File -> if (payload.uri.startsWith("file://") ||
+                payload.uri.contains("://")
+            ) {
+                payload.uri
+            } else {
+                "file://${payload.uri}"
+            }
+
+            else -> return null // Text/Image/Multi fall through to clipboard
+        }
+        val osName = System.getProperty("os.name").lowercase()
+        val cmd: List<String> = when {
+            osName.contains("mac") -> listOf("open", target)
+            osName.contains("linux") -> listOf("xdg-open", target)
+            osName.contains("windows") -> listOf("cmd", "/c", "start", "", target)
+            else -> return null
+        }
+        return try {
+            val process = ProcessBuilder(cmd).redirectErrorStream(true).start()
+            val exit = process.waitFor()
+            if (exit == 0) ShareResult.Completed else null // null = fall through to clipboard
+        } catch (e: Throwable) {
+            null // native dispatcher unavailable; fall through
+        }
+    }
 
     private fun systemClipboard(): Clipboard = Toolkit.getDefaultToolkit().systemClipboard
 

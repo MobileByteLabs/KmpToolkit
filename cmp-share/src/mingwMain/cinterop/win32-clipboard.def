@@ -1,0 +1,22 @@
+# Spike artifact for inter-app-comms-real-native-impls Phase 0 S0.A
+# Purpose: verify Kotlin/Native 2.3.10 mingwX64 cinterop builds Win32 clipboard symbols.
+# If verdict is PASS, this file is promoted to permanent in Phase 2.
+
+headers = windows.h
+linkerOpts.mingw_x64 = -luser32 -lkernel32
+
+---
+
+#include <windows.h>
+
+static inline HGLOBAL spike_alloc_global(SIZE_T size) {
+    return GlobalAlloc(GMEM_MOVEABLE, size);
+}
+
+static inline LPVOID spike_lock_global(HGLOBAL h) {
+    return GlobalLock(h);
+}
+
+static inline BOOL spike_unlock_global(HGLOBAL h) {
+    return GlobalUnlock(h);
+}

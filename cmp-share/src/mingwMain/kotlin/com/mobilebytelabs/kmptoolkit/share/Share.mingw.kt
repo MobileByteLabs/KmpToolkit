@@ -9,45 +9,73 @@
  */
 package com.mobilebytelabs.kmptoolkit.share
 
-import kotlinx.cinterop.ExperimentalForeignApi
 import platform.posix.system
 
 /**
- * mingw (Windows) `Share` — `cmd /c start` for URL share; everything else Unsupported.
+ * mingw (Windows) `Share` — `cmd /c start` for URL share + `cmd /c "echo TEXT | clip"`
+ * for text. Image / File / Multi binary payloads → `UnsupportedPlatform`.
  *
- * `start` resolves the URL/file against the Windows registry and launches the
- * configured handler (Edge for http, mailto: handler for mailto:, default opener
- * for files).  This is the closest Win32-portable equivalent of `xdg-open`
- * without taking a shell32.dll cinterop dependency.
+ * **Win32 cinterop status**: `win32-clipboard.def` (CF_DIB binary clipboard, Phase 2
+ * ADR-09 #3 closure) compiles → klib successfully on macOS-arm64 K/N hosts but the
+ * generated bindings do NOT expose the Win32 SDK types (`OpenClipboard`, `CF_DIB`,
+ * `SetClipboardData`, etc.) as Kotlin symbols — K/N cinterop's parser drops the SDK
+ * struct types when run on a non-Windows host (only `static inline` helper functions
+ * end up in the klib).
  *
- * Note: image/file binary payloads and Multi remain Unsupported. Win32 clipboard
- * (OpenClipboard / SetClipboardData) is a v0.3 candidate — needs Win32 cinterop.
+ * Real binary-clipboard round-trip needs either:
+ * 1. A Windows CI host running the cinterop step (where `windows.h` resolves natively)
+ * 2. A cinterop wrapper layer that exposes clipboard state through helper functions
+ *    only, never as SDK struct refs (rewrite the .def to be Win32-SDK-opaque)
  *
- * **Security:** the URL is double-quote-wrapped (Windows uses double quotes for
- * cmd args) and embedded double quotes are escaped to prevent injection.
+ * Both deferred to post-v0.4. ADR-09 #3 audit-log updated: WONTFIX-PROVISIONAL remains
+ * in effect; `win32-clipboard.def` ships as a future-use artifact.
  *
- * v0.2 sub-plan 10.B.
+ * **Security:** URL is double-quote-wrapped + embedded quotes escaped to prevent
+ * cmd injection.
  */
-@OptIn(ExperimentalForeignApi::class)
 @ExperimentalShareApi
 public actual object Share {
     public actual suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult = when (payload) {
         is SharePayload.Url -> winStart(payload.href)
-        is SharePayload.Text -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-        is SharePayload.Image -> ShareResult.Failed(ShareError.UnsupportedPlatform)
-        is SharePayload.File -> winStart(payload.uri)
-        is SharePayload.Multi -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+
+        is SharePayload.Text -> winClipText(payload.content)
+
+        is SharePayload.Image,
+        is SharePayload.File,
+        -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+
+        is SharePayload.Multi -> multi(payload)
     }
 
-    private fun winStart(rawTarget: String): ShareResult {
-        val target = rawTarget.replace("\"", "\\\"")
-        // `start` needs an empty title arg ("") when the target is quoted.
-        val cmd = "cmd /c start \"\" \"$target\""
-        val rc = system(cmd)
-        return if (rc == 0) {
-            ShareResult.Completed
-        } else {
-            ShareResult.Failed(ShareError.Unknown("cmd start exit=$rc"))
+    /** Dispatch URL via Windows shell resolver (`start ""` consumes a title arg). */
+    private fun winStart(href: String): ShareResult {
+        val escaped = href.replace("\"", "\\\"")
+        val rc = system("cmd /c start \"\" \"$escaped\"")
+        return if (rc == 0) ShareResult.Completed else ShareResult.Failed(ShareError.Unknown("cmd start exit=$rc"))
+    }
+
+    /** Copy text to clipboard via Windows built-in `clip.exe` (since Windows XP). */
+    private fun winClipText(text: String): ShareResult {
+        // Newlines in text would break the single-line command — replace with a placeholder
+        // and re-emit via echo's `^M` continuation? Simpler: only single-line text copied;
+        // multi-line falls back to NoHandler. Production consumers wanting binary-safe
+        // clipboard should ship their own clip-replacement.
+        if (text.contains('\n') || text.contains('"')) {
+            return ShareResult.Failed(ShareError.Unknown("clip.exe path limited to single-line non-quoted text"))
         }
+        val rc = system("cmd /c \"echo $text | clip\"")
+        return if (rc == 0) ShareResult.Completed else ShareResult.Failed(ShareError.Unknown("clip exit=$rc"))
+    }
+
+    private fun multi(multi: SharePayload.Multi): ShareResult {
+        for (item in multi.items) {
+            val r = when (item) {
+                is SharePayload.Text -> winClipText(item.content)
+                is SharePayload.Url -> winStart(item.href)
+                else -> ShareResult.Failed(ShareError.UnsupportedPlatform)
+            }
+            if (r is ShareResult.Completed) return r
+        }
+        return ShareResult.Failed(ShareError.NoHandler)
     }
 }

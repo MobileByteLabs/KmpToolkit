@@ -9,6 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Inter-App Comms v0.4 (closes ADR-09 + Compose adapter modules + opinionated UX)
+
+Plan: [`inter-app-comms-compose-completeness`](../../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-compose-completeness/PLAN.md) — 12-sub-plan epic on v0.3-alpha foundation.
+
+**Phase 0 — Spikes** (`SPIKE_FINDINGS_V0_4.md`):
+- S1.A Compose-MP target audit → UNCHANGED (CMP roadmap still at 9 targets per JetBrains)
+- S1.B Win32 OPENFILENAMEW + IShellLinkW marshal → PROVISIONAL PASS
+- S1.C tvOS Swift dispatch cinterop → PROVISIONAL PASS
+- S1.D Gradle codegen approach → MANIFEST-JSON picked (zero KSP dep)
+- S1.E Kover threshold calibration → per-module table (75-85%)
+
+**Phases 2-5 — ADR-09 closures:**
+- ADR-09 #1: tvOS Swift bridge probing wired (Swift class detected via ObjC runtime; full dispatch deferred to real-device CI)
+- ADR-09 #2: watchOS `WCSession.transferFile` real impl for Image/File/Multi binary payloads
+- ADR-09 #3: mingw CF_DIB binary clipboard via Win32 cinterop (PROVISIONAL — needs Windows CI runtime verify)
+- ADR-09 #4: JVM OS-detect with ProcessBuilder subprocess dispatch (macOS open / Linux xdg-open / Windows cmd start)
+- ADR-09 #7/#8: cmp-intent-launcher Linux PickContact WONTFIX KDoc + mingw `GetOpenFileNameW` real impl
+- ADR-09 #11: cmp-app-intents watchOS/tvOS manifest writes + Swift bridge handoff + Linux XDG/.desktop + mingw APPDATA manifest
+- ADR-09 #12: `generateShortcutsXml` + `generateSwiftIntents` Gradle codegen tasks (MANIFEST-JSON approach)
+
+**Phases 6-7 — NEW Compose adapter modules:**
+- `cmp-share-compose` — `@Composable rememberShareLauncher()` + Material 3 `ShareSheet()` + `ShareButton()`
+- `cmp-app-intents-compose` — `@Composable AppIntentsRegistration(config)` (DisposableEffect lifecycle) + `AppIntentsRegistry()` Material 3 dev/debug LazyColumn UI
+
+**Phase 8 — cmp-intent-launcher-compose UX expansion:**
+- `@Composable IntentPickerDialog(contract, onResult, onDismiss)` — Material 3 AlertDialog scaffold
+- `@Composable IntentPickerSheet(...)` — Material 3 ModalBottomSheet variant
+- Material 3 + materialIconsExtended deps added
+
+**Phase 9 — ABI + coverage infrastructure:**
+- `binaryCompatibilityValidator` plugin applied to all 6 modules (3 core + 3 compose); baselines deferred to first Windows-CI green run
+- `kover` plugin applied to all 6 modules with per-S1.E thresholds (cinterop-heavy: 75-80%; pure-Kotlin compose: 85%)
+- Smoke commonTest cases authored for new compose modules
+
+**Phase 10 — Sample app:**
+- `samples/sample-inter-app-comms/composeApp` adds dependencies on 3 compose adapter modules
+- New "Compose UX" tab demonstrates all opinionated Composables (ShareSheet, ShareButton, IntentPickerDialog, IntentPickerSheet, AppIntentsRegistration, AppIntentsRegistry)
+- `iosApp/iosApp/AppIntents/CmpAppIntentBridge.swift` committed for end-to-end demo + `Generated/` dir scaffolded
+- **NOTE**: Linux/mingw native binary targets NOT added to sample composeApp (Compose Multiplatform doesn't support those targets per S1.A — would fail build); a future non-Compose `sample-inter-app-comms-natives` would cover them
+
+**Phase 11 — Docs (shared-version-aware):**
+- NEW `docs/inter-app-comms/CAPABILITY_MATRIX.md` — canonical 3-module × per-target × per-API support matrix
+- ADR-09 audit log updated per row (closed / WONTFIX / provisional)
+- `@ExperimentalShareApi` / `@ExperimentalIntentLauncherApi` / `@ExperimentalAppIntentsApi` markers **RETAINED** in this toolkit release — marker drop is a future toolkit-release decision pending Windows CI verification of Win32 cinterop runtime correctness (S1.B PROVISIONAL needs runtime evidence before locking BCV baselines + dropping markers). All 6 IPC modules continue to ship with the shared `kmptoolkit.version` (currently `3.3.2`; next bump to `3.4.0` lands this v0.4 epic).
+
+**Phase 13 — cmp-intent-launcher `SystemIntents` lifecycle-free entry points** (post-Phase 11 follow-up):
+- `SystemIntents.openAppSettings(): IntentResult` — Android `ACTION_APPLICATION_DETAILS_SETTINGS`, iOS `UIApplicationOpenSettingsURLString`, macOS `NSWorkspace.open("x-apple.systempreferences:")`, JVM OS-aware shell dispatch, Linux gnome-control-center→kcmshell5→xdg-open chain, Windows `start ms-settings:appsfeatures`. JS/wasmJs/tvOS/watchOS → `Failed(UnsupportedPlatform)`.
+- `SystemIntents.createDocument(suggestedName, mimeType): IntentResult` — Android invisible proxy Activity wraps `ActivityResultContracts.CreateDocument` (lifecycle-free), iOS `UIDocumentPickerViewController(URLs:, inMode: ExportToService)` with `SystemIntentsDelegatePin`, macOS `NSSavePanel.runModal()`, JVM `JFileChooser` on EDT via `Dispatchers.IO`, JS/wasmJs `window.showSaveFilePicker()` via `js()`/`@JsFun` with state-discriminator callback, Linux `zenity --file-selection --save`. mingw/tvOS/watchOS → `Failed(UnsupportedPlatform)` (Win32 `GetSaveFileNameW` cinterop is a future task).
+- New auto-init infrastructure: `IntentLauncherInitProvider` ContentProvider + `IntentLauncherContext` (mirrors `cmp-share/ShareInitProvider` pattern). `CreateDocumentProxyActivity` declared in library manifest with translucent theme + `excludeFromRecents`.
+- Tests: `SystemIntentsContractTest` (commonTest), `SystemIntentsJvmTest` (headless JVM), `SystemIntentsAndroidUnitTest` (no-init-provider failure-shape).
+- Unblocks pure-commonMain `IntentManager` consumers (kmp-project-template `IntentManagerImpl`) — no per-target source set needed for `openAppSettings` / `createDocument`.
+
 ### Added — Desktop JVM expansion for cmp-product-tickets + cmp-remote-config
 
 - **`cmp-product-tickets`** now ships a `jvm()` target — Desktop Compose apps can consume the full ProductTickets DSL + UI + Supabase integration. Pure commonMain module (no platform-specific code), so the entire change was adding `jvm()` to the targets list. Transitive deps (Ktor, Supabase, Koin, kotlinx) were already JVM-ready.

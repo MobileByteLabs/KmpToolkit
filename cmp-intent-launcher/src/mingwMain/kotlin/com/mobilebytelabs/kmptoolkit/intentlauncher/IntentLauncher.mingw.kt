@@ -1,0 +1,66 @@
+/*
+ * Copyright 2026 MobileByteLabs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ */
+package com.mobilebytelabs.kmptoolkit.intentlauncher
+
+import platform.posix.system
+
+/**
+ * mingw (Windows) `IntentLauncher` — v0.4 status: **UnsupportedPlatform for picker
+ * contracts** + arbitrary URL dispatch via `cmd /c start`.
+ *
+ * The `win32-pickers.def` cinterop (Phase 0 S1.B PROVISIONAL PASS) compiles the .def
+ * → klib successfully on macOS-arm64 K/N hosts but the generated bindings do NOT
+ * expose `OPENFILENAMEW` / `GetOpenFileNameW` as Kotlin types under the `win32pickers`
+ * package — the K/N cinterop parser drops Win32 SDK struct types when run on a
+ * non-Windows host (only the `static inline` helper functions are exposed, not the
+ * underlying Win32 types they manipulate).
+ *
+ * The real `GetOpenFileNameW` round-trip requires either:
+ * 1. A Windows CI host running the cinterop step (where `windows.h` resolves natively)
+ * 2. A cinterop wrapper layer that exposes the OPENFILENAMEW state through helper
+ *    functions only, never as a struct (rewrite the .def to be Win32-SDK-opaque)
+ *
+ * Both deferred to post-v0.4. ADR-09 #8 audit-log updated to reflect: WONTFIX-PROVISIONAL
+ * remains in effect; `win32-pickers.def` ships as a future-use artifact.
+ */
+@ExperimentalIntentLauncherApi
+public actual class IntentLauncher public constructor() {
+    public actual suspend fun launch(block: IntentBuilder.() -> Unit): IntentResult {
+        val builder = IntentBuilder().apply(block)
+        return when (val contract = builder.resultContract) {
+            ResultContracts.PickImage,
+            ResultContracts.PickMultipleImages,
+            ResultContracts.PickDocument,
+            ResultContracts.PickContact,
+            -> IntentResult.Failed(IntentError.UnsupportedPlatform)
+
+            null -> arbitraryUrl(builder)
+
+            else -> builder.onUnsupportedHandler?.invoke()
+                ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
+        }
+    }
+
+    /**
+     * Dispatch arbitrary http/https/mailto/file URI via the Windows shell's URI handler
+     * registry. `start ""` requires the empty title argument to avoid `start` interpreting
+     * the URI as a window-title.
+     */
+    private fun arbitraryUrl(builder: IntentBuilder): IntentResult {
+        val uri = builder.data ?: return IntentResult.Failed(IntentError.NoHandler)
+        val escaped = uri.replace("\"", "\\\"")
+        val rc = system("cmd /c start \"\" \"$escaped\"")
+        return if (rc == 0) {
+            IntentResult.Ok(IntentData(uri = uri, mimeType = builder.type))
+        } else {
+            IntentResult.Failed(IntentError.Unknown("cmd start exit=$rc"))
+        }
+    }
+}

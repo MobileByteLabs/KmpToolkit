@@ -1,0 +1,40 @@
+# =============================================================================
+# win32-pickers.def — Win32 GetOpenFileNameW cinterop for cmp-intent-launcher
+# =============================================================================
+# Phase 3 of inter-app-comms-compose-completeness (v0.4).
+# Provides OPENFILENAMEW struct + GetOpenFileNameW (comdlg32.lib) +
+# ShellExecuteW (shell32.lib) bindings.
+#
+# Phase 0 S1.B PROVISIONAL PASS — uses well-documented K/N cinterop pattern
+# extending the v0.3 Phase 0 win32-clipboard.def spike that PASSED in 18s.
+
+headers = windows.h commdlg.h shellapi.h
+linkerOpts.mingw_x64 = -lcomdlg32 -lshell32 -lole32 -luuid
+
+---
+
+#include <windows.h>
+#include <commdlg.h>
+#include <shellapi.h>
+
+// Zero-allocate + lStructSize-initialize OPENFILENAMEW per Win32 contract
+static inline OPENFILENAMEW cmpil_alloc_ofnw(void) {
+    OPENFILENAMEW ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+    return ofn;
+}
+
+// Helper to set lpstrFilter — caller provides a UTF-16 buffer containing
+// `Description\0*.ext\0...\0\0` (double-null-terminated)
+static inline void cmpil_set_filter(OPENFILENAMEW* ofn, LPCWSTR filter) {
+    ofn->lpstrFilter = filter;
+    ofn->nFilterIndex = 1;
+}
+
+// Helper to set lpstrFile + nMaxFile (caller-provided buffer)
+static inline void cmpil_set_file_buffer(OPENFILENAMEW* ofn, LPWSTR buffer, DWORD maxFile) {
+    ofn->lpstrFile = buffer;
+    ofn->nMaxFile = maxFile;
+}

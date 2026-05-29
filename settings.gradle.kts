@@ -33,8 +33,14 @@ include(":cmp-firebase-analytics")
 include(":cmp-pdf-generator")
 // Inter-app comms suite (Phase 1 scaffolds; full impl per plan-layer/.../inter-app-comms-suite/)
 include(":cmp-share") // Share — cross-platform share sheet
+// Share Compose — rememberShareLauncher() + ShareSheet() + ShareButton() (v0.4)
+include(":cmp-share-compose")
 include(":cmp-intent-launcher") // Intent Launcher — typed Android-Intent builder + ActivityResult; iOS picker whitelist
+// Intent Launcher Compose — @Composable rememberIntentLauncher() adapter (extracted v0.3) + UX (v0.4)
+include(":cmp-intent-launcher-compose")
 include(":cmp-app-intents") // App Intents — SiriKit Shortcuts + Spotlight (iOS 16+); Android on-device registry
+// App Intents Compose — AppIntentsRegistration() + AppIntentsRegistry() (v0.4)
+include(":cmp-app-intents-compose")
 
 // Sample applications
 include(":samples:sample-clipboard:composeApp")

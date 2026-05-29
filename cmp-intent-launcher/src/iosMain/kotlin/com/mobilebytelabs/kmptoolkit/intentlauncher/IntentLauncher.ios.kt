@@ -14,8 +14,6 @@
 
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.Contacts.CNContact
@@ -58,7 +56,7 @@ import kotlin.coroutines.resume
  * cmp-share API exposes today via `ShareOptions.presentingController`).
  */
 @ExperimentalIntentLauncherApi
-public actual class IntentLauncher internal constructor() {
+public actual class IntentLauncher public constructor() {
 
     public actual suspend fun launch(block: IntentBuilder.() -> Unit): IntentResult {
         val builder = IntentBuilder().apply(block)
@@ -76,9 +74,22 @@ public actual class IntentLauncher internal constructor() {
 
             ResultContracts.PickContact -> presentContactPicker(presenting)
 
+            // v0.3 (Phase 3 T1): arbitrary intents dispatch via UIApplication.openURL for URL-shaped
+            // data (ACTION_VIEW external-app launch). UIDocumentInteractionController for file URIs
+            // deferred to v0.4 (ADR-09: needs full UIDocumentInteractionController lifecycle bridge).
+            null -> arbitraryUrlIntent(builder)
+
             else -> builder.onUnsupportedHandler?.invoke()
                 ?: IntentResult.Failed(IntentError.UnsupportedPlatform)
         }
+    }
+
+    /** Dispatch http/https/mailto/tel URL via UIApplication.sharedApplication.openURL. */
+    private fun arbitraryUrlIntent(builder: IntentBuilder): IntentResult {
+        val uriStr = builder.data ?: return IntentResult.Failed(IntentError.NoHandler)
+        val url = NSURL.URLWithString(uriStr) ?: return IntentResult.Failed(IntentError.NoHandler)
+        UIApplication.sharedApplication.openURL(url, mapOf<Any?, Any?>(), null)
+        return IntentResult.Ok(IntentData(uri = uriStr, mimeType = builder.type))
     }
 
     private suspend fun presentPhotoPicker(presenting: UIViewController, multi: Boolean): IntentResult =
@@ -185,10 +196,6 @@ public actual class IntentLauncher internal constructor() {
         return top
     }
 }
-
-@ExperimentalIntentLauncherApi
-@Composable
-public actual fun rememberIntentLauncher(): IntentLauncher = remember { IntentLauncher() }
 
 // -----------------------------------------------------------------------------
 // Delegate bridges — subclass NSObject + implement Apple's delegate protocols.

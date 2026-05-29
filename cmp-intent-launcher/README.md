@@ -12,7 +12,48 @@ Kotlin Multiplatform.
 - **ActivityResult contracts**: `PickImage`, `PickDocument`, `PickMultipleImages`, `PickContact`, `Custom<R>`
 - **Compose-scoped launcher**: `rememberIntentLauncher()` — lifecycle-bound to enclosing Composable
 - **Android escape hatch**: `ComponentActivity.intentLauncher()` for non-Compose callers
+- **Lifecycle-free `SystemIntents`** (v0.4+): `openAppSettings()` + `createDocument(name, mime)` callable from commonMain with no Composable / Activity wiring (Android Context auto-injected via ContentProvider; SAF round-trip via invisible proxy Activity)
 - **Cross-platform fallback**: arbitrary intents route through `onUnsupported { }` lambda on non-Android
+
+## `SystemIntents` — lifecycle-free entry points (v0.4+)
+
+For operations that don't need an `ActivityResult` round-trip (settings deep-link)
+or that should round-trip through a library-managed proxy (`createDocument` SAF),
+use the `SystemIntents` expect object — callable from commonMain / DI graphs / non-UI
+code:
+
+```kotlin
+import com.mobilebytelabs.kmptoolkit.intentlauncher.SystemIntents
+
+suspend fun openSettings() {
+    when (val result = SystemIntents.openAppSettings()) {
+        is IntentResult.Ok -> { /* settings opened */ }
+        is IntentResult.Failed -> { /* UnsupportedPlatform on JS/wasmJs/tvOS/watchOS */ }
+        IntentResult.Cancelled -> { /* not used by openAppSettings */ }
+    }
+}
+
+suspend fun saveReport() {
+    val result = SystemIntents.createDocument(
+        suggestedName = "report.pdf",
+        mimeType = "application/pdf",
+    )
+    if (result is IntentResult.Ok) {
+        val uri = result.data?.uri // platform-native URI to write to
+    }
+}
+```
+
+Per-platform behaviour:
+
+| Method | Android | iOS | macOS | JVM | Linux | Windows | JS / wasmJs | tvOS / watchOS |
+|---|---|---|---|---|---|---|---|---|
+| `openAppSettings` | ✅ ACTION_APPLICATION_DETAILS_SETTINGS | ✅ openSettingsURLString | ✅ x-apple.systempreferences | ✅ OS-aware shell | ✅ gnome-control-center / kcmshell5 / xdg-open | ✅ ms-settings:appsfeatures | ❌ Unsupported | ❌ Unsupported |
+| `createDocument` | ✅ Proxy Activity + SAF | ✅ UIDocumentPicker (ExportToService) | ✅ NSSavePanel | ✅ JFileChooser | ✅ zenity --save | ❌ Unsupported (Win32 needs cinterop) | ✅ showSaveFilePicker (Chromium only) | ❌ Unsupported |
+
+**Android consumer note**: `IntentLauncherInitProvider` + `CreateDocumentProxyActivity`
+are bundled in the library AndroidManifest via manifest-merger — no consumer-side
+declaration needed.
 
 ## Platform support
 

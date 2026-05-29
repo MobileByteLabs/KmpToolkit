@@ -14,6 +14,11 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
+    // v0.4 Phase 9 — ABI stability (kover deferred — incompatible with the
+    // new `com.android.kotlin.multiplatform.library` plugin's `androidLibrary {}`
+    // extension; Kover 0.9.1 still requires the legacy `android {}` extension.
+    // Re-enable when Kover ships KMP-Android-Library plugin support.)
+    alias(libs.plugins.binaryCompatibilityValidator)
 }
 
 // ============================================================================
@@ -76,7 +81,14 @@ kotlin {
     // Linux + mingw (v0.2 — xdg-open / ShellExecuteW for URL share; clipboard fallback for text)
     linuxX64()
     linuxArm64()
-    mingwX64()
+    mingwX64 {
+        // SPIKE Phase 0 S0.A — revert if verdict FAIL
+        compilations.getByName("main").cinterops {
+            create("win32clipboard") {
+                defFile = file("src/mingwMain/cinterop/win32-clipboard.def")
+            }
+        }
+    }
 
     js {
         browser {

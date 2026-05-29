@@ -10,10 +10,12 @@
 package com.mobilebytelabs.kmptoolkit.appintents
 
 /**
- * JS browser `AppIntents` — no-op + `invokeForTesting` helper.
+ * JS browser `AppIntents` — **ADR-09 #10 WONTFIX (architectural)** per v0.4 docs refresh.
  *
- * Web has no native App Intents surface. PWA shortcut manifest is a separate concern
- * (deferred to potential `cmp-pwa-shortcuts` follow-up).
+ * Web has no canonical OS-level intent registration API. PWA shortcut Web App Manifest
+ * action handlers are a separate concern (deferred to potential future `cmp-pwa-shortcuts`
+ * module if requested — see GOAL.md D8 + OOS row). `register()` is intentionally no-op;
+ * `invokeForTesting` works for dev/test.
  */
 @ExperimentalAppIntentsApi
 public actual object AppIntents {

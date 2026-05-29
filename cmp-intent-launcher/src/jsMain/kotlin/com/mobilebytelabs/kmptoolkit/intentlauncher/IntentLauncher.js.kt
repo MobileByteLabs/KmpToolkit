@@ -9,8 +9,6 @@
  */
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -22,7 +20,7 @@ import kotlin.coroutines.resume
  * context. Returns `IntentResult.Failed(IntentError.UserGestureMissing)` on browser block.
  */
 @ExperimentalIntentLauncherApi
-public actual class IntentLauncher internal constructor() {
+public actual class IntentLauncher public constructor() {
     public actual suspend fun launch(block: IntentBuilder.() -> Unit): IntentResult {
         val builder = IntentBuilder().apply(block)
         val contract = builder.resultContract
@@ -73,10 +71,6 @@ public actual class IntentLauncher internal constructor() {
         }
     }
 }
-
-@ExperimentalIntentLauncherApi
-@Composable
-public actual fun rememberIntentLauncher(): IntentLauncher = remember { IntentLauncher() }
 
 /**
  * Programmatically create + click a `<input type=file>` element; resolve with the
