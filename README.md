@@ -38,9 +38,7 @@ Each module is completely independent — add only what your project needs.
 
 ## Installation
 
-All modules are published to Maven Central at the unified `kmptoolkit.version` shown in the badges above. Pick one of the install patterns:
-
-### Version Catalog (recommended)
+All modules ship together at the unified `kmptoolkit` version. Declare it once in your version catalog, then add only the libraries you need:
 
 ```toml
 # gradle/libs.versions.toml
@@ -58,6 +56,7 @@ cmp-remote-config   = { module = "io.github.mobilebytelabs:cmp-remote-config",  
 cmp-product-tickets = { module = "io.github.mobilebytelabs:cmp-product-tickets", version.ref = "kmptoolkit" }
 cmp-network-monitor = { module = "io.github.mobilebytelabs:cmp-network-monitor", version.ref = "kmptoolkit" }
 cmp-pdf-generator   = { module = "io.github.mobilebytelabs:cmp-pdf-generator",   version.ref = "kmptoolkit" }
+cmp-firebase-analytics = { module = "io.github.mobilebytelabs:cmp-firebase-analytics", version.ref = "kmptoolkit" }
 cmp-share           = { module = "io.github.mobilebytelabs:cmp-share",           version.ref = "kmptoolkit" }
 cmp-intent-launcher = { module = "io.github.mobilebytelabs:cmp-intent-launcher", version.ref = "kmptoolkit" }
 cmp-app-intents     = { module = "io.github.mobilebytelabs:cmp-app-intents",     version.ref = "kmptoolkit" }
@@ -81,23 +80,7 @@ kotlin {
 }
 ```
 
-### Direct dependency
-
-```kotlin
-// build.gradle.kts
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            val kmptoolkit = "LATEST"  // see Maven Central badge above
-            implementation("io.github.mobilebytelabs:cmp-clipboard:$kmptoolkit")
-            implementation("io.github.mobilebytelabs:cmp-toast:$kmptoolkit")
-            // ... add only what you need
-        }
-    }
-}
-```
-
-> 💡 Replace `LATEST` with the version shown in the [Maven Central badge](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs) at the top of this README — single source of truth, no manual update on this file when a new release ships.
+> 💡 Replace `LATEST` with the version shown in the [Maven Central badge](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs) at the top of this README — single source of truth, single line to bump when a new release ships.
 
 ## Platform Support
 
