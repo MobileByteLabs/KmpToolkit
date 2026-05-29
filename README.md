@@ -67,18 +67,7 @@ cmp-app-intents-compose      = { module = "io.github.mobilebytelabs:cmp-app-inte
 cmp-network-monitor-compose  = { module = "io.github.mobilebytelabs:cmp-network-monitor-compose",  version.ref = "kmptoolkit" }
 ```
 
-```kotlin
-// build.gradle.kts
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            implementation(libs.cmp.clipboard)
-            implementation(libs.cmp.toast)
-            // ... add only what you need
-        }
-    }
-}
-```
+Then reference any library from `commonMain` via the standard `implementation(libs.cmp.<name>)` pattern.
 
 > 💡 Replace `LATEST` with the version shown in the [Maven Central badge](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs) at the top of this README — single source of truth, single line to bump when a new release ships.
 
