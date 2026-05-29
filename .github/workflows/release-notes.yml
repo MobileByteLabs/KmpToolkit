@@ -1,0 +1,110 @@
+# Release Notes Enrichment
+#
+# When a GitHub release is created/published (by the publish.yml workflow or
+# manually), enrich its body by prepending the relevant `## [Unreleased]` or
+# `## [<version>]` section from CHANGELOG.md.
+#
+# The mbl-actionhub reusable publish workflow creates releases with just a
+# "Published Modules" list — this workflow adds the human-readable changelog
+# above that list so readers see "what changed" before "what was published."
+#
+# Decoupled from publish.yml so it also fires for manually-created releases
+# and can be re-run via workflow_dispatch to backfill missing notes.
+
+name: Release Notes
+
+on:
+  release:
+    types: [created, published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to enrich (e.g. v3.4.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history so CHANGELOG.md at the release commit is what we read,
+          # not whatever's on the default branch HEAD (in case the release was tagged
+          # against an older commit).
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Enrich release notes from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          echo "Enriching release $TAG (version=$VERSION)"
+
+          # Extract the changelog section. Try [<version>] first (post-bump
+          # convention), fall back to [Unreleased] (when bump-after-release
+          # hasn't curated CHANGELOG yet).
+          extract_section() {
+              local pattern="$1"
+              awk -v pat="$pattern" '
+                  BEGIN { capturing = 0 }
+                  /^## \[/ {
+                      if (capturing) exit
+                      if ($0 ~ pat) { capturing = 1; next }
+                  }
+                  capturing { print }
+              ' CHANGELOG.md
+          }
+
+          BODY=$(extract_section "\\[$VERSION\\]")
+          if [ -z "$(echo "$BODY" | tr -d '[:space:]')" ]; then
+              echo "No [$VERSION] section found, trying [Unreleased]"
+              BODY=$(extract_section "\\[Unreleased\\]")
+          fi
+
+          if [ -z "$(echo "$BODY" | tr -d '[:space:]')" ]; then
+              echo "No matching CHANGELOG section — leaving release notes unchanged"
+              exit 0
+          fi
+
+          # Trim trailing blank lines
+          BODY=$(echo "$BODY" | awk '
+              { lines[NR] = $0 }
+              END {
+                  end = NR
+                  while (end > 0 && lines[end] ~ /^[[:space:]]*$/) end--
+                  for (i = 1; i <= end; i++) print lines[i]
+              }
+          ')
+
+          # Get the existing release body (preserves the "Published Modules" block)
+          EXISTING=$(gh release view "$TAG" --json body --jq .body)
+
+          # If the existing body already starts with "## What's changed" we
+          # already enriched this release — skip to keep idempotency.
+          if echo "$EXISTING" | head -1 | grep -q "^## What's changed"; then
+              echo "Release notes already enriched — no-op"
+              exit 0
+          fi
+
+          # Prepend the changelog section to the existing body
+          {
+              echo "## What's changed"
+              echo ""
+              echo "$BODY"
+              echo ""
+              echo "---"
+              echo ""
+              echo "$EXISTING"
+          } > /tmp/release-body.md
+
+          gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --notes-file /tmp/release-body.md
+
+          echo "Release $TAG enriched"
