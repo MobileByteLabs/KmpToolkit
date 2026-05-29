@@ -100,7 +100,7 @@ The toolkit targets every platform Kotlin Multiplatform supports. Per-module cov
 
 📊 **Full per-module × per-target matrix:** [Wiki › Platform Matrix](https://github.com/MobileByteLabs/KmpToolkit/wiki/Platform-Matrix) · [docs/inter-app-comms/CAPABILITY_MATRIX.md](docs/inter-app-comms/CAPABILITY_MATRIX.md)
 
-## Inter-App Comms Suite (v0.4)
+## Inter-App Comms Suite
 
 Three modules ship together as the **inter-app communication** suite — all share the same Compose-MP adapter pattern (core + `-compose` adapter):
 
@@ -110,26 +110,25 @@ Three modules ship together as the **inter-app communication** suite — all sha
 
 Architecture docs: [docs/inter-app-comms/CAPABILITY_MATRIX.md](docs/inter-app-comms/CAPABILITY_MATRIX.md) · [ADR-09 (platform-impl-exits)](cmp-app-intents/adrs/ADR-09-platform-impl-exits.md)
 
-## Sample Apps
+## Sample App
+
+[**`sample-toolkit`**](samples/sample-toolkit/) is the unified catalog app — every published `cmp-*` module wired in one Compose Multiplatform project. Pick a module from the catalog UI to launch its dedicated showcase. Same app, every platform:
 
 ```bash
 # Desktop (JVM)
-./gradlew :samples:sample-clipboard:composeApp:run
-./gradlew :samples:sample-open-url:composeApp:run
-./gradlew :samples:sample-deep-link:composeApp:run
-./gradlew :samples:sample-network-monitor:composeApp:run
+./gradlew :samples:sample-toolkit:composeApp:run
 
 # Android
-./gradlew :samples:sample-clipboard:androidApp:installDebug
-./gradlew :samples:sample-network-monitor:androidApp:installDebug
+./gradlew :samples:sample-toolkit:androidApp:installDebug
 
-# Inter-app comms — all 5 platforms (Android, iOS, JVM, JS, wasmJs)
-./gradlew :samples:sample-cmp-share:composeApp:run
-./gradlew :samples:sample-cmp-intent-launcher:composeApp:jsBrowserDevelopmentRun
-./gradlew :samples:sample-inter-app-comms:composeApp:run
+# Web (browser — JS + wasmJs)
+./gradlew :samples:sample-toolkit:composeApp:jsBrowserDevelopmentRun
+./gradlew :samples:sample-toolkit:composeApp:wasmJsBrowserDevelopmentRun
+
+# iOS — open samples/sample-toolkit/iosApp in Xcode
 ```
 
-The full sample matrix (one sample per module + a combined inter-app-comms showcase) lives under [`samples/`](samples/).
+Per-module standalone samples (one per library) live alongside `sample-toolkit` under [`samples/`](samples/) — useful if you want to study a single module in isolation.
 
 > **First-run note (web targets):** `jsBrowserDevelopmentRun` / `wasmJsBrowserDevelopmentRun` downloads ~50MB of Skiko WASM assets on a cold cache. Subsequent runs are fast. If you hit `OutOfMemoryError: GC overhead limit exceeded`, ensure `org.gradle.jvmargs=-Xmx4096M` in `gradle.properties` (the repo default).
 
