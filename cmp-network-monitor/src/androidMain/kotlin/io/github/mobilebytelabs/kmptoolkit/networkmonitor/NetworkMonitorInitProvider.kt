@@ -5,6 +5,8 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
+import io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata as ObserveMetadata
+import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservation
 
 /**
  * Auto-initializes the library's application context at app startup.
@@ -13,17 +15,34 @@ import android.net.Uri
  * does not serve any content — it exists solely to capture
  * [Context.getApplicationContext] before user code runs.
  *
+ * Also fires `LibraryObservation.notifyInit(...)` for the library-runtime-observability
+ * subsystem (cmp-observe). T0 (Crashlytics tagging) + T1 (lib_init_success/failure
+ * Analytics events) hooks attached at app startup will receive notifications. Per
+ * library-runtime-observability epic Phase 02 T6 (AC #13).
+ *
  * If ContentProvider-based init is disabled (e.g., via tools:node="remove"),
  * call [setApplicationContext] manually from Application.onCreate().
  */
 internal class NetworkMonitorInitProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
-        context?.applicationContext?.let {
-            appContext = it
-            applicationContextHolder = it
+        val meta = ObserveMetadata(
+            name = CmpMetadata.NAME,
+            version = CmpMetadata.VERSION,
+            artifact = CmpMetadata.ARTIFACT,
+        )
+        LibraryObservation.notifyInit(meta)
+        return try {
+            context?.applicationContext?.let {
+                appContext = it
+                applicationContextHolder = it
+            }
+            LibraryObservation.notifyInitComplete(meta)
+            true
+        } catch (t: Throwable) {
+            LibraryObservation.notifyInitFailure(meta, t)
+            throw t
         }
-        return true
     }
 
     override fun query(

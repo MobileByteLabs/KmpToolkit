@@ -113,7 +113,10 @@ kotlin {
 // MAVEN CENTRAL PUBLISHING CONFIGURATION
 // ============================================================================
 mavenPublishing {
-    signAllPublications()
+    // Sign only when credentials are present (Maven Central / CI). Skip for local dev builds.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+        signAllPublications()
+    }
 
     pom {
         name = "CMP Network Monitor Compose"
@@ -145,3 +148,6 @@ mavenPublishing {
         }
     }
 }
+
+// Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
+apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")

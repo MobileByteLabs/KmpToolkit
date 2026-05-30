@@ -311,3 +311,6 @@ tasks.register("generateSwiftIntents") {
         logger.lifecycle("Wrote $emitted Swift @AppIntent stub(s) to $outDir")
     }
 }
+
+// Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
+apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
