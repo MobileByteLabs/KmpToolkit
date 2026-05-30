@@ -9,23 +9,30 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.observe
 
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+
 /**
- * Process-wide hook registry. Thread-safe via copy-on-write list.
+ * Process-wide hook registry. Thread-safe via copy-on-write [AtomicReference].
  *
  * notify* methods fan-out to all registered hooks. Hook exceptions are caught
  * and discarded (per [LibraryObservationHook] contract); a misbehaving hook
  * cannot crash the host application or block subsequent hooks.
  *
+ * Uses [AtomicReference] (kotlin.concurrent.atomics — stdlib, multiplatform)
+ * instead of `@Volatile` + `synchronized` so the same code compiles for all
+ * 10 KMP targets that cmp-observe ships (jvm/android/ios/macos/js/wasmJs/
+ * tvos/watchos/linux/mingw).
+ *
  * Authored 2026-05-30 by library-runtime-observability epic Phase 01 T3.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public object LibraryObservation {
-    @Volatile
-    private var hooks: List<LibraryObservationHook> = emptyList()
-    private val lock = Any()
+    private val hooksRef: AtomicReference<List<LibraryObservationHook>> = AtomicReference(emptyList())
 
     /** Register a hook. Idempotent — registering the same hook twice still fans out twice. */
     public fun register(hook: LibraryObservationHook) {
-        synchronized(lock) { hooks = hooks + hook }
+        updateHooks { it + hook }
     }
 
     /**
@@ -33,32 +40,40 @@ public object LibraryObservation {
      * to re-register hooks when user toggles per-tier consent in Settings → Privacy.
      */
     public fun replaceHooks(transform: (List<LibraryObservationHook>) -> List<LibraryObservationHook>) {
-        synchronized(lock) { hooks = transform(hooks) }
+        updateHooks(transform)
     }
 
     public fun notifyInit(meta: CmpMetadata) {
-        hooks.forEach { safeCall { it.onInitStart(meta) } }
+        hooksRef.load().forEach { safeCall { it.onInitStart(meta) } }
     }
 
     public fun notifyInitComplete(meta: CmpMetadata) {
-        hooks.forEach { safeCall { it.onInitComplete(meta) } }
+        hooksRef.load().forEach { safeCall { it.onInitComplete(meta) } }
     }
 
     public fun notifyInitFailure(meta: CmpMetadata, throwable: Throwable) {
-        hooks.forEach { safeCall { it.onInitFailure(meta, throwable) } }
+        hooksRef.load().forEach { safeCall { it.onInitFailure(meta, throwable) } }
     }
 
     public fun notifyLifecycle(meta: CmpMetadata, event: String, payload: Map<String, Any?> = emptyMap()) {
-        hooks.forEach { safeCall { it.onLifecycleEvent(meta, event, payload) } }
+        hooksRef.load().forEach { safeCall { it.onLifecycleEvent(meta, event, payload) } }
     }
 
     public fun notifyClose(meta: CmpMetadata) {
-        hooks.forEach { safeCall { it.onClose(meta) } }
+        hooksRef.load().forEach { safeCall { it.onClose(meta) } }
     }
 
     /** Test-only: clear all hooks. NOT public API. */
     internal fun reset() {
-        synchronized(lock) { hooks = emptyList() }
+        hooksRef.store(emptyList())
+    }
+
+    private inline fun updateHooks(transform: (List<LibraryObservationHook>) -> List<LibraryObservationHook>) {
+        while (true) {
+            val current = hooksRef.load()
+            val next = transform(current)
+            if (hooksRef.compareAndSet(current, next)) return
+        }
     }
 
     private inline fun safeCall(block: () -> Unit) {

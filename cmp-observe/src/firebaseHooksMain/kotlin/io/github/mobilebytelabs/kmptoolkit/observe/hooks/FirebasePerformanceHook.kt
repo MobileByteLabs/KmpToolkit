@@ -14,6 +14,8 @@ import dev.gitlive.firebase.perf.metrics.Trace
 import dev.gitlive.firebase.perf.performance
 import io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata
 import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservationHook
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * T3 hook: wraps lifecycle events whose name ends with `_start` / `_end` in
@@ -27,9 +29,12 @@ import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservationHook
  *
  * Authored 2026-05-30 by library-runtime-observability epic Phase 01 T6.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public class FirebasePerformanceHook : LibraryObservationHook {
-    private val activeTraces: MutableMap<String, Trace> = mutableMapOf()
-    private val lock = Any()
+    // AtomicReference + CAS retry loop — multiplatform-safe replacement for
+    // `synchronized(lock)`. Required because firebaseHooksMain is consumed by
+    // both android (where kotlin.jvm.synchronized works) and ios (where it does NOT).
+    private val activeTracesRef: AtomicReference<Map<String, Trace>> = AtomicReference(emptyMap())
 
     override fun onInitStart(meta: CmpMetadata) {}
     override fun onInitComplete(meta: CmpMetadata) {}
@@ -42,12 +47,12 @@ public class FirebasePerformanceHook : LibraryObservationHook {
                     val prefix = event.removeSuffix("_start")
                     val traceName = "${meta.name}_$prefix"
                     val trace = Firebase.performance.newTrace(traceName).apply { start() }
-                    synchronized(lock) { activeTraces[traceName] = trace }
+                    updateTraces { it + (traceName to trace) }
                 }
                 event.endsWith("_end") -> {
                     val prefix = event.removeSuffix("_end")
                     val traceName = "${meta.name}_$prefix"
-                    val trace = synchronized(lock) { activeTraces.remove(traceName) }
+                    val trace = removeTrace(traceName)
                     trace?.stop()
                 }
                 else -> {
@@ -60,11 +65,28 @@ public class FirebasePerformanceHook : LibraryObservationHook {
     override fun onClose(meta: CmpMetadata) {
         // Close + drop any traces still open for this module on shutdown.
         runCatching {
-            synchronized(lock) {
-                val prefix = "${meta.name}_"
-                val toRemove = activeTraces.keys.filter { it.startsWith(prefix) }
-                toRemove.forEach { activeTraces.remove(it)?.stop() }
-            }
+            val prefix = "${meta.name}_"
+            val current = activeTracesRef.load()
+            val toRemove = current.filterKeys { it.startsWith(prefix) }
+            if (toRemove.isEmpty()) return@runCatching
+            updateTraces { it - toRemove.keys }
+            toRemove.values.forEach { it.stop() }
+        }
+    }
+
+    private inline fun updateTraces(transform: (Map<String, Trace>) -> Map<String, Trace>) {
+        while (true) {
+            val current = activeTracesRef.load()
+            val next = transform(current)
+            if (activeTracesRef.compareAndSet(current, next)) return
+        }
+    }
+
+    private fun removeTrace(name: String): Trace? {
+        while (true) {
+            val current = activeTracesRef.load()
+            val trace = current[name] ?: return null
+            if (activeTracesRef.compareAndSet(current, current - name)) return trace
         }
     }
 }

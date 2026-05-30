@@ -23,6 +23,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * T2/T4 hook: POSTs structured library events to framework-supabase.library_events.
@@ -42,6 +44,7 @@ import kotlinx.serialization.json.Json
  *
  * Authored 2026-05-30 by library-runtime-observability epic Phase 01 T7.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public class SupabaseEventsHook(
     private val supabaseUrl: String,
     private val anonKey: String,
@@ -58,8 +61,9 @@ public class SupabaseEventsHook(
         }
     }
 
-    private val queue: MutableList<LibraryEvent> = mutableListOf()
-    private val queueLock = Any()
+    // AtomicReference + CAS retry loop — multiplatform-safe replacement for
+    // `synchronized(queueLock)`. Compiles on all 10 KMP targets cmp-observe ships.
+    private val queueRef: AtomicReference<List<LibraryEvent>> = AtomicReference(emptyList())
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 
     @Serializable
@@ -106,10 +110,8 @@ public class SupabaseEventsHook(
             payload = json.encodeToString(kotlinx.serialization.serializer<Map<String, String>>(), sanitized),
             anonymized_user_id = anonymizedUserIdProvider?.invoke(),
         )
-        synchronized(queueLock) {
-            queue += ev
-            if (queue.size >= 50) coroutineScope.launch { flush() }
-        }
+        val updated = updateQueue { it + ev }
+        if (updated.size >= 50) coroutineScope.launch { flush() }
     }
 
     /**
@@ -117,12 +119,9 @@ public class SupabaseEventsHook(
      * a single in-flight batch is retried on failure (re-enqueued at the head).
      */
     public suspend fun flush() {
-        val batch: List<LibraryEvent>
-        synchronized(queueLock) {
-            if (queue.isEmpty()) return
-            batch = queue.toList()
-            queue.clear()
-        }
+        // Atomically drain the queue.
+        val batch = drainQueue()
+        if (batch.isEmpty()) return
         try {
             httpClient.post("$supabaseUrl/rest/v1/library_events") {
                 header(HttpHeaders.Authorization, "Bearer $anonKey")
@@ -132,8 +131,24 @@ public class SupabaseEventsHook(
                 setBody(json.encodeToString(ListSerializer(LibraryEvent.serializer()), batch))
             }
         } catch (_: Throwable) {
-            // Re-enqueue on failure for retry.
-            synchronized(queueLock) { queue.addAll(0, batch) }
+            // Re-enqueue at head on failure for retry.
+            updateQueue { batch + it }
+        }
+    }
+
+    private inline fun updateQueue(transform: (List<LibraryEvent>) -> List<LibraryEvent>): List<LibraryEvent> {
+        while (true) {
+            val current = queueRef.load()
+            val next = transform(current)
+            if (queueRef.compareAndSet(current, next)) return next
+        }
+    }
+
+    private fun drainQueue(): List<LibraryEvent> {
+        while (true) {
+            val current = queueRef.load()
+            if (current.isEmpty()) return emptyList()
+            if (queueRef.compareAndSet(current, emptyList())) return current
         }
     }
 }

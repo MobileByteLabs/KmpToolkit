@@ -33,7 +33,7 @@ import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservationHook
 public class FirebaseCrashlyticsAttributionHook : LibraryObservationHook {
     override fun onInitStart(meta: CmpMetadata) {
         runCatching {
-            Firebase.crashlytics.setCustomValue("library:${meta.name}", meta.version)
+            Firebase.crashlytics.setCustomKey("library:${meta.name}", meta.version)
         }
     }
 
@@ -44,7 +44,7 @@ public class FirebaseCrashlyticsAttributionHook : LibraryObservationHook {
     override fun onInitFailure(meta: CmpMetadata, throwable: Throwable) {
         runCatching {
             Firebase.crashlytics.recordException(throwable)
-            Firebase.crashlytics.setCustomValue("library:${meta.name}:init_failed", "true")
+            Firebase.crashlytics.setCustomKey("library:${meta.name}:init_failed", "true")
         }
     }
 

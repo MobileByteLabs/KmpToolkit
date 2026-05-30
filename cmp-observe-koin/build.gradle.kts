@@ -45,13 +45,16 @@ kotlin {
         minSdk = 24
     }
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64(),
-        macosX64(),
-        macosArm64(),
-    ).forEach { it.binaries.framework { baseName = "CmpObserveKoin" } }
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+    macosX64()
+    macosArm64()
+    // No `binaries.framework { baseName = "CmpObserveKoin" }` block — would
+    // transitively trigger the cmp-observe Framework link step which fails on
+    // `ld: framework 'FirebaseCore' not found` (Firebase Apple SDK is provisioned
+    // via CocoaPods at consumer integration time). Following the cmp-observe +
+    // cmp-firebase-analytics pattern (klib-only publication for iOS).
 
     js(IR) { browser(); nodejs() }
     @OptIn(ExperimentalWasmDsl::class)

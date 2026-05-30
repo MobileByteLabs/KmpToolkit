@@ -61,7 +61,13 @@ val moduleArtifact: String = try {
 
 // Derive Kotlin package: cmp-share → com.mobilebytelabs.kmptoolkit.share
 val modulePackage: String = run {
-    val short = moduleName.removePrefix("cmp-").replace('-', '.')
+    // Mirror the actual source package convention used across cmp-* modules:
+    // cmp-network-monitor → io.github.mobilebytelabs.kmptoolkit.networkmonitor
+    // cmp-deep-link       → io.github.mobilebytelabs.kmptoolkit.deeplink
+    // cmp-share           → io.github.mobilebytelabs.kmptoolkit.share
+    // (hyphens are DROPPED, not converted to dots — the existing source tree uses
+    // squashed concatenation, e.g. `package …kmptoolkit.networkmonitor`.)
+    val short = moduleName.removePrefix("cmp-").replace("-", "")
     "io.github.mobilebytelabs.kmptoolkit.$short"
 }
 
@@ -141,5 +147,16 @@ afterEvaluate {
     }
 }
 
-tasks.matching { it.name.startsWith("compileKotlin") || it.name.startsWith("compileCommonMainKotlinMetadata") }
-    .configureEach { dependsOn(genTask) }
+// Wire dependsOn on every Kotlin compile task — names vary across plugins:
+//   - compileKotlin{TargetName}            (KMP standard targets)
+//   - compileCommonMainKotlinMetadata      (KMP metadata)
+//   - compileAndroidMain                   (Android KMP Library plugin)
+//   - compile{Variant}KotlinAndroid        (legacy android plugin paths)
+// Without Android coverage, Gradle 9+'s strict validation flags compileAndroidMain
+// as reading from build/generated/observability/ (via commonMain srcDir) without
+// declared dependency on generateCmpMetadata.
+tasks.matching {
+    it.name.startsWith("compileKotlin")
+        || it.name.startsWith("compileCommonMainKotlinMetadata")
+        || it.name.startsWith("compileAndroid")
+}.configureEach { dependsOn(genTask) }

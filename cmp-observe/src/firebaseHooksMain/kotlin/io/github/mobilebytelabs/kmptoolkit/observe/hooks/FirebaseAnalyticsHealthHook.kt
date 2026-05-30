@@ -11,6 +11,7 @@ package io.github.mobilebytelabs.kmptoolkit.observe.hooks
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
+import dev.gitlive.firebase.analytics.logEvent
 import io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata
 import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservationHook
 
