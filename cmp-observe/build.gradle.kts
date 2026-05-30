@@ -37,8 +37,20 @@ plugins {
 // All hooks are FAIL-SAFE: exceptions swallowed by LibraryObservation.safeCall;
 // no hook can crash the host application.
 //
-// Targets: full KMP (Android, iOS x64/arm64/simArm64, macOS x64/arm64, JVM, JS, wasmJs)
-// excluded native/Tier-3: tvOS, watchOS, linux, mingw, wasmWasi (no Firebase + Supabase wiring on those targets).
+// Targets: 11/11 KMP coverage as of 2026-05-30 audit follow-up.
+// - 7 "Firebase-supported" targets (jvm/android/ios/macos/js/wasmJs/wasmWasi) get the
+//   3 Firebase hook impls (Crashlytics/Analytics/Performance) via firebaseHooksMain
+//   intermediate source-set.
+// - 4 "stub" targets (tvos/watchos/linux/mingw) inherit ONLY commonMain — they get the
+//   LibraryObservationHook interface + LibraryObservation registry + CmpMetadata data class
+//   + SupabaseEventsHook (Ktor-backed, all-target). Firebase hooks are NOT available on
+//   these targets — consumer apps register their own no-op or platform-specific hooks
+//   for crash/analytics attribution if those backends ever ship for these targets.
+//
+// This structure was added to eliminate the commonMain-scope blast-radius problem
+// surfaced by cmp-network-monitor (11 targets) depending on cmp-observe (originally
+// 7 targets): every cmp-* module can now depend on cmp-observe in commonMain without
+// constraining its own target list.
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
@@ -70,17 +82,55 @@ kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs { browser(); nodejs() }
 
+    // ─── Stub-target additions (2026-05-30 audit follow-up) ──────────────
+    // These 4 target groups only see commonMain — NO Firebase hook impls.
+    tvosX64()
+    tvosArm64()
+    tvosSimulatorArm64()
+    watchosX64()
+    watchosArm64()
+    watchosSimulatorArm64()
+    linuxX64()
+    linuxArm64()
+    mingwX64()
+
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
-            implementation(libs.gitlive.firebase.crashlytics)
-            implementation(libs.gitlive.firebase.analytics)
-            implementation(libs.gitlive.firebase.performance)
+            // Ktor supports all 11 KMP targets via per-platform engines — SupabaseEventsHook
+            // can stay in commonMain and emit T2/T4 events from any target.
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            // Firebase deps INTENTIONALLY MOVED to firebaseHooksMain (below) — GitLive Firebase
+            // doesn't publish for tvos/watchos/linux/mingw. Keeping them out of commonMain is
+            // what lets cmp-observe ship 11 targets.
         }
+
+        // Custom intermediate source-set: holds the 3 Firebase hook impls + their deps.
+        // Only the 7 Firebase-supported targets depend on this source-set; the 4 stub targets
+        // skip it and get an interface-only commonMain compilation.
+        //
+        // Hook files physically live in src/firebaseHooksMain/kotlin/.../hooks/.
+        val firebaseHooksMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.gitlive.firebase.crashlytics)
+                implementation(libs.gitlive.firebase.analytics)
+                implementation(libs.gitlive.firebase.performance)
+            }
+        }
+
+        // Wire the 7 Firebase-supported targets to depend on firebaseHooksMain.
+        // (tvos/watchos/linux/mingw deliberately omitted — they get commonMain only.)
+        jvmMain.get().dependsOn(firebaseHooksMain)
+        androidMain.get().dependsOn(firebaseHooksMain)
+        iosMain.get().dependsOn(firebaseHooksMain)
+        macosMain.get().dependsOn(firebaseHooksMain)
+        jsMain.get().dependsOn(firebaseHooksMain)
+        wasmJsMain.get().dependsOn(firebaseHooksMain)
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)

@@ -11,60 +11,55 @@ package io.github.mobilebytelabs.kmptoolkit.observe.koin
 
 import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservation
 import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservationHook
-import io.github.mobilebytelabs.kmptoolkit.observe.hooks.FirebaseAnalyticsHealthHook
-import io.github.mobilebytelabs.kmptoolkit.observe.hooks.FirebaseCrashlyticsAttributionHook
-import io.github.mobilebytelabs.kmptoolkit.observe.hooks.FirebasePerformanceHook
 import org.koin.core.module.Module
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 /**
- * Zero-config Koin module for cmp-observe.
+ * Zero-config Koin companion for cmp-observe.
  *
- * Reads consent state + per-library `observability_opt_in` flags (consumer-side
- * Phase 04 wiring) and registers only the hooks the consumer + end-user have
- * agreed to.
+ * Takes a list of [LibraryObservationHook] instances assembled by the consumer
+ * app (typically: `FirebaseCrashlyticsAttributionHook`, `FirebaseAnalyticsHealthHook`,
+ * `FirebasePerformanceHook`, `SupabaseEventsHook` — all from cmp-observe, scoped to
+ * the platforms where they ship). Registers each via Koin AND wires it into the
+ * process-wide [LibraryObservation] registry at first injection.
  *
- * Default tier posture per GOAL.md D8:
- *   - T0 (Crashlytics tagging) → ON  (operational/security parity with existing Crashlytics defaults)
- *   - T1 (init health events) → ON  (analytics_enabled gate inherited from consumer)
- *   - T2 (lifecycle events)   → OFF (consumer-level opt-in via Settings → Privacy)
- *   - T3 (perf traces)        → OFF (consumer-level opt-in)
- *   - T4 (full API usage)     → OFF (consumer-level + per-end-user opt-in + iOS ATT)
+ * Why this signature accepts hooks as a parameter rather than importing the
+ * Firebase impls directly: the Firebase hooks live in cmp-observe's
+ * `firebaseHooksMain` source-set (only 7 of 11 targets see them). Decoupling
+ * cmp-observe-koin from those concrete types lets THIS module ship on all
+ * 11 targets — consumer apps on tvos/watchos/linux/mingw can still use it,
+ * passing whatever hook set is appropriate for those platforms (most likely
+ * none from cmp-observe; consumer-provided hooks remain valid).
  *
- * Usage in consumer app's Koin startup:
+ * Usage:
  * ```kotlin
  * startKoin {
  *     modules(
  *         observeKoinModule(
- *             enableT0 = true,
- *             enableT1 = true,
- *             enableT2 = consentState.t2LifecycleEvents,  // from Settings → Privacy
- *             enableT3 = consentState.t3PerformanceTraces,
+ *             hooks = listOf(
+ *                 FirebaseCrashlyticsAttributionHook(),     // T0 — Android/iOS/JVM/macOS/JS/wasmJs/wasmWasi only
+ *                 FirebaseAnalyticsHealthHook(),            // T1 — same
+ *                 SupabaseEventsHook(supabaseUrl, anonKey, consumerAppId, httpClient, scope),  // T2 — all 11 targets
+ *             ),
  *         ),
  *     )
  * }
- * // Then at app onCreate:
- * getKoin().getAll<LibraryObservationHook>().forEach { LibraryObservation.register(it) }
+ * // First `get<LibraryObservation>()` call wires every hook into the registry.
  * ```
  *
- * SupabaseEventsHook is NOT auto-wired — it requires per-consumer anon-key +
- * supabase URL + httpClient + coroutineScope; consumer apps instantiate it
- * explicitly and call LibraryObservation.register() themselves.
- *
- * Authored 2026-05-30 by library-runtime-observability epic Phase 01 T9.
+ * Authored 2026-05-30 by library-runtime-observability epic Phase 01 T9;
+ * decoupled from Firebase types 2026-05-30 (audit follow-up) so the module
+ * can ship to all 11 KMP targets alongside cmp-observe's expanded target set.
  */
 public fun observeKoinModule(
-    enableT0: Boolean = true,
-    enableT1: Boolean = true,
-    enableT3: Boolean = false,
+    hooks: List<LibraryObservationHook>,
 ): Module = module {
-    if (enableT0) single<LibraryObservationHook>(qualifier = org.koin.core.qualifier.named("T0")) {
-        FirebaseCrashlyticsAttributionHook()
-    }
-    if (enableT1) single<LibraryObservationHook>(qualifier = org.koin.core.qualifier.named("T1")) {
-        FirebaseAnalyticsHealthHook()
-    }
-    if (enableT3) single<LibraryObservationHook>(qualifier = org.koin.core.qualifier.named("T3")) {
-        FirebasePerformanceHook()
+    // Register each hook under a name-qualified single<>.
+    hooks.forEach { hook ->
+        val qName = hook::class.simpleName ?: "anonymous-hook-${hook.hashCode()}"
+        single<LibraryObservationHook>(qualifier = named(qName)) {
+            hook.also { LibraryObservation.register(it) }
+        }
     }
 }

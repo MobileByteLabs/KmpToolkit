@@ -22,13 +22,11 @@ plugins {
 // ============================================================================
 // Zero-config Koin companion for cmp-observe.
 //
-// Consumer apps that use Koin call observeKoinModule(...) at startup; the module
-// reads consent state + observability_opt_in flags and registers only the hooks
-// the consumer + end-user have agreed to.
-//
-// Per GOAL.md D8 progressive consent posture:
-// - T0 + T1 default ON
-// - T2 + T3 + T4 opt-in
+// observeKoinModule(hooks: List<LibraryObservationHook>) takes hook instances
+// as a parameter (no direct dep on Firebase hook types) so the module ships
+// to all 11 KMP targets — same set as cmp-observe (audit follow-up 2026-05-30).
+// The 4 stub targets (tvos/watchos/linux/mingw) get the module but typically
+// pass an empty hook list or consumer-provided non-Firebase hooks.
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
@@ -56,6 +54,17 @@ kotlin {
     js(IR) { browser(); nodejs() }
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs { browser(); nodejs() }
+
+    // ─── Stub-target additions (2026-05-30 — matches cmp-observe's 11-target set) ──
+    tvosX64()
+    tvosArm64()
+    tvosSimulatorArm64()
+    watchosX64()
+    watchosArm64()
+    watchosSimulatorArm64()
+    linuxX64()
+    linuxArm64()
+    mingwX64()
 
     sourceSets {
         commonMain.dependencies {
