@@ -76,9 +76,10 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         override fun onLost(network: Network) {
             scope.launch {
                 seedComplete.await()
-                // Check if there's still an active network
-                val activeNetwork = connectivityManager.activeNetwork
-                if (activeNetwork == null) {
+                // Guard against race: after onLost fires, activeNetwork may briefly
+                // still point to the just-lost network before the system updates.
+                // Verify the remaining active network actually has validated internet.
+                if (!hasValidatedInternetAccess()) {
                     updateOffline()
                 }
             }
@@ -239,6 +240,22 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         _isOnline.value = false
         if (wasOnline) {
             _networkChanges.tryEmit(NetworkChangeEvent.Disconnected)
+        }
+    }
+
+    /**
+     * Returns true only if there is an active network with validated internet access.
+     * Checks NET_CAPABILITY_VALIDATED (API 23+) to avoid false positives from networks
+     * that are "available" but have no actual internet (e.g. captive portal, LAN-only).
+     */
+    private fun hasValidatedInternetAccess(): Boolean {
+        val activeNetwork = connectivityManager.activeNetwork ?: return false
+        val caps = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        } else {
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
     }
 
