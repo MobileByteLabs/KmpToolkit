@@ -37,15 +37,16 @@ plugins {
 // All hooks are FAIL-SAFE: exceptions swallowed by LibraryObservation.safeCall;
 // no hook can crash the host application.
 //
-// Targets: 11/11 KMP coverage as of 2026-05-30 audit follow-up.
-// - 7 "Firebase-supported" targets (jvm/android/ios/macos/js/wasmJs/wasmWasi) get the
-//   3 Firebase hook impls (Crashlytics/Analytics/Performance) via firebaseHooksMain
-//   intermediate source-set.
-// - 4 "stub" targets (tvos/watchos/linux/mingw) inherit ONLY commonMain — they get the
-//   LibraryObservationHook interface + LibraryObservation registry + CmpMetadata data class
-//   + SupabaseEventsHook (Ktor-backed, all-target). Firebase hooks are NOT available on
-//   these targets — consumer apps register their own no-op or platform-specific hooks
-//   for crash/analytics attribution if those backends ever ship for these targets.
+// Targets: 10/10 KMP coverage as of 2026-05-30 audit follow-up + PR #115 CI fix.
+// - 4 "Firebase-supported" targets (jvm/android/ios/macos) get the 3 Firebase hook impls
+//   (Crashlytics/Analytics/Performance) via firebaseHooksMain intermediate source-set.
+//   GitLive Firebase Crashlytics/Performance do not publish js/wasmJs variants; including
+//   js+wasmJs in firebaseHooksMain consumers breaks dependency resolution.
+// - 6 "stub" targets (js, wasmJs, tvos, watchos, linux, mingw) inherit ONLY commonMain —
+//   they get the LibraryObservationHook interface + LibraryObservation registry +
+//   CmpMetadata data class + SupabaseEventsHook (Ktor-backed, all-target). Firebase hooks
+//   are NOT available on these targets — consumer apps register their own no-op or
+//   platform-specific hooks for crash/analytics attribution if those backends ever ship.
 //
 // This structure was added to eliminate the commonMain-scope blast-radius problem
 // surfaced by cmp-network-monitor (11 targets) depending on cmp-observe (originally
@@ -98,19 +99,20 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
-            // Ktor supports all 11 KMP targets via per-platform engines — SupabaseEventsHook
+            // Ktor supports all 10 KMP targets via per-platform engines — SupabaseEventsHook
             // can stay in commonMain and emit T2/T4 events from any target.
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             // Firebase deps INTENTIONALLY MOVED to firebaseHooksMain (below) — GitLive Firebase
-            // doesn't publish for tvos/watchos/linux/mingw. Keeping them out of commonMain is
-            // what lets cmp-observe ship 11 targets.
+            // doesn't publish for js/wasmJs/tvos/watchos/linux/mingw. Keeping them out of
+            // commonMain is what lets cmp-observe ship 10 targets.
         }
 
         // Custom intermediate source-set: holds the 3 Firebase hook impls + their deps.
-        // Only the 7 Firebase-supported targets depend on this source-set; the 4 stub targets
-        // skip it and get an interface-only commonMain compilation.
+        // Only the 4 Firebase-supported targets (jvm/android/ios/macos) depend on this
+        // source-set; the 6 stub targets (js/wasmJs/tvos/watchos/linux/mingw) skip it and
+        // get an interface-only commonMain compilation.
         //
         // Hook files physically live in src/firebaseHooksMain/kotlin/.../hooks/.
         val firebaseHooksMain by creating {
@@ -122,14 +124,20 @@ kotlin {
             }
         }
 
-        // Wire the 7 Firebase-supported targets to depend on firebaseHooksMain.
-        // (tvos/watchos/linux/mingw deliberately omitted — they get commonMain only.)
+        // Wire the 4 Firebase-supported targets to depend on firebaseHooksMain.
+        // GitLive Firebase Crashlytics/Analytics/Performance publish variants for:
+        // jvm, android, ios (X64/Arm64/SimulatorArm64), macos (X64/Arm64) — that's it.
+        // js + wasmJs are deliberately OMITTED because Crashlytics has no js variant
+        // (resolution fails with "No matching variant of dev.gitlive:firebase-crashlytics
+        // was found ... attribute org.jetbrains.kotlin.platform.type with value 'js'").
+        // tvos/watchos/linux/mingw also omitted — they get commonMain only.
+        // Net: 6 targets see ONLY the interface + Ktor-based SupabaseEventsHook
+        // (js, wasmJs, tvos, watchos, linux, mingw). Apps targeting those platforms
+        // register consumer-provided hooks if they need crash/analytics attribution.
         jvmMain.get().dependsOn(firebaseHooksMain)
         androidMain.get().dependsOn(firebaseHooksMain)
         iosMain.get().dependsOn(firebaseHooksMain)
         macosMain.get().dependsOn(firebaseHooksMain)
-        jsMain.get().dependsOn(firebaseHooksMain)
-        wasmJsMain.get().dependsOn(firebaseHooksMain)
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -24,9 +24,10 @@ plugins {
 //
 // observeKoinModule(hooks: List<LibraryObservationHook>) takes hook instances
 // as a parameter (no direct dep on Firebase hook types) so the module ships
-// to all 11 KMP targets — same set as cmp-observe (audit follow-up 2026-05-30).
-// The 4 stub targets (tvos/watchos/linux/mingw) get the module but typically
-// pass an empty hook list or consumer-provided non-Firebase hooks.
+// to all 10 KMP targets — same set as cmp-observe (audit follow-up 2026-05-30).
+// The 6 stub targets (js/wasmJs/tvos/watchos/linux/mingw) get the module but
+// typically pass an empty hook list or consumer-provided non-Firebase hooks
+// (GitLive Firebase Crashlytics/Performance have no js/wasmJs variants).
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
@@ -55,7 +56,7 @@ kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs { browser(); nodejs() }
 
-    // ─── Stub-target additions (2026-05-30 — matches cmp-observe's 11-target set) ──
+    // ─── Stub-target additions (2026-05-30 — matches cmp-observe's 10-target set) ──
     tvosX64()
     tvosArm64()
     tvosSimulatorArm64()

@@ -26,11 +26,13 @@ import org.koin.dsl.module
  *
  * Why this signature accepts hooks as a parameter rather than importing the
  * Firebase impls directly: the Firebase hooks live in cmp-observe's
- * `firebaseHooksMain` source-set (only 7 of 11 targets see them). Decoupling
- * cmp-observe-koin from those concrete types lets THIS module ship on all
- * 11 targets — consumer apps on tvos/watchos/linux/mingw can still use it,
- * passing whatever hook set is appropriate for those platforms (most likely
- * none from cmp-observe; consumer-provided hooks remain valid).
+ * `firebaseHooksMain` source-set (only 4 of 10 targets see them — GitLive
+ * Firebase Crashlytics/Analytics/Performance publish only for jvm/android/
+ * ios/macos). Decoupling cmp-observe-koin from those concrete types lets THIS
+ * module ship on all 10 targets — consumer apps on js/wasmJs/tvos/watchos/
+ * linux/mingw can still use it, passing whatever hook set is appropriate for
+ * those platforms (most likely none from cmp-observe; consumer-provided
+ * hooks remain valid).
  *
  * Usage:
  * ```kotlin
@@ -38,9 +40,9 @@ import org.koin.dsl.module
  *     modules(
  *         observeKoinModule(
  *             hooks = listOf(
- *                 FirebaseCrashlyticsAttributionHook(),     // T0 — Android/iOS/JVM/macOS/JS/wasmJs/wasmWasi only
+ *                 FirebaseCrashlyticsAttributionHook(),     // T0 — jvm/android/ios/macos only
  *                 FirebaseAnalyticsHealthHook(),            // T1 — same
- *                 SupabaseEventsHook(supabaseUrl, anonKey, consumerAppId, httpClient, scope),  // T2 — all 11 targets
+ *                 SupabaseEventsHook(supabaseUrl, anonKey, consumerAppId, httpClient, scope),  // T2 — all 10 targets
  *             ),
  *         ),
  *     )
@@ -50,7 +52,7 @@ import org.koin.dsl.module
  *
  * Authored 2026-05-30 by library-runtime-observability epic Phase 01 T9;
  * decoupled from Firebase types 2026-05-30 (audit follow-up) so the module
- * can ship to all 11 KMP targets alongside cmp-observe's expanded target set.
+ * can ship to all 10 KMP targets alongside cmp-observe's expanded target set.
  */
 public fun observeKoinModule(
     hooks: List<LibraryObservationHook>,
