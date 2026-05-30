@@ -102,6 +102,7 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 gitlive-firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "gitliveFirebase" }
 gitlive-firebase-common = { module = "dev.gitlive:firebase-common", version.ref = "gitliveFirebase" }
 gitlive-firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "gitliveFirebase" }
+gitlive-firebase-performance = { module = "dev.gitlive:firebase-perf", version.ref = "gitliveFirebase" }
 
 # Firebase Android BOM — supplies versions for transitive Google Firebase artifacts
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }

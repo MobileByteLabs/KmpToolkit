@@ -1,0 +1,83 @@
+name: DEVELOPMENT.md coherence
+
+# Per RULE-LIB-DEVELOPMENT-MD-001 (consumer-library-ai-bridge epic, Phase 00 T12).
+# Validates every cmp-*/DEVELOPMENT.md against the rule's core sub-checks.
+# Self-contained — no cross-repo checkout required (Pull request CI must run on
+# fork-PRs too where framework-RO-token isn't available).
+# Spec lives at: claude-product-cycle/layers/framework/rules/RULE-LIB-DEVELOPMENT-MD-001.md
+
+on:
+  pull_request:
+    paths:
+      - 'cmp-*/**'
+      - 'cmp-*/DEVELOPMENT.md'
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate DEVELOPMENT.md (LD-1 / LD-4 / LD-5 / LD-7 / LD-10)
+        run: |
+          set -uo pipefail
+
+          violations=0
+          files_with_errors=0
+          total=0
+
+          validate_one() {
+            local file="$1"
+            local f_errors=0
+
+            # LD-1: required frontmatter fields
+            for field in module artifact version last_reviewed; do
+              if ! head -20 "$file" | grep -qE "^${field}: "; then
+                echo "FAIL ${file}: LD-1 missing '${field}:' in frontmatter"
+                f_errors=$((f_errors+1))
+              fi
+            done
+
+            # LD-10: section order §1-§8
+            expected="§1 §2 §3 §4 §5 §6 §7 §8"
+            actual="$(grep -oE '^## §[1-8]' "$file" | awk '{print $2}' | paste -sd' ' -)"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "FAIL ${file}: LD-10 section order mismatch"
+              echo "       got:  ${actual}"
+              echo "       want: ${expected}"
+              f_errors=$((f_errors+1))
+            fi
+
+            # LD-4 / LD-5 / LD-7: author sections exist
+            for sec in 4 5 7; do
+              if ! grep -qE "^## §${sec}" "$file"; then
+                echo "FAIL ${file}: LD-${sec} §${sec} section missing"
+                f_errors=$((f_errors+1))
+              fi
+            done
+
+            if [[ $f_errors -gt 0 ]]; then
+              files_with_errors=$((files_with_errors+1))
+              violations=$((violations+f_errors))
+            fi
+            total=$((total+1))
+          }
+
+          while IFS= read -r f; do
+            validate_one "$f"
+          done < <(find . -mindepth 2 -maxdepth 2 -name DEVELOPMENT.md -path './cmp-*/DEVELOPMENT.md' 2>/dev/null | sort)
+
+          echo ""
+          echo "----------------------------------------"
+          echo "DEVELOPMENT.md validator results:"
+          echo "  Files checked: ${total}"
+          echo "  Files with errors: ${files_with_errors}"
+          echo "  Total violations: ${violations}"
+          echo "----------------------------------------"
+
+          if [[ $files_with_errors -gt 0 ]]; then
+            exit 1
+          fi

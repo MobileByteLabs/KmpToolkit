@@ -27,6 +27,9 @@ include(":cmp-open-url") // Open URL — cross-platform URL/scheme handler (brow
 include(":cmp-deep-link") // Deep Link — unified deep link handling across all KMP targets
 include(":cmp-network-monitor") // Network Monitor — reactive connectivity monitoring across all KMP targets
 include(":cmp-network-monitor-compose") // Network Monitor Compose — Compose Multiplatform UI extensions
+// Library observability — shared hook interface + 4 default Firebase/Supabase hook impls (library-runtime-observability epic, 2026-05-30)
+include(":cmp-observe")
+include(":cmp-observe-koin") // Zero-config Koin companion for cmp-observe
 // Firebase Analytics — 21/21 KMP targets (GitLive on 11, Measurement Protocol HTTP on 10)
 include(":cmp-firebase-analytics")
 // PDF Generator — cross-platform PDF generation (HTML / Markdown / DSL input; multi-output)

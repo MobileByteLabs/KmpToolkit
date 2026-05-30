@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -15,7 +16,7 @@ plugins {
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
 
-@OptIn(ExperimentalKotlinGradlePluginApi::class)
+@OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
     // Apply default hierarchy template for automatic source set setup
     applyDefaultHierarchyTemplate()
@@ -65,6 +66,23 @@ kotlin {
     // ========================================================================
     macosX64()
     macosArm64()
+
+    // ========================================================================
+    // Web Targets (added 2026-05-30 — library-runtime-observability audit follow-up)
+    // Compose Multiplatform Web supports both JS/IR + WasmJS browser runtimes.
+    // Toast has zero expect declarations → adding the targets requires no per-
+    // platform actuals; the Compose-common `Snackbar` / `Toast` composables compile
+    // straight through to web.
+    //
+    // Compose Multiplatform does NOT support tvOS / watchOS / Linux / mingw —
+    // those targets remain out of scope until upstream Compose adds them.
+    // ========================================================================
+    js(IR) {
+        browser()
+    }
+    wasmJs {
+        browser()
+    }
 
     // ========================================================================
     // Compiler Options
@@ -126,3 +144,6 @@ mavenPublishing {
         }
     }
 }
+
+// Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
+apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
