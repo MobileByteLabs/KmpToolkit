@@ -25,9 +25,10 @@ plugins {
 // observeKoinModule(hooks: List<LibraryObservationHook>) takes hook instances
 // as a parameter (no direct dep on Firebase hook types) so the module ships
 // to all 10 KMP targets — same set as cmp-observe (audit follow-up 2026-05-30).
-// The 6 stub targets (js/wasmJs/tvos/watchos/linux/mingw) get the module but
-// typically pass an empty hook list or consumer-provided non-Firebase hooks
-// (GitLive Firebase Crashlytics/Performance have no js/wasmJs variants).
+// The 8 stub targets (jvm/macos/js/wasmJs/tvos/watchos/linux/mingw) get the
+// module but typically pass an empty hook list or consumer-provided non-Firebase
+// hooks (GitLive Firebase v2.4.0 only intersects on {android, ios}; crashlytics
+// has no jvm variant, perf has no macos variant).
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()

@@ -26,13 +26,13 @@ import org.koin.dsl.module
  *
  * Why this signature accepts hooks as a parameter rather than importing the
  * Firebase impls directly: the Firebase hooks live in cmp-observe's
- * `firebaseHooksMain` source-set (only 4 of 10 targets see them — GitLive
- * Firebase Crashlytics/Analytics/Performance publish only for jvm/android/
- * ios/macos). Decoupling cmp-observe-koin from those concrete types lets THIS
- * module ship on all 10 targets — consumer apps on js/wasmJs/tvos/watchos/
- * linux/mingw can still use it, passing whatever hook set is appropriate for
- * those platforms (most likely none from cmp-observe; consumer-provided
- * hooks remain valid).
+ * `firebaseHooksMain` source-set (only 2 of 10 targets see them — the GitLive
+ * Firebase v2.4.0 deps for Crashlytics/Analytics/Performance only intersect
+ * on {android, ios}). Decoupling cmp-observe-koin from those concrete types
+ * lets THIS module ship on all 10 targets — consumer apps on jvm/macos/js/
+ * wasmJs/tvos/watchos/linux/mingw can still use it, passing whatever hook set
+ * is appropriate for those platforms (most likely none from cmp-observe;
+ * consumer-provided hooks remain valid).
  *
  * Usage:
  * ```kotlin
@@ -40,7 +40,7 @@ import org.koin.dsl.module
  *     modules(
  *         observeKoinModule(
  *             hooks = listOf(
- *                 FirebaseCrashlyticsAttributionHook(),     // T0 — jvm/android/ios/macos only
+ *                 FirebaseCrashlyticsAttributionHook(),     // T0 — android + ios only
  *                 FirebaseAnalyticsHealthHook(),            // T1 — same
  *                 SupabaseEventsHook(supabaseUrl, anonKey, consumerAppId, httpClient, scope),  // T2 — all 10 targets
  *             ),
