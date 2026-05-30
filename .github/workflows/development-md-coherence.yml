@@ -1,0 +1,44 @@
+name: DEVELOPMENT.md coherence
+
+# Per RULE-LIB-DEVELOPMENT-MD-001 (consumer-library-ai-bridge epic, Phase 00 T12).
+# Validates every cmp-*/DEVELOPMENT.md against the rule's 8 sub-checks.
+# Runs on PRs touching cmp-*/ source + daily at 00:00 UTC for drift detection.
+
+on:
+  pull_request:
+    paths:
+      - 'cmp-*/**'
+      - 'cmp-*/DEVELOPMENT.md'
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kmp-toolkit
+        uses: actions/checkout@v4
+        with:
+          path: kmp-toolkit
+      - name: Checkout framework (validators live in claude-product-cycle)
+        uses: actions/checkout@v4
+        with:
+          repository: MobileByteLabs/claude-product-cycle
+          path: claude-product-cycle
+          token: ${{ secrets.FRAMEWORK_RO_TOKEN }}
+      - name: Symlink kmp-toolkit into framework's workspace layout
+        run: |
+          mkdir -p claude-product-cycle/workspaces/mbs/kmp-toolkit/source
+          ln -sf "$(pwd)/kmp-toolkit" claude-product-cycle/workspaces/mbs/kmp-toolkit/source/kmp-toolkit
+      - name: Run DEVELOPMENT.md validator
+        working-directory: claude-product-cycle
+        run: |
+          bash .claude-runtime/scripts/development-md-validate.sh --workspace mbs/kmp-toolkit --strict
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-md-validation-report
+          path: claude-product-cycle/.claude-runtime/ci-state/development-md-validate-*.log
+          if-no-files-found: warn
