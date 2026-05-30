@@ -167,7 +167,13 @@ kotlin {
 }
 
 mavenPublishing {
-    coordinates(group.toString(), "cmp-observe", version.toString())
+    // No explicit coordinates() — the vanniktech plugin auto-derives from
+    // project.group / project.name / project.version. Calling coordinates()
+    // here breaks the publish workflow, which pre-finalizes the version
+    // property (`-Pversion=X.Y.Z`); a second assignment throws:
+    //   "The value for extension 'mavenPublishing' property 'version$plugin'
+    //    is final and cannot be changed any further."
+    // Matches the pattern used by all 19 other cmp-* modules.
     pom {
         name.set("cmp-observe")
         description.set(
