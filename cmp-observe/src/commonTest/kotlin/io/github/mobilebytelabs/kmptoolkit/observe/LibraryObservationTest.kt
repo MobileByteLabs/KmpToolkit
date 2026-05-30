@@ -24,15 +24,21 @@ class LibraryObservationTest {
 
     private class RecordingHook : LibraryObservationHook {
         val calls = mutableListOf<String>()
-        override fun onInitStart(meta: CmpMetadata) { calls += "init_start:${meta.name}" }
-        override fun onInitComplete(meta: CmpMetadata) { calls += "init_complete:${meta.name}" }
+        override fun onInitStart(meta: CmpMetadata) {
+            calls += "init_start:${meta.name}"
+        }
+        override fun onInitComplete(meta: CmpMetadata) {
+            calls += "init_complete:${meta.name}"
+        }
         override fun onInitFailure(meta: CmpMetadata, throwable: Throwable) {
             calls += "init_failure:${meta.name}:${throwable.message}"
         }
         override fun onLifecycleEvent(meta: CmpMetadata, event: String, payload: Map<String, Any?>) {
             calls += "lifecycle:${meta.name}:$event"
         }
-        override fun onClose(meta: CmpMetadata) { calls += "close:${meta.name}" }
+        override fun onClose(meta: CmpMetadata) {
+            calls += "close:${meta.name}"
+        }
     }
 
     private val testMeta = CmpMetadata(
@@ -41,11 +47,17 @@ class LibraryObservationTest {
         artifact = "io.github.mobilebytelabs:cmp-test",
     )
 
-    @BeforeTest fun setUp() { LibraryObservation.reset() }
-    @AfterTest fun tearDown() { LibraryObservation.reset() }
+    @BeforeTest fun setUp() {
+        LibraryObservation.reset()
+    }
+
+    @AfterTest fun tearDown() {
+        LibraryObservation.reset()
+    }
 
     @Test fun `notifyInit fans out to all registered hooks`() {
-        val h1 = RecordingHook(); val h2 = RecordingHook()
+        val h1 = RecordingHook()
+        val h2 = RecordingHook()
         LibraryObservation.register(h1)
         LibraryObservation.register(h2)
         LibraryObservation.notifyInit(testMeta)
@@ -55,7 +67,7 @@ class LibraryObservationTest {
 
     @Test fun `hook exception is isolated — subsequent hooks still run`() {
         val failingHook = object : LibraryObservationHook {
-            override fun onInitStart(meta: CmpMetadata) { throw RuntimeException("hook crashed") }
+            override fun onInitStart(meta: CmpMetadata): Unit = throw RuntimeException("hook crashed")
             override fun onInitComplete(meta: CmpMetadata) {}
             override fun onInitFailure(meta: CmpMetadata, throwable: Throwable) {}
             override fun onLifecycleEvent(meta: CmpMetadata, event: String, payload: Map<String, Any?>) {}
@@ -69,11 +81,12 @@ class LibraryObservationTest {
     }
 
     @Test fun `notifyInit with zero registered hooks is silent + non-throwing`() {
-        LibraryObservation.notifyInit(testMeta)  // Should NOT throw
+        LibraryObservation.notifyInit(testMeta) // Should NOT throw
     }
 
     @Test fun `replaceHooks atomically swaps registered list`() {
-        val before = RecordingHook(); val after = RecordingHook()
+        val before = RecordingHook()
+        val after = RecordingHook()
         LibraryObservation.register(before)
         LibraryObservation.replaceHooks { _ -> listOf(after) }
         LibraryObservation.notifyInit(testMeta)

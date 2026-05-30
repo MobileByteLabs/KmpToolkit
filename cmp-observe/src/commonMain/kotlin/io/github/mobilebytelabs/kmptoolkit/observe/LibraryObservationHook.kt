@@ -41,8 +41,4 @@ public interface LibraryObservationHook {
  * @property version Semantic version, e.g. "3.2.11".
  * @property artifact Maven artifact ID, e.g. "io.github.mobilebytelabs:cmp-share".
  */
-public data class CmpMetadata(
-    public val name: String,
-    public val version: String,
-    public val artifact: String,
-)
+public data class CmpMetadata(public val name: String, public val version: String, public val artifact: String)

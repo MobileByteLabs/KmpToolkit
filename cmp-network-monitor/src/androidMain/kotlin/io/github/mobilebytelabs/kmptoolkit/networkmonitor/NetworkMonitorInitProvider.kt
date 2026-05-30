@@ -5,8 +5,8 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
-import io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata as ObserveMetadata
 import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservation
+import io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata as ObserveMetadata
 
 /**
  * Auto-initializes the library's application context at app startup.

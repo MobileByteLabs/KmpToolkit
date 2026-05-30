@@ -56,9 +56,15 @@ kotlin {
     // via CocoaPods at consumer integration time). Following the cmp-observe +
     // cmp-firebase-analytics pattern (klib-only publication for iOS).
 
-    js(IR) { browser(); nodejs() }
+    js(IR) {
+        browser()
+        nodejs()
+    }
     @OptIn(ExperimentalWasmDsl::class)
-    wasmJs { browser(); nodejs() }
+    wasmJs {
+        browser()
+        nodejs()
+    }
 
     // ─── Stub-target additions (2026-05-30 — matches cmp-observe's 10-target set) ──
     tvosX64()
@@ -86,7 +92,9 @@ mavenPublishing {
     coordinates(group.toString(), "cmp-observe-koin", version.toString())
     pom {
         name.set("cmp-observe-koin")
-        description.set("Koin companion for cmp-observe — zero-config DI registration of LibraryObservationHook instances.")
+        description.set(
+            "Koin companion for cmp-observe — zero-config DI registration of LibraryObservationHook instances.",
+        )
         inceptionYear.set("2026")
         url.set("https://github.com/MobileByteLabs/KmpToolkit")
         licenses {

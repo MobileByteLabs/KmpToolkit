@@ -64,7 +64,10 @@ public class SupabaseEventsHook(
     // AtomicReference + CAS retry loop — multiplatform-safe replacement for
     // `synchronized(queueLock)`. Compiles on all 10 KMP targets cmp-observe ships.
     private val queueRef: AtomicReference<List<LibraryEvent>> = AtomicReference(emptyList())
-    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
 
     @Serializable
     private data class LibraryEvent(

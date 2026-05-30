@@ -48,28 +48,31 @@ val moduleName: String = project.name
 val moduleKey: String = moduleName.replace('-', '_')
 
 // Resolve version + artifact from rootProject.extra; fall back to UNKNOWN.
-val moduleVersion: String = try {
-    rootProject.extra["${moduleKey}_version"] as String
-} catch (_: Exception) {
-    "UNKNOWN"
-}
-val moduleArtifact: String = try {
-    rootProject.extra["${moduleKey}_artifact"] as String
-} catch (_: Exception) {
-    "io.github.mobilebytelabs:$moduleName"
-}
+val moduleVersion: String =
+    try {
+        rootProject.extra["${moduleKey}_version"] as String
+    } catch (_: Exception) {
+        "UNKNOWN"
+    }
+val moduleArtifact: String =
+    try {
+        rootProject.extra["${moduleKey}_artifact"] as String
+    } catch (_: Exception) {
+        "io.github.mobilebytelabs:$moduleName"
+    }
 
 // Derive Kotlin package: cmp-share → com.mobilebytelabs.kmptoolkit.share
-val modulePackage: String = run {
-    // Mirror the actual source package convention used across cmp-* modules:
-    // cmp-network-monitor → io.github.mobilebytelabs.kmptoolkit.networkmonitor
-    // cmp-deep-link       → io.github.mobilebytelabs.kmptoolkit.deeplink
-    // cmp-share           → io.github.mobilebytelabs.kmptoolkit.share
-    // (hyphens are DROPPED, not converted to dots — the existing source tree uses
-    // squashed concatenation, e.g. `package …kmptoolkit.networkmonitor`.)
-    val short = moduleName.removePrefix("cmp-").replace("-", "")
-    "io.github.mobilebytelabs.kmptoolkit.$short"
-}
+val modulePackage: String =
+    run {
+        // Mirror the actual source package convention used across cmp-* modules:
+        // cmp-network-monitor → io.github.mobilebytelabs.kmptoolkit.networkmonitor
+        // cmp-deep-link       → io.github.mobilebytelabs.kmptoolkit.deeplink
+        // cmp-share           → io.github.mobilebytelabs.kmptoolkit.share
+        // (hyphens are DROPPED, not converted to dots — the existing source tree uses
+        // squashed concatenation, e.g. `package …kmptoolkit.networkmonitor`.)
+        val short = moduleName.removePrefix("cmp-").replace("-", "")
+        "io.github.mobilebytelabs.kmptoolkit.$short"
+    }
 
 abstract class CmpMetadataGenTask : org.gradle.api.DefaultTask() {
     @get:org.gradle.api.tasks.Input
@@ -106,24 +109,25 @@ abstract class CmpMetadataGenTask : org.gradle.api.DefaultTask() {
                 const val VERSION: String = "${moduleVersion.get()}"
                 const val ARTIFACT: String = "${moduleArtifact.get()}"
             }
-            """.trimIndent()
+            """.trimIndent(),
         )
     }
 }
 
 // Capture script-level vars before they are shadowed by the task's same-named abstract properties.
-val _capturedName = moduleName
-val _capturedVersion = moduleVersion
-val _capturedArtifact = moduleArtifact
-val _capturedPackage = modulePackage
+val capturedModuleName = moduleName
+val capturedModuleVersion = moduleVersion
+val capturedModuleArtifact = moduleArtifact
+val capturedModulePackage = modulePackage
 
-val genTask = tasks.register<CmpMetadataGenTask>("generateCmpMetadata") {
-    moduleName.set(_capturedName)
-    moduleVersion.set(_capturedVersion)
-    moduleArtifact.set(_capturedArtifact)
-    modulePackage.set(_capturedPackage)
-    outputDir.set(layout.buildDirectory.dir("generated/observability"))
-}
+val genTask =
+    tasks.register<CmpMetadataGenTask>("generateCmpMetadata") {
+        moduleName.set(capturedModuleName)
+        moduleVersion.set(capturedModuleVersion)
+        moduleArtifact.set(capturedModuleArtifact)
+        modulePackage.set(capturedModulePackage)
+        outputDir.set(layout.buildDirectory.dir("generated/observability"))
+    }
 
 // Wire generated file into commonMain so compileKotlinCommon picks it up.
 // KotlinMultiplatformExtension is NOT on the buildscript compilation classpath of an applied
@@ -134,13 +138,15 @@ afterEvaluate {
     val ext = project.extensions.findByName("kotlin") ?: return@afterEvaluate
     try {
         @Suppress("UNCHECKED_CAST")
-        val sourceSets = ext.javaClass.getMethod("getSourceSets").invoke(ext)
-            as? org.gradle.api.NamedDomainObjectContainer<Any>
-            ?: return@afterEvaluate
+        val sourceSets =
+            ext.javaClass.getMethod("getSourceSets").invoke(ext)
+                as? org.gradle.api.NamedDomainObjectContainer<Any>
+                ?: return@afterEvaluate
         val commonMain = sourceSets.findByName("commonMain") ?: return@afterEvaluate
-        val kotlinSrcSet = commonMain.javaClass.getMethod("getKotlin").invoke(commonMain)
-            as? org.gradle.api.file.SourceDirectorySet
-            ?: return@afterEvaluate
+        val kotlinSrcSet =
+            commonMain.javaClass.getMethod("getKotlin").invoke(commonMain)
+                as? org.gradle.api.file.SourceDirectorySet
+                ?: return@afterEvaluate
         kotlinSrcSet.srcDir(layout.buildDirectory.dir("generated/observability"))
     } catch (e: Exception) {
         logger.warn("cmp-observe-metadata: failed to register generated sources in commonMain: ${e.message}")
@@ -155,8 +161,9 @@ afterEvaluate {
 // Without Android coverage, Gradle 9+'s strict validation flags compileAndroidMain
 // as reading from build/generated/observability/ (via commonMain srcDir) without
 // declared dependency on generateCmpMetadata.
-tasks.matching {
-    it.name.startsWith("compileKotlin")
-        || it.name.startsWith("compileCommonMainKotlinMetadata")
-        || it.name.startsWith("compileAndroid")
-}.configureEach { dependsOn(genTask) }
+tasks
+    .matching {
+        it.name.startsWith("compileKotlin") ||
+            it.name.startsWith("compileCommonMainKotlinMetadata") ||
+            it.name.startsWith("compileAndroid")
+    }.configureEach { dependsOn(genTask) }

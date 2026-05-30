@@ -54,9 +54,7 @@ import org.koin.dsl.module
  * decoupled from Firebase types 2026-05-30 (audit follow-up) so the module
  * can ship to all 10 KMP targets alongside cmp-observe's expanded target set.
  */
-public fun observeKoinModule(
-    hooks: List<LibraryObservationHook>,
-): Module = module {
+public fun observeKoinModule(hooks: List<LibraryObservationHook>): Module = module {
     // Register each hook under a name-qualified single<>.
     hooks.forEach { hook ->
         val qName = hook::class.simpleName ?: "anonymous-hook-${hook.hashCode()}"

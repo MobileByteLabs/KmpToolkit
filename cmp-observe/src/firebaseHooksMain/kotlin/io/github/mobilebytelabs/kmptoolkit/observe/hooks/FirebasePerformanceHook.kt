@@ -49,12 +49,14 @@ public class FirebasePerformanceHook : LibraryObservationHook {
                     val trace = Firebase.performance.newTrace(traceName).apply { start() }
                     updateTraces { it + (traceName to trace) }
                 }
+
                 event.endsWith("_end") -> {
                     val prefix = event.removeSuffix("_end")
                     val traceName = "${meta.name}_$prefix"
                     val trace = removeTrace(traceName)
                     trace?.stop()
                 }
+
                 else -> {
                     // Non-start/_end lifecycle events ignored by T3.
                 }

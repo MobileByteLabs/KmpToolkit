@@ -86,7 +86,10 @@ kotlin {
         nodejs()
     }
     @OptIn(ExperimentalWasmDsl::class)
-    wasmJs { browser(); nodejs() }
+    wasmJs {
+        browser()
+        nodejs()
+    }
 
     // ─── Stub-target additions (2026-05-30 audit follow-up) ──────────────
     // These 4 target groups only see commonMain — NO Firebase hook impls.
@@ -167,7 +170,9 @@ mavenPublishing {
     coordinates(group.toString(), "cmp-observe", version.toString())
     pom {
         name.set("cmp-observe")
-        description.set("Shared library observability hook interface + 4 default Firebase/Supabase hook implementations. Per RULE-LIB-OBSERVABILITY-SURFACE-001.")
+        description.set(
+            "Shared library observability hook interface + 4 default Firebase/Supabase hook implementations. Per RULE-LIB-OBSERVABILITY-SURFACE-001.",
+        )
         inceptionYear.set("2026")
         url.set("https://github.com/MobileByteLabs/KmpToolkit")
         licenses {
