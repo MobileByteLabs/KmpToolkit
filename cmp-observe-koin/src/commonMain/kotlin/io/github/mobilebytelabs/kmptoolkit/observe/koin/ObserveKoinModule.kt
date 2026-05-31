@@ -20,9 +20,9 @@ import org.koin.dsl.module
  *
  * Takes a list of [LibraryObservationHook] instances assembled by the consumer
  * app (typically: `FirebaseCrashlyticsAttributionHook`, `FirebaseAnalyticsHealthHook`,
- * `FirebasePerformanceHook`, `SupabaseEventsHook` — all from cmp-observe, scoped to
- * the platforms where they ship). Registers each via Koin AND wires it into the
- * process-wide [LibraryObservation] registry at first injection.
+ * `FirebasePerformanceHook` — all from cmp-observe's firebaseHooksMain, scoped to
+ * android + ios where GitLive Firebase ships). Registers each via Koin AND wires
+ * it into the process-wide [LibraryObservation] registry at first injection.
  *
  * Why this signature accepts hooks as a parameter rather than importing the
  * Firebase impls directly: the Firebase hooks live in cmp-observe's
@@ -41,8 +41,8 @@ import org.koin.dsl.module
  *         observeKoinModule(
  *             hooks = listOf(
  *                 FirebaseCrashlyticsAttributionHook(),     // T0 — android + ios only
- *                 FirebaseAnalyticsHealthHook(),            // T1 — same
- *                 SupabaseEventsHook(supabaseUrl, anonKey, consumerAppId, httpClient, scope),  // T2 — all 10 targets
+ *                 FirebaseAnalyticsHealthHook(),            // T1 — android + ios only
+ *                 FirebasePerformanceHook(),                // T3 — android + ios only
  *             ),
  *         ),
  *     )
@@ -53,6 +53,7 @@ import org.koin.dsl.module
  * Authored 2026-05-30 by library-runtime-observability epic Phase 01 T9;
  * decoupled from Firebase types 2026-05-30 (audit follow-up) so the module
  * can ship to all 10 KMP targets alongside cmp-observe's expanded target set.
+ * Supabase backend support dropped 2026-05-31 (cmp-observe is Google-only).
  */
 public fun observeKoinModule(hooks: List<LibraryObservationHook>): Module = module {
     // Register each hook under a name-qualified single<>.

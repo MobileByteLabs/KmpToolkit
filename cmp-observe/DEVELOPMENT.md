@@ -41,11 +41,11 @@ Legend: ✅ real impl, 🟡 UnsupportedPlatform stub, ⛔ not declared, — N/A.
 <!-- No api/*.api BCV baseline yet — scanned commonMain public declarations: -->
 ```kotlin
 public object LibraryObservation {
-public class FirebasePerformanceHook : LibraryObservationHook {
-public class SupabaseEventsHook(
-public class FirebaseAnalyticsHealthHook : LibraryObservationHook {
-public class FirebaseCrashlyticsAttributionHook : LibraryObservationHook {
 public interface LibraryObservationHook {
+// firebaseHooksMain (android + ios only):
+public class FirebaseCrashlyticsAttributionHook : LibraryObservationHook {
+public class FirebaseAnalyticsHealthHook : LibraryObservationHook {
+public class FirebasePerformanceHook : LibraryObservationHook {
 ```
 
 ---
@@ -127,18 +127,20 @@ public interface LibraryObservationHook {
 |-------------|--------|---------|
 | T0 (Crashlytics attribution) | enabled | custom_key: `library:cmp-observe@UNKNOWN` (set on init by FirebaseCrashlyticsAttributionHook) |
 | T1 (config + version health)  | enabled | events: `lib_init_success`, `lib_init_failure` (FirebaseAnalyticsHealthHook) |
-| T2 (lifecycle events)         | opted-out | (author when ready — populate event_schema YAML below + flip to enabled) |
+| T2 (lifecycle events)         | not-supported | dropped 2026-05-31 — cmp-observe is Google-only, no Supabase/HTTP backend ships in this module |
 | T3 (performance traces)       | opted-out | (opt-in per consumer; FirebasePerformanceHook wraps `*_start` / `*_end` lifecycle events) |
-| T4 (full API usage)           | opted-out | opt-in per consumer + per end-user; iOS ATT prompt required |
+| T4 (full API usage)           | not-supported | requires T2 backend; dropped with Supabase 2026-05-31 |
 
 ```yaml
 # DEVELOPMENT_OBSERVABILITY.schema.yaml-conformant block
 tiers:
   T0: enabled
   T1: enabled
-  T2: opted-out
+  T2: not-supported  # Supabase backend dropped 2026-05-31 — cmp-observe is Google-only
+  T3: opted-out
+  T4: not-supported
 custom_key_format: "library:cmp-observe@UNKNOWN"
-event_schema: []  # populate when T2 enabled — see library-runtime-observability epic AC #12-13
+event_schema: []  # N/A — T2 not supported in this module
 consumer_opt_in: "lib-integrate.properties#cmp-observe.observability_opt_in"
 ```
 

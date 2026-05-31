@@ -14,45 +14,43 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
-    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.binaryCompatibilityValidator)
 }
 
 // ============================================================================
 // LIBRARY CONFIGURATION — cmp-observe
 // ============================================================================
-// Shared library observability hook interface + 4 default hook implementations.
-// Authored 2026-05-30 by library-runtime-observability epic Phase 01.
+// Shared library observability hook interface + 3 default Google/Firebase hook
+// implementations. Authored 2026-05-30 by library-runtime-observability epic
+// Phase 01; Supabase backend support dropped 2026-05-31 (Google-only scope).
 //
 // Every published cmp-* / worker-kmp / monetization-kmp / paycraft library MAY
 // add this as a commonMain dependency to receive the LibraryObservationHook
 // interface — then call LibraryObservation.notifyInit(...) at init paths.
 //
-// Hook implementations:
-// - FirebaseCrashlyticsAttributionHook  → T0 (setCustomValue per library version)
+// Hook implementations (Google/Firebase only):
+// - FirebaseCrashlyticsAttributionHook  → T0 (setCustomKey per library version)
 // - FirebaseAnalyticsHealthHook         → T1 (lib_init_success / lib_init_failure events)
 // - FirebasePerformanceHook             → T3 (Trace.start/stop around *_start/*_end lifecycle events)
-// - SupabaseEventsHook                  → T2/T4 (structured events to framework-supabase.library_events)
 //
 // All hooks are FAIL-SAFE: exceptions swallowed by LibraryObservation.safeCall;
 // no hook can crash the host application.
 //
-// Targets: 10/10 KMP coverage as of 2026-05-30 audit follow-up + PR #115 CI fix.
+// Targets: 10/10 KMP coverage.
 // - 2 "Firebase-supported" targets (android + ios) get the 3 Firebase hook impls
-//   (Crashlytics/Analytics/Performance) via firebaseHooksMain intermediate source-set.
-//   The 3 GitLive Firebase deps at v2.4.0 only intersect on {android, ios} — crashlytics
-//   has no jvm variant, perf has no macos variant, and none have js/wasmJs/native.
-// - 8 "stub" targets (jvm, macos, js, wasmJs, tvos, watchos, linux, mingw) inherit ONLY
-//   commonMain — they get the LibraryObservationHook interface + LibraryObservation
-//   registry + CmpMetadata data class + SupabaseEventsHook (Ktor-backed, all-target).
-//   Firebase hooks are NOT available on these targets — consumer apps register their own
-//   no-op or platform-specific hooks for crash/analytics attribution if those backends
-//   ever ship for these platforms.
+//   via the firebaseHooksMain intermediate source-set. The 3 GitLive Firebase
+//   deps at v2.4.0 only intersect on {android, ios} — crashlytics has no jvm
+//   variant, perf has no macos variant, none have js/wasmJs/native.
+// - 8 "stub" targets (jvm, macos, js, wasmJs, tvos, watchos, linux, mingw) inherit
+//   ONLY commonMain — they get the LibraryObservationHook interface +
+//   LibraryObservation registry + CmpMetadata data class (no transport, no hooks).
+//   Consumer apps register their own no-op or platform-specific hooks for these
+//   targets if they need crash/analytics attribution.
 //
-// This structure was added to eliminate the commonMain-scope blast-radius problem
-// surfaced by cmp-network-monitor (11 targets) depending on cmp-observe (originally
-// 7 targets): every cmp-* module can now depend on cmp-observe in commonMain without
-// constraining its own target list.
+// This structure eliminates the commonMain-scope blast-radius problem surfaced
+// by cmp-network-monitor (11 targets) depending on cmp-observe: every cmp-*
+// module can depend on cmp-observe in commonMain without constraining its own
+// target list.
 // ============================================================================
 group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("kmptoolkit.version").get()
@@ -111,16 +109,11 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.serialization.json)
-            // Ktor supports all 10 KMP targets via per-platform engines — SupabaseEventsHook
-            // can stay in commonMain and emit T2/T4 events from any target.
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
-            // Firebase deps INTENTIONALLY MOVED to firebaseHooksMain (below) — GitLive Firebase
-            // doesn't publish for js/wasmJs/tvos/watchos/linux/mingw. Keeping them out of
-            // commonMain is what lets cmp-observe ship 10 targets.
+            // Interface + registry + CmpMetadata only — no transport, no deps.
+            // The 3 Google/Firebase hook impls live in firebaseHooksMain (below)
+            // and bring their own GitLive Firebase deps. GitLive Firebase doesn't
+            // publish for js/wasmJs/tvos/watchos/linux/mingw — keeping it out of
+            // commonMain lets cmp-observe ship 10 targets.
         }
 
         // Custom intermediate source-set: holds the 3 Firebase hook impls + their deps.
@@ -149,7 +142,7 @@ kotlin {
         // source-sets and rejects the build on any unresolved platform.
         // Net: 8 stub targets (jvm, macos, js, wasmJs, tvos, watchos, linux, mingw)
         // inherit ONLY commonMain — they get the LibraryObservationHook interface +
-        // LibraryObservation registry + CmpMetadata + Ktor-based SupabaseEventsHook.
+        // LibraryObservation registry + CmpMetadata data class only (no hook impls).
         // Apps targeting those platforms register consumer-provided hooks if they
         // need crash/analytics attribution.
         androidMain.get().dependsOn(firebaseHooksMain)
@@ -167,7 +160,6 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }
@@ -178,9 +170,9 @@ mavenPublishing {
     pom {
         name = "CMP Observe"
         description =
-            "Shared library observability hook interface + 4 default Firebase/Supabase hook " +
-            "implementations (Crashlytics attribution / Analytics health / Performance traces / " +
-            "Supabase events) for Kotlin Multiplatform. Per RULE-LIB-OBSERVABILITY-SURFACE-001."
+            "Shared library observability hook interface + 3 default Google/Firebase hook " +
+            "implementations (Crashlytics attribution / Analytics health / Performance traces) " +
+            "for Kotlin Multiplatform. Per RULE-LIB-OBSERVABILITY-SURFACE-001."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 
