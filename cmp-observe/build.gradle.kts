@@ -167,17 +167,7 @@ kotlin {
 }
 
 mavenPublishing {
-    // No explicit coordinates() — the vanniktech plugin auto-derives from
-    // project.group / project.name / project.version. Calling coordinates()
-    // here breaks the publish workflow, which pre-finalizes the version
-    // property (`-Pversion=X.Y.Z`); a second assignment throws:
-    //   "The value for extension 'mavenPublishing' property 'version$plugin'
-    //    is final and cannot be changed any further."
-
-    // Sign only when credentials are present (Maven Central / CI). Skip for local dev builds.
-    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
-        signAllPublications()
-    }
+    signAllPublications()
 
     pom {
         name = "CMP Observe"

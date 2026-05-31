@@ -165,10 +165,7 @@ kotlin {
 // MAVEN CENTRAL PUBLISHING CONFIGURATION
 // ============================================================================
 mavenPublishing {
-    // Sign only when credentials are present (Maven Central / CI). Skip for local dev builds.
-    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
-        signAllPublications()
-    }
+    signAllPublications()
 
     pom {
         name = "CMP Network Monitor"
