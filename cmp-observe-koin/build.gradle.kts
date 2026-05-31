@@ -95,19 +95,40 @@ mavenPublishing {
     // property; a second assignment throws:
     //   "The value for extension 'mavenPublishing' property 'version$plugin'
     //    is final and cannot be changed any further."
-    // Matches the pattern used by all 19 other cmp-* modules.
+
+    // Sign only when credentials are present (Maven Central / CI). Skip for local dev builds.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+        signAllPublications()
+    }
+
     pom {
-        name.set("cmp-observe-koin")
-        description.set(
-            "Koin companion for cmp-observe — zero-config DI registration of LibraryObservationHook instances.",
-        )
-        inceptionYear.set("2026")
-        url.set("https://github.com/MobileByteLabs/KmpToolkit")
+        name = "CMP Observe Koin"
+        description =
+            "Koin companion for cmp-observe — zero-config DI registration of " +
+            "LibraryObservationHook instances for Kotlin Multiplatform."
+        inceptionYear = "2026"
+        url = "https://github.com/MobileByteLabs/KmpToolkit/"
+
         licenses {
             license {
-                name.set("Apache-2.0")
-                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                name = "The Apache License, Version 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "repo"
             }
+        }
+
+        developers {
+            developer {
+                id = "MobileByteLabs"
+                name = "MobileByteLabs"
+                url = "https://github.com/MobileByteLabs"
+            }
+        }
+
+        scm {
+            url = "https://github.com/MobileByteLabs/KmpToolkit/"
+            connection = "scm:git:git://github.com/MobileByteLabs/KmpToolkit.git"
+            developerConnection = "scm:git:ssh://git@github.com/MobileByteLabs/KmpToolkit.git"
         }
     }
 }
