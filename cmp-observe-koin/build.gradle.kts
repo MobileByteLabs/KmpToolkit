@@ -41,8 +41,14 @@ kotlin {
 
     androidLibrary {
         namespace = "com.mobilebytelabs.kmptoolkit.observe.koin"
-        compileSdk = 36
-        minSdk = 24
+        compileSdk =
+            libs.versions.android.compileSdk
+                .get()
+                .toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
     }
 
     iosX64()

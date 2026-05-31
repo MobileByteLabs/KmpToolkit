@@ -147,23 +147,33 @@ afterEvaluate {
             commonMain.javaClass.getMethod("getKotlin").invoke(commonMain)
                 as? org.gradle.api.file.SourceDirectorySet
                 ?: return@afterEvaluate
-        kotlinSrcSet.srcDir(layout.buildDirectory.dir("generated/observability"))
+        // Wire srcDir to the TaskProvider (not the static path) — Gradle then
+        // auto-derives the task dependency for EVERY consumer of this source
+        // set (compileKotlinX, androidSourcesJar, X64SourcesJar, etc.). Avoids
+        // the brittle task-name-pattern approach that previously missed
+        // *SourcesJar publish-time tasks and broke the publish workflow.
+        kotlinSrcSet.srcDir(genTask.map { it.outputDir })
     } catch (e: Exception) {
         logger.warn("cmp-observe-metadata: failed to register generated sources in commonMain: ${e.message}")
     }
 }
 
-// Wire dependsOn on every Kotlin compile task — names vary across plugins:
+// Belt-and-suspenders: also wire an explicit dependsOn on every consumer task
+// pattern we know about. The srcDir(taskProvider) registration above should be
+// sufficient on its own, but this guard catches any task that reads the source
+// dir via a path other than the kotlinSrcSet API.
+//
+// Pattern coverage:
 //   - compileKotlin{TargetName}            (KMP standard targets)
 //   - compileCommonMainKotlinMetadata      (KMP metadata)
 //   - compileAndroidMain                   (Android KMP Library plugin)
 //   - compile{Variant}KotlinAndroid        (legacy android plugin paths)
-// Without Android coverage, Gradle 9+'s strict validation flags compileAndroidMain
-// as reading from build/generated/observability/ (via commonMain srcDir) without
-// declared dependency on generateCmpMetadata.
+//   - {target}SourcesJar / androidSourcesJar / sourcesJar  (publish-time)
 tasks
     .matching {
         it.name.startsWith("compileKotlin") ||
             it.name.startsWith("compileCommonMainKotlinMetadata") ||
-            it.name.startsWith("compileAndroid")
+            it.name.startsWith("compileAndroid") ||
+            it.name.endsWith("SourcesJar") ||
+            it.name == "sourcesJar"
     }.configureEach { dependsOn(genTask) }
