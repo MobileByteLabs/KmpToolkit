@@ -50,7 +50,8 @@ public class FirebaseAnalyticsHealthHook : LibraryObservationHook {
     }
 
     override fun onLifecycleEvent(meta: CmpMetadata, event: String, payload: Map<String, Any?>) {
-        // No-op — lifecycle events go to T2 (SupabaseEventsHook), not Firebase Analytics.
+        // No-op — lifecycle events not emitted as Firebase Analytics events
+        // (kept off T1 to avoid burning the 500/day-per-user event quota).
     }
 
     override fun onClose(meta: CmpMetadata) {
