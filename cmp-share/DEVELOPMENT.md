@@ -28,20 +28,21 @@ adr_refs: []
 
 ## §2 Per-Platform Parity Matrix (auto-gen)
 
-| Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Notes |
-|--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|-------|
-| androidMain | ✅ | ✅ real | 0 | 3 | 2026-05-30 | — |
-| iosMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
-| macosMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
-| jvmMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
-| jsMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
-| wasmJsMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
-| mingwMain | 🟡 | 🟡 stub | 3 | 1 | 2026-05-30 | — |
-| linuxMain | 🟡 | 🟡 stub | 2 | 1 | 2026-05-30 | — |
-| tvosMain | 🟡 | 🟡 stub | 2 | 1 | 2026-05-30 | — |
-| watchosMain | 🟡 | 🟡 stub | 4 | 1 | 2026-05-30 | — |
+| Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
+|--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
+| androidMain | ✅ | ✅ real | 0 | 3 | 2026-06-01 | full | — |
+| iosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
+| macosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
+| jvmMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
+| jsMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
+| wasmJsMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
+| mingwMain | 🟡 | 🟡 partial | 3 | 1 | 2026-06-01 | partial | — |
+| linuxMain | ✅ | ✅ real | 2 | 1 | 2026-06-01 | full | — |
+| tvosMain | 🟡 | 🟡 wontfix-OS | 2 | 1 | 2026-06-01 | wontfix-OS | — |
+| watchosMain | 🟡 | 🟡 partial | 4 | 1 | 2026-06-01 | partial | — |
 
-Legend: ✅ real impl, 🟡 UnsupportedPlatform stub, ⛔ not declared, — N/A.
+Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
+Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
 
 ---
 
@@ -70,25 +71,35 @@ public sealed class ShareError {
 
 ---
 
-## §5 Extension Recipes (authored — LLM-seeded)
+## §5 Extension Recipes (authored — cmp-intent-share-coverage-trueup, 2026-06-01)
 
-<!-- AUTHOR: WIP — initial draft from 2026-05-30 -->
+### Recipe: How a platform graduates from stub → partial → full
 
-### Recipe: Add a new platform actual
+Same procedure as `cmp-intent-launcher` — see [cmp-intent-launcher DEVELOPMENT.md §5](../cmp-intent-launcher/DEVELOPMENT.md#5-extension-recipes-authored--cmp-intent-share-coverage-trueup-2026-06-01) for the canonical 7-step playbook. `cmp-share`-specific adaptations:
 
-1. _TBD by author._
-2. _TBD by author._
-3. _TBD by author._
+- **Step 2 template files:**
+  - Android — `androidMain/Share.android.kt` (Intent.ACTION_SEND + FileProvider for binary; EXTRA_TEXT for text/url).
+  - iOS — `iosMain/Share.ios.kt` (UIActivityViewController via `suspendCancellableCoroutine`; resolves top-most VC via traversal).
+  - macOS — `macosMain/Share.macos.kt` (NSSharingServicePicker; `showRelativeToRect` on anchor view).
+  - JVM — `jvmMain/Share.jvm.kt` (AWT clipboard + OS-dispatch chain via ProcessBuilder).
+  - JS/wasmJs — `jsMain/Share.js.kt` / `wasmJsMain/Share.wasmJs.kt` (`navigator.share` Web Share API; Level-2 file support via `Blob` / `File` + `navigator.canShare({files})` feature-detect; falls back to clipboard).
+  - Linux — `linuxMain/Share.linux.kt` (POSIX `fopen`+`fwrite` to `$TMPDIR/cmp-share-*` for Image; `xclip` for text; `xdg-open` for url/file).
+  - mingw — `mingwMain/Share.mingw.kt` (Win32 `ShellExecuteW` for url; clipboard API for text; binary blocked — see ADR-001).
+  - tvOS — `tvosMain/Share.tvos.kt` (optional consumer-provided `CmpShareTvosBridge.swift` probed via ObjC runtime — Text/Url only).
+  - watchOS — `watchosMain/Share.watchos.kt` (`WCSession.transferUserInfo` for text/url; binary blocked on arm32 — see ADR-001).
 
-### Recipe: Extend the public API
+- **Step 5 contract tests:** mirror `FakeShareLauncher` + `ShareContractTest`. Verify your impl returns the same sealed-result types as the Fake's scripted results (`Completed` / `Cancelled` / `Failed(typed cause)`).
 
-1. _TBD by author._
-2. _TBD by author._
+- **Step 7 ADR:** if your graduation reverses a row from [ADR-001](docs/ADR-001-tvos-no-share-watchos-arm32.md), supersede ADR-001 with a new ADR explaining what changed.
 
-### Recipe: Add a new variant under an existing platform (e.g. tvosArm64)
+### Recipe: Add a new SharePayload subtype
 
-1. _TBD by author._
-2. _TBD by author._
+1. Add `public {data} class NewType(...) : SharePayload()` to `commonMain/Share.kt`.
+2. Add a DSL convenience helper: `public suspend fun Share.newtype(...) = share(SharePayload.NewType(...))`.
+3. Per-platform — extend each `Share.{platform}.kt`'s `when (payload)` block to handle the new subtype. Platforms that can't route the new payload return `Failed(UnsupportedPlatform)`.
+4. Update the per-platform LD-2-coverage annotation if any platform's coverage degrades from `full` → `partial`.
+5. Add a contract test exercising the new subtype against `FakeShareLauncher`.
+6. Refresh BCV baseline: `./gradlew :cmp-share:apiDump`.
 
 ---
 
@@ -118,7 +129,8 @@ public sealed class ShareError {
 
 | Type | Reference |
 |------|-----------|
-| GOAL.md | [consumer-library-ai-bridge](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/consumer-library-ai-bridge/GOAL.md) |
-| ADRs | _List relevant ADR-NN entries (e.g. ADR-09 for inter-app-comms modules)._ |
+| GOAL.md (consumer-library-ai-bridge) | [consumer-library-ai-bridge](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/archive/2026-05/consumer-library-ai-bridge/GOAL.md) |
+| GOAL.md (cmp-intent-share-coverage-trueup) | [cmp-intent-share-coverage-trueup](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-intent-share-coverage-trueup/GOAL.md) |
+| ADRs | **[ADR-001 — tvOS no-share + watchOS arm32 binary-share policy](docs/ADR-001-tvos-no-share-watchos-arm32.md)** (2026-06-01) — locks tvOS share (wontfix-OS), watchOS arm32 binary share (wontfix-infra, policy-deferred to v0.5). |
 | Sync rule | [RULE-LIB-DEVELOPMENT-MD-001](../../../../../../layers/framework/rules/RULE-LIB-DEVELOPMENT-MD-001.md) |
 | External docs | [README](README.md) |

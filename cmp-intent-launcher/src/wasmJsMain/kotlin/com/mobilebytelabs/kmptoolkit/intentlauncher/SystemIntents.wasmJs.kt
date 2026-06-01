@@ -9,6 +9,8 @@
  */
 @file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 
+// LD-2-coverage: full
+
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
 import kotlinx.coroutines.suspendCancellableCoroutine

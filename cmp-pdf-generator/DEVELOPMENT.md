@@ -28,16 +28,17 @@ adr_refs: []
 
 ## §2 Per-Platform Parity Matrix (auto-gen)
 
-| Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Notes |
-|--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|-------|
-| androidMain | ✅ | ✅ real | 0 | 3 | 2026-05-30 | — |
-| iosMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
-| macosMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
-| jvmMain | ✅ | ✅ real | 0 | 2 | 2026-05-30 | — |
-| jsMain | ✅ | ✅ real | 0 | 3 | 2026-05-30 | — |
-| wasmJsMain | ✅ | ✅ real | 0 | 1 | 2026-05-30 | — |
+| Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
+|--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
+| androidMain | ✅ | ✅ real | 0 | 3 | 2026-06-01 | (legacy:full) | — |
+| iosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | (legacy:full) | — |
+| macosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | (legacy:full) | — |
+| jvmMain | ✅ | ✅ real | 0 | 2 | 2026-06-01 | (legacy:full) | — |
+| jsMain | ✅ | ✅ real | 0 | 3 | 2026-06-01 | (legacy:full) | — |
+| wasmJsMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | (legacy:full) | — |
 
-Legend: ✅ real impl, 🟡 UnsupportedPlatform stub, ⛔ not declared, — N/A.
+Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
+Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
 
 ---
 

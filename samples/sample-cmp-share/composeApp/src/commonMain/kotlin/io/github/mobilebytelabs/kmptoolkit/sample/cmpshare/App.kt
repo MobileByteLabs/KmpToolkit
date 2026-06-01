@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 
 private enum class Screen {
     Home,
+    TryIt,
     ShareBasic,
     ShareAdvanced,
 }
@@ -59,6 +60,7 @@ fun App() {
                             Text(
                                 when (currentScreen) {
                                     Screen.Home -> "cmp-share Sample"
+                                    Screen.TryIt -> "Try It"
                                     Screen.ShareBasic -> "Basic Share"
                                     Screen.ShareAdvanced -> "Advanced Share"
                                 },
@@ -84,6 +86,7 @@ fun App() {
                 ) { screen ->
                     when (screen) {
                         Screen.Home -> HomeScreen(onNavigate = { currentScreen = it })
+                        Screen.TryIt -> TryItPanel()
                         Screen.ShareBasic -> ShareTextScreen()
                         Screen.ShareAdvanced -> ShareAdvancedScreen()
                     }
@@ -115,6 +118,12 @@ private fun HomeScreen(onNavigate: (Screen) -> Unit) {
         )
         Spacer(Modifier.height(24.dp))
 
+        DemoCard(
+            title = "Try It (per-platform smoke test)",
+            subtitle = "Four buttons — Share text / URL / image / file — that invoke the production Share API on this platform and surface the typed ShareResult",
+            onClick = { onNavigate(Screen.TryIt) },
+        )
+        Spacer(Modifier.height(12.dp))
         DemoCard(
             title = "Basic Share",
             subtitle = "Text · URL · Image · File — exercises Share.text/url/image/file",

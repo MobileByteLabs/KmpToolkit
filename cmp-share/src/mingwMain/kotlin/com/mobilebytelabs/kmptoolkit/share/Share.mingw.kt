@@ -7,6 +7,8 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
+// LD-2-coverage: partial
+
 package com.mobilebytelabs.kmptoolkit.share
 
 import platform.posix.system
