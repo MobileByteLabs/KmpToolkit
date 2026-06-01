@@ -7,6 +7,8 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
+// LD-2-coverage: full
+
 package com.mobilebytelabs.kmptoolkit.share
 
 import kotlinx.coroutines.await
@@ -82,9 +84,26 @@ public actual object Share {
                 hasContent = true
             }
 
-            is SharePayload.Image, is SharePayload.File -> {
-                // Web Share Level 2 file support varies; fall back to clipboard via payloadAsText.
-                // (Real file sharing would need to construct File objects from bytes — deferred.)
+            is SharePayload.Image -> {
+                // Web Share Level 2: build a File from the bytes + pass via `files: [file]`.
+                // 2026-06-01 — Replaces the v0.1 fall-through (sub-plan 02 T3).
+                val file = createJsFile(payload.bytes, payload.mimeType, payload.filename ?: "shared")
+                if (file != null && canShareFiles(file)) {
+                    val filesArr: dynamic = js("[]")
+                    js("filesArr.push(file)")
+                    data["files"] = filesArr
+                    hasContent = true
+                } else {
+                    // Browser doesn't support file share (e.g. Firefox < 130, older Safari) —
+                    // fall through to clipboard (Image bytes can't be clipboard'd; surfaces NoHandler).
+                    return null
+                }
+            }
+
+            is SharePayload.File -> {
+                // File payload references an existing URI; Web Share API expects File objects,
+                // not URIs. Without fetching the bytes (which would require ambient CORS perms),
+                // fall back to clipboard via payloadAsText (returns null → NoHandler).
                 return null
             }
 
@@ -125,6 +144,42 @@ private fun navigatorShare(data: dynamic): Promise<dynamic> = js("navigator.shar
 
 private fun navigatorClipboardWriteText(text: String): Promise<dynamic> =
     js("navigator.clipboard.writeText(text)") as Promise<dynamic>
+
+/**
+ * Construct a [File] object from a Kotlin [ByteArray]. Returns `null` if the browser
+ * doesn't support File / Blob (very old browsers) or if construction fails.
+ *
+ * Kotlin/JS `ByteArray` is backed by `Int8Array` at runtime; wrapping in `Uint8Array`
+ * shares the underlying buffer (no copy).
+ */
+private fun createJsFile(bytes: ByteArray, mime: String, name: String): dynamic = try {
+    js(
+        """
+        (function(b, m, n) {
+            if (typeof File !== 'function' || typeof Blob !== 'function') return null;
+            try {
+                var u8 = new Uint8Array(b);
+                return new File([u8], n, { type: m });
+            } catch (e) { return null; }
+        })(bytes, mime, name)
+        """,
+    )
+} catch (_: Throwable) {
+    null
+}
+
+private fun canShareFiles(file: dynamic): Boolean = try {
+    js(
+        """
+        (function(f) {
+            if (typeof navigator === 'undefined' || typeof navigator.canShare !== 'function') return false;
+            try { return navigator.canShare({ files: [f] }); } catch (e) { return false; }
+        })(file)
+        """,
+    ) as Boolean
+} catch (_: Throwable) {
+    false
+}
 
 private fun readJsErrorName(e: Throwable): String? = try {
     @Suppress("UNCHECKED_CAST")

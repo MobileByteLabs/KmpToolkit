@@ -62,6 +62,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
 
             implementation(project(":cmp-intent-launcher"))
+            // The @Composable rememberIntentLauncher() lives in the -compose adapter
+            // module. The core module is intentionally Compose-free (v0.3 split per
+            // inter-app-comms-real-native-impls Phase 1) to reach all KMP targets.
+            implementation(project(":cmp-intent-launcher-compose"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

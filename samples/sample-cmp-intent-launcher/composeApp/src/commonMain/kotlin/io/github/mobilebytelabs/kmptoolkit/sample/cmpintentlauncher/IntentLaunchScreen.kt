@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobilebytelabs.kmptoolkit.intentlauncher.IntentError
 import com.mobilebytelabs.kmptoolkit.intentlauncher.IntentResult
-import com.mobilebytelabs.kmptoolkit.intentlauncher.rememberIntentLauncher
+import com.mobilebytelabs.kmptoolkit.intentlauncher.compose.rememberIntentLauncher
 import kotlinx.coroutines.launch
 
 @Composable

@@ -9,6 +9,8 @@
  */
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 
+// LD-2-coverage: full
+
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
 import platform.AppKit.NSModalResponseOK

@@ -7,29 +7,44 @@
  *
  *     https://www.apache.org/licenses/LICENSE-2.0
  */
+// LD-2-coverage: full
+
 package com.mobilebytelabs.kmptoolkit.share
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
 import kotlinx.cinterop.toKString
+import kotlinx.cinterop.usePinned
 import platform.posix.fclose
+import platform.posix.fopen
 import platform.posix.fputs
+import platform.posix.fwrite
+import platform.posix.getenv
 import platform.posix.pclose
 import platform.posix.popen
 import platform.posix.system
+import kotlin.random.Random
 
 /**
- * Linux `Share` — v0.3 (inter-app-comms-real-native-impls Phase 2):
+ * Linux `Share` — full coverage as of 2026-06-01 (cmp-intent-share-coverage-trueup sub-plan 02):
  *
  * - Text → `xclip -selection clipboard` (consumer paste-anywhere) per ADR-09
  * - Url → `xdg-open` (browser / mailto / sms handler)
- * - Image / File → `xdg-open <path>` (if file already materialized; binary Image
- *   bytes write to /tmp first then dispatched)
+ * - Image → POSIX `fopen`+`fwrite` to `$TMPDIR/cmp-share-{basename}-{rand}{.ext}`, then
+ *   `xdg-open <path>` (registered image viewer / GUI app handles the share UX)
+ * - File → `xdg-open <uri>` (if already materialized)
  * - Multi → first-success strategy across items
  *
  * **Dependencies:** `xdg-utils` (xdg-open) and `xclip`. Documented as required in module README;
  * absence returns `ShareResult.Failed(ShareError.NoHandler)` with a "is X installed?" hint.
  *
- * **Security:** all shell inputs single-quote-wrapped + embedded single quote escaped.
+ * **Security:** all shell inputs single-quote-wrapped + embedded single quote escaped;
+ * temp filenames are randomized + character-filtered (no shell metacharacters).
+ *
+ * **Temp file lifecycle:** files persist in `$TMPDIR`/`/tmp` until cleaned by the system
+ * (`systemd-tmpfiles` default sweep). This is the platform-correct path — premature
+ * deletion would race the launched GUI app's file read.
  */
 @OptIn(ExperimentalForeignApi::class)
 @ExperimentalShareApi
@@ -59,14 +74,57 @@ public actual object Share {
     }
 
     /**
-     * Materialize Image bytes to /tmp then xdg-open. v0.3 stub — full impl would persist
-     * to a configurable cache dir + return that URI for downstream consumers.
+     * Materialize Image bytes to a /tmp file via POSIX `fopen`+`fwrite`, then `xdg-open`
+     * — the registered image viewer / GUI app handles the share UX (Files → "Send to…",
+     * Eye of GNOME → "Send via Email", etc.). Linux has no first-class share-sheet API;
+     * delegating to the file's default-handler app is the platform-correct path.
+     *
+     * Cleanup: we leave the temp file in place. Linux distros' `systemd-tmpfiles` cleans
+     * `/tmp` periodically (default: files unmodified for 10d are removed). The temp file
+     * lives long enough for the launched app to read it. Documented behavior.
+     *
+     * 2026-06-01 — Replaces the v0.3 `Failed(UnsupportedPlatform)` stub
+     * (per cmp-intent-share-coverage-trueup sub-plan 02 T2).
      */
     private fun imageShare(image: SharePayload.Image): ShareResult {
-        // ADR-09: writing binary bytes via libc on Kotlin/Native linuxX64/Arm64 requires
-        // additional cinterop work; v0.3 punts to filename-only path if caller pre-materialized.
-        // For now: text-shaped (data URI form is too long for shell args reliably).
-        return ShareResult.Failed(ShareError.UnsupportedPlatform)
+        val suffix = mimeToSuffix(image.mimeType)
+        val basename = image.filename
+            ?.substringBeforeLast('.', missingDelimiterValue = image.filename ?: "image")
+            ?.replace(Regex("[^A-Za-z0-9._-]"), "_")
+            ?.take(64)
+            ?: "image"
+        val tmpdir = getenv("TMPDIR")?.toKString()?.takeIf { it.isNotEmpty() } ?: "/tmp"
+        val rand = Random.nextLong().toULong().toString(16)
+        val path = "$tmpdir/cmp-share-$basename-$rand$suffix"
+
+        val file = fopen(path, "wb") ?: return ShareResult.Failed(
+            ShareError.Unknown("fopen failed for $path (TMPDIR not writable?)"),
+        )
+        try {
+            val written: ULong = image.bytes.usePinned { pinned ->
+                fwrite(pinned.addressOf(0), 1uL.convert(), image.bytes.size.convert(), file).convert()
+            }
+            if (written.toInt() != image.bytes.size) {
+                return ShareResult.Failed(
+                    ShareError.Unknown("fwrite short write: $written / ${image.bytes.size}"),
+                )
+            }
+        } finally {
+            fclose(file)
+        }
+        return xdgOpen(path)
+    }
+
+    /** Map common image MIME types to filename suffixes so xdg-open's content sniffer can route. */
+    private fun mimeToSuffix(mime: String): String = when (mime.lowercase()) {
+        "image/png" -> ".png"
+        "image/jpeg", "image/jpg" -> ".jpg"
+        "image/webp" -> ".webp"
+        "image/gif" -> ".gif"
+        "image/bmp" -> ".bmp"
+        "image/tiff" -> ".tiff"
+        "image/svg+xml" -> ".svg"
+        else -> ".bin"
     }
 
     private fun multiShare(multi: SharePayload.Multi): ShareResult {
@@ -75,6 +133,7 @@ public actual object Share {
                 is SharePayload.Url -> xdgOpen(item.href)
                 is SharePayload.Text -> xclipText(item.content)
                 is SharePayload.File -> xdgOpen(uriFromFile(item.uri))
+                is SharePayload.Image -> imageShare(item)
                 else -> ShareResult.Failed(ShareError.UnsupportedPlatform)
             }
             if (r is ShareResult.Completed) return r

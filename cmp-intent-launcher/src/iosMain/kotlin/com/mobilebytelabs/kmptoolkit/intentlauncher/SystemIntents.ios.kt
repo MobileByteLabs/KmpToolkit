@@ -12,6 +12,8 @@
     kotlinx.cinterop.BetaInteropApi::class,
 )
 
+// LD-2-coverage: full
+
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
 import kotlinx.cinterop.ObjCSignatureOverride

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 
 private enum class Screen {
     Home,
+    TryIt,
     IntentLaunch,
     IntentBuilder,
 }
@@ -59,6 +60,7 @@ fun App() {
                             Text(
                                 when (currentScreen) {
                                     Screen.Home -> "cmp-intent-launcher Sample"
+                                    Screen.TryIt -> "Try It"
                                     Screen.IntentLaunch -> "Intent Launch"
                                     Screen.IntentBuilder -> "Intent Builder"
                                 },
@@ -84,6 +86,7 @@ fun App() {
                 ) { screen ->
                     when (screen) {
                         Screen.Home -> HomeScreen(onNavigate = { currentScreen = it })
+                        Screen.TryIt -> TryItPanel()
                         Screen.IntentLaunch -> IntentLaunchScreen()
                         Screen.IntentBuilder -> IntentBuilderScreen()
                     }
@@ -115,6 +118,12 @@ private fun HomeScreen(onNavigate: (Screen) -> Unit) {
         )
         Spacer(Modifier.height(24.dp))
 
+        DemoCard(
+            title = "Try It (per-platform smoke test)",
+            subtitle = "Three buttons — Open URL, Pick image, Open app settings — that invoke the production IntentLauncher / SystemIntents on this platform and surface the typed IntentResult",
+            onClick = { onNavigate(Screen.TryIt) },
+        )
+        Spacer(Modifier.height(12.dp))
         DemoCard(
             title = "Intent Launch",
             subtitle = "Launch ACTION_PICK — pick an image via platform intent; observe IntentResult variants",
