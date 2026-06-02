@@ -1,5 +1,10 @@
 name: Publish docs (mkdocs → GitHub Pages)
 
+# Delegates to the reusable workflow in mbl-actionhub. The mkdocs build
+# + Pages deploy logic lives there as a single source of truth across
+# every MobileByteLabs KMP library that publishes documentation.
+# Repo Pages source must be set to "GitHub Actions" (build_type=workflow).
+
 on:
   push:
     branches: [development]
@@ -16,43 +21,6 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: pip
-          cache-dependency-path: docs/requirements.txt
-
-      - name: Install mkdocs + plugins
-        run: pip install -r docs/requirements.txt
-
-      - name: Build site (strict mode)
-        run: mkdocs build --strict
-
-      - name: Disable Jekyll on Pages artifact
-        run: touch ./site/.nojekyll
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+  publish:
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/docs-publish-mkdocs.yml@v1.9.0
