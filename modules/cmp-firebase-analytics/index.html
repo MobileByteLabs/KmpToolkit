@@ -1,0 +1,2090 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Cross-platform utilities for Kotlin Multiplatform apps — 21 modules published to Maven Central">
+      
+      
+      
+        <link rel="canonical" href="https://mobilebytelabs.github.io/KmpToolkit/modules/cmp-firebase-analytics/">
+      
+      
+        <link rel="prev" href="../cmp-deep-link/">
+      
+      
+        <link rel="next" href="../cmp-in-app-update/">
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>cmp-firebase-analytics - kmp-toolkit</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/mbs-brand.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cmp-firebase-analytics" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="kmp-toolkit" class="md-header__button md-logo" aria-label="kmp-toolkit" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            kmp-toolkit
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              cmp-firebase-analytics
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/MobileByteLabs/KmpToolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MobileByteLabs/KmpToolkit
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/" class="md-tabs__link">
+        
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../cmp-app-intents/" class="md-tabs__link">
+          
+  
+  Modules
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cookbook/inter-app-comms/" class="md-tabs__link">
+          
+  
+  Cookbook
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="kmp-toolkit" class="md-nav__button md-logo" aria-label="kmp-toolkit" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    kmp-toolkit
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/MobileByteLabs/KmpToolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MobileByteLabs/KmpToolkit
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Modules
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Modules
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-app-intents/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-app-intents
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-app-intents-compose/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-app-intents-compose
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-bubble/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-bubble
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-clipboard/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-clipboard
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-deep-link/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-deep-link
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    cmp-firebase-analytics
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    cmp-firebase-analytics
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cmp-firebase-analytics_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      cmp-firebase-analytics
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cmp-firebase-analytics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-in-the-box" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's in the box
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#targets-true-2121-kmp-coverage-via-two-transport-tiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Targets — true 21/21 KMP coverage via two transport tiers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#android" class="md-nav__link">
+    <span class="md-ellipsis">
+      Android
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ios-macos-tvos" class="md-nav__link">
+    <span class="md-ellipsis">
+      iOS / macOS / tvOS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#js-jvm" class="md-nav__link">
+    <span class="md-ellipsis">
+      JS / JVM
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watchos-linux-windows-wasm-non-firebase-platforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      watchOS / Linux / Windows / wasm — Non-Firebase platforms
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#direct-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Direct logging
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#direct-firebase-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      Direct Firebase access
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-injected-kmp_platform-param" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-injected kmp_platform param
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#firebase-analytics-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      Firebase Analytics constraints
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#privacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Privacy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#project-consumer-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Project consumer pattern
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      Related
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      License
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Module reference
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2-per-platform-parity-matrix-auto-gen" class="md-nav__link">
+    <span class="md-ellipsis">
+      §2 Per-Platform Parity Matrix (auto-gen)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      API reference
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-in-app-update/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-in-app-update
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-intent-launcher/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-intent-launcher
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-intent-launcher-compose/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-intent-launcher-compose
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-library/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-library
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-network-monitor/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-network-monitor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-network-monitor-compose/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-network-monitor-compose
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-observe/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-observe
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-observe-koin/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-observe-koin
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-open-url/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-open-url
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-pdf-generator/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-pdf-generator
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-product-tickets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-product-tickets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-remote-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-remote-config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-share/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-share
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-share-compose/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-share-compose
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmp-toast/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cmp-toast
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Cookbook
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Cookbook
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cookbook/inter-app-comms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Inter-app comms
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cookbook/network-monitor/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Network monitor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cookbook/observability/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Observability
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cookbook/storage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Storage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cmp-firebase-analytics_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      cmp-firebase-analytics
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cmp-firebase-analytics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-in-the-box" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's in the box
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#targets-true-2121-kmp-coverage-via-two-transport-tiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Targets — true 21/21 KMP coverage via two transport tiers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#android" class="md-nav__link">
+    <span class="md-ellipsis">
+      Android
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ios-macos-tvos" class="md-nav__link">
+    <span class="md-ellipsis">
+      iOS / macOS / tvOS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#js-jvm" class="md-nav__link">
+    <span class="md-ellipsis">
+      JS / JVM
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watchos-linux-windows-wasm-non-firebase-platforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      watchOS / Linux / Windows / wasm — Non-Firebase platforms
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#direct-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Direct logging
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#direct-firebase-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      Direct Firebase access
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-injected-kmp_platform-param" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-injected kmp_platform param
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#firebase-analytics-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      Firebase Analytics constraints
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#privacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Privacy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#project-consumer-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Project consumer pattern
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      Related
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      License
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Module reference
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2-per-platform-parity-matrix-auto-gen" class="md-nav__link">
+    <span class="md-ellipsis">
+      §2 Per-Platform Parity Matrix (auto-gen)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      API reference
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/MobileByteLabs/KmpToolkit/edit/development/docs/modules/cmp-firebase-analytics.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="cmp-firebase-analytics">cmp-firebase-analytics<a class="headerlink" href="#cmp-firebase-analytics" title="Permanent link">&para;</a></h1>
+<h2 id="cmp-firebase-analytics_1">cmp-firebase-analytics<a class="headerlink" href="#cmp-firebase-analytics_1" title="Permanent link">&para;</a></h2>
+<p>Firebase Analytics for <strong>Kotlin Multiplatform</strong> — single-module design. Interface + Stub/NoOp/Test variants on all 21 KMP targets, with <a href="https://github.com/GitLiveApp/firebase-kotlin-sdk">GitLive Firebase Analytics</a> on <strong>11 of 21 targets</strong> (everything Apple/Android/JVM/JS — only watchOS, Linux, Windows, and wasm fall back to NoOp).</p>
+<p><a href="https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-firebase-analytics"><img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-firebase-analytics" /></a>
+<a href="https://kotlinlang.org/../../cmp-firebase-analytics"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.0-blue.svg?logo=kotlin" /></a>
+<a href="https://www.apache.org/licenses/LICENSE-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-green.svg" /></a></p>
+<h3 id="whats-in-the-box">What's in the box<a class="headerlink" href="#whats-in-the-box" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>io.github.mobilebytelabs.kmptoolkit.analytics
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── AnalyticsHelper            — interface (logEvent, logScreenView, logError, ...)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├── AnalyticsEvent / Param     — type-safe event + param data classes (Firebase-aligned validation)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── EventTypes / ParamKeys     — standard constants for cross-app consistency
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── StubAnalyticsHelper        — dev/Kermit logger
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── NoOpAnalyticsHelper        — release/test default; events silently discarded
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── TestAnalyticsHelper        — captures events for assertion in unit tests
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── EventValidator             — taxonomy regex + PII regex check (debug-build use)
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── PerformanceTracker         — start/stop timer that emits loading_time events
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── EventRegistry              — opt-in declared-event enforcement
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── AnalyticsExtensions        — `analytics.log(&quot;event&quot;) { param(...) }` DSL
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>├── AnalyticsProvider.kt       — `expect fun provideAnalyticsHelper(): AnalyticsHelper`
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>├── di/AnalyticsModule         — factory: Mode.Firebase | Mode.Stub | Mode.NoOp
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>└── firebase/
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    └── FirebaseAnalyticsHelper  — GitLive-backed concrete impl (firebaseMain only)
+</code></pre></div>
+<h3 id="targets-true-2121-kmp-coverage-via-two-transport-tiers">Targets — true 21/21 KMP coverage via two transport tiers<a class="headerlink" href="#targets-true-2121-kmp-coverage-via-two-transport-tiers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Targets</th>
+<th style="text-align: center;">Count</th>
+<th>Recommended helper</th>
+<th>Default <code>provideAnalyticsHelper()</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>firebaseMain</strong></td>
+<td>Android, JVM, iOS (iosX64/iosArm64/iosSimulatorArm64), macOS (macosX64/macosArm64), tvOS (tvosX64/tvosArm64/tvosSimulatorArm64), JS</td>
+<td style="text-align: center;"><strong>11</strong></td>
+<td><code>FirebaseAnalyticsHelper</code> (GitLive — full native: DebugView, automatic events, A/B Testing, demographics)</td>
+<td><code>FirebaseAnalyticsHelper(Firebase.analytics)</code></td>
+</tr>
+<tr>
+<td><strong>nonFirebaseMain</strong></td>
+<td>watchOS (×4), Linux (×2), mingwX64, wasmJs, wasmWasi</td>
+<td style="text-align: center;"><strong>10</strong></td>
+<td><code>MeasurementProtocolAnalyticsHelper</code> (HTTP POST to Firebase MP — events land in the SAME Firebase Analytics property + same BigQuery export)</td>
+<td><code>NoOpAnalyticsHelper</code> (until app wires MP — see below)</td>
+</tr>
+</tbody>
+</table>
+<p>GitLive Firebase Analytics 2.x ships on macOS and tvOS — they're real Apple targets that Firebase iOS SDK supports natively. Only watchOS sits outside on the Apple side (Firebase iOS SDK has no watchOS variant).</p>
+<p>For the 10 non-Firebase platforms, <code>MeasurementProtocolAnalyticsHelper</code> provides event capture parity (custom events, user properties, persistent client_id). It uses Firebase's Measurement Protocol REST API — events land in the SAME property and BigQuery dataset as GitLive-emitted events. Trade-offs vs native SDK: no DebugView, no automatic events, no A/B tie-in, ~1h latency to BigQuery (same as GitLive).</p>
+<p><code>provideAnalyticsHelper()</code> defaults to NoOp on nonFirebase platforms because MP requires app-supplied config (<code>measurement_id</code> + <code>api_secret</code>). Apps that want analytics on watchOS / Linux / etc. wire <code>MeasurementProtocolAnalyticsHelper</code> directly in their Koin module — see "Setup → Non-Firebase platforms" below.</p>
+<h3 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// gradle/libs.versions.toml</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">[</span><span class="n">versions</span><span class="o">]</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">cmpFirebaseAnalytics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;...&quot;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="o">[</span><span class="n">libraries</span><span class="o">]</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">cmp</span><span class="o">-</span><span class="n">firebase</span><span class="o">-</span><span class="n">analytics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;io.github.mobilebytelabs:cmp-firebase-analytics&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">version</span><span class="p">.</span><span class="na">ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;cmpFirebaseAnalytics&quot;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// build.gradle.kts (consumer module)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">commonMain</span><span class="p">.</span><span class="na">dependencies</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="n">libs</span><span class="p">.</span><span class="na">cmp</span><span class="p">.</span><span class="na">firebase</span><span class="p">.</span><span class="na">analytics</span><span class="p">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>GitLive Firebase Analytics is brought in transitively as <code>api</code> on supported platforms. On non-supported platforms the dependency simply doesn't apply (Gradle source-set hierarchy handles it).</p>
+<h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
+<h4 id="android">Android<a class="headerlink" href="#android" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Add <code>google-services.json</code> to <code>app/</code></li>
+<li>Apply the plugin: <code>id("com.google.gms.google-services") version "..."</code></li>
+<li>Add Firebase BoM and Analytics:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">implementation</span><span class="p">(</span><span class="n">platform</span><span class="p">(</span><span class="s">&quot;com.google.firebase:firebase-bom:...&quot;</span><span class="p">))</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">implementation</span><span class="p">(</span><span class="s">&quot;com.google.firebase:firebase-analytics&quot;</span><span class="p">)</span>
+</code></pre></div></li>
+</ol>
+<h4 id="ios-macos-tvos">iOS / macOS / tvOS<a class="headerlink" href="#ios-macos-tvos" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Add <code>GoogleService-Info.plist</code> to your app target</li>
+<li>In your AppDelegate / <code>@main</code> App:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kd">import</span><span class="w"> </span><span class="nc">FirebaseCore</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">FirebaseApp</span><span class="p">.</span><span class="n">configure</span><span class="p">()</span>
+</code></pre></div></li>
+<li>Pod dependencies are bundled by GitLive — see your project's Podfile</li>
+</ol>
+<h4 id="js-jvm">JS / JVM<a class="headerlink" href="#js-jvm" title="Permanent link">&para;</a></h4>
+<p>Follow GitLive's docs: https://github.com/GitLiveApp/firebase-kotlin-sdk</p>
+<h4 id="watchos-linux-windows-wasm-non-firebase-platforms">watchOS / Linux / Windows / wasm — Non-Firebase platforms<a class="headerlink" href="#watchos-linux-windows-wasm-non-firebase-platforms" title="Permanent link">&para;</a></h4>
+<p>GitLive doesn't ship on these 10 targets, so use <strong>Firebase Measurement Protocol over HTTP</strong> for event capture parity.</p>
+<ol>
+<li>
+<p><strong>Generate an MP API secret</strong> at Firebase Console → Project settings → Integrations → GA4 → Data Streams → {your stream} → <strong>Measurement Protocol API secrets</strong> → Create.</p>
+</li>
+<li>
+<p><strong>Store the secret in your app's secrets store</strong> — env var, encrypted prefs, keychain, or <code>release-layer/.env</code> (gitignored). NEVER hard-code or commit.</p>
+</li>
+<li>
+<p><strong>Wire <code>MeasurementProtocolAnalyticsHelper</code> in your Koin module</strong>:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">import</span><span class="w"> </span><span class="nn">com.russhwolf.settings.Settings</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">import</span><span class="w"> </span><span class="nn">io.github.mobilebytelabs.kmptoolkit.analytics.AnalyticsHelper</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">import</span><span class="w"> </span><span class="nn">io.github.mobilebytelabs.kmptoolkit.analytics.mp.MeasurementProtocolAnalyticsHelper</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">import</span><span class="w"> </span><span class="nn">io.github.mobilebytelabs.kmptoolkit.analytics.mp.MpConfig</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="kd">val</span><span class="w"> </span><span class="nv">analyticsModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">module</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="n">single</span><span class="o">&lt;</span><span class="n">AnalyticsHelper</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">        </span><span class="n">MeasurementProtocolAnalyticsHelper</span><span class="p">(</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">            </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MpConfig</span><span class="p">(</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">                </span><span class="n">measurementId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;G-XXXXXXXX&quot;</span><span class="p">,</span><span class="w">                       </span><span class="c1">// GA4 measurement ID</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">                </span><span class="n">apiSecret</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">SecureStore</span><span class="p">.</span><span class="na">read</span><span class="p">(</span><span class="s">&quot;MP_API_SECRET&quot;</span><span class="p">),</span><span class="w">  </span><span class="c1">// your secrets store</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">            </span><span class="p">),</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">            </span><span class="n">settings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Settings</span><span class="p">(),</span><span class="w">                                  </span><span class="c1">// multiplatform-settings</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">        </span><span class="p">)</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="p">}</span>
+</code></pre></div>
+<ol>
+<li>Events from MP land in the SAME <code>analytics_*.events_*</code> BigQuery table as GitLive-emitted events. <code>/idea analytics --fetch</code> works identically across all 21 platforms.</li>
+</ol>
+<p><strong>What you give up vs native SDK on these platforms:</strong>
+- No automatic events (<code>first_open</code>, <code>session_start</code>, <code>in_app_purchase</code>) — emit manually if needed
+- No DebugView (events visible only in BigQuery, ~1h latency)
+- No A/B Testing tie-in
+- No demographics inference
+- No platform-native session tracking — supply <code>engagement_time_msec</code> param manually if you need engagement metrics</p>
+<p><strong>What still works:</strong>
+- Custom event capture with up to 25 params per event
+- User properties + user ID
+- Persistent client_id on platforms with KV storage (Apple, JS) — in-memory on Linux native / mingwX64 / wasmWasi
+- Async batching (5s debounce or 25 events, whichever first)
+- Silent failure on network errors (analytics never breaks the app)</p>
+<h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">import</span><span class="w"> </span><span class="nn">io.github.mobilebytelabs.kmptoolkit.analytics.*</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">import</span><span class="w"> </span><span class="nn">io.github.mobilebytelabs.kmptoolkit.analytics.di.AnalyticsModule</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1">// Easiest path — let the module pick per build:</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="kd">val</span><span class="w"> </span><span class="nv">analyticsModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">module</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="n">single</span><span class="o">&lt;</span><span class="n">AnalyticsHelper</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">        </span><span class="n">AnalyticsModule</span><span class="p">.</span><span class="na">analyticsHelper</span><span class="p">(</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">BuildConfig</span><span class="p">.</span><span class="na">DEBUG</span><span class="p">)</span><span class="w"> </span><span class="n">AnalyticsModule</span><span class="p">.</span><span class="na">Mode</span><span class="p">.</span><span class="na">Stub</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">            </span><span class="k">else</span><span class="w">                   </span><span class="n">AnalyticsModule</span><span class="p">.</span><span class="na">Mode</span><span class="p">.</span><span class="na">Firebase</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">        </span><span class="p">)</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span><span class="n">single</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">AnalyticsModule</span><span class="p">.</span><span class="na">performanceTracker</span><span class="p">(</span><span class="k">get</span><span class="p">())</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">}</span>
+</code></pre></div>
+<p>Then in your ViewModel:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kd">class</span><span class="w"> </span><span class="nc">SettingsViewModel</span><span class="p">(</span><span class="kd">private</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">analytics</span><span class="p">:</span><span class="w"> </span><span class="n">AnalyticsHelper</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ViewModel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="k">init</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">        </span><span class="n">analytics</span><span class="p">.</span><span class="na">logScreenView</span><span class="p">(</span><span class="s">&quot;settings&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sourceScreen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;home&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="kd">fun</span><span class="w"> </span><span class="nf">onSaveClick</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">        </span><span class="n">analytics</span><span class="p">.</span><span class="na">logButtonClick</span><span class="p">(</span><span class="s">&quot;save&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">screenName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;settings&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">        </span><span class="c1">// ... save logic</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="direct-logging">Direct logging<a class="headerlink" href="#direct-logging" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">analytics</span><span class="p">.</span><span class="na">logEvent</span><span class="p">(</span><span class="n">EventTypes</span><span class="p">.</span><span class="na">BUTTON_CLICK</span><span class="p">,</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="n">ParamKeys</span><span class="p">.</span><span class="na">BUTTON_NAME</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="s">&quot;save&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="n">ParamKeys</span><span class="p">.</span><span class="na">SCREEN_NAME</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="s">&quot;settings&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="p">)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1">// Convenience helpers</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">analytics</span><span class="p">.</span><span class="na">logScreenView</span><span class="p">(</span><span class="s">&quot;settings&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sourceScreen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;home&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">analytics</span><span class="p">.</span><span class="na">logError</span><span class="p">(</span><span class="s">&quot;Network timeout&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">errorCode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;NET_001&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">screen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;settings&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">analytics</span><span class="p">.</span><span class="na">logStateTransition</span><span class="p">(</span><span class="s">&quot;settings&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;loading&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;content&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1">// Builder DSL</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="n">analytics</span><span class="p">.</span><span class="na">log</span><span class="p">(</span><span class="n">EventTypes</span><span class="p">.</span><span class="na">FORM_COMPLETED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">    </span><span class="n">param</span><span class="p">(</span><span class="n">ParamKeys</span><span class="p">.</span><span class="na">FORM_NAME</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;registration&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">    </span><span class="n">param</span><span class="p">(</span><span class="n">ParamKeys</span><span class="p">.</span><span class="na">COMPLETION_TIME</span><span class="p">,</span><span class="w"> </span><span class="m">45</span><span class="p">)</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="p">}</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="c1">// Performance timing</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="kd">val</span><span class="w"> </span><span class="nv">tracker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PerformanceTracker</span><span class="p">(</span><span class="n">analytics</span><span class="p">)</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="n">tracker</span><span class="p">.</span><span class="na">measure</span><span class="p">(</span><span class="s">&quot;settings_screen_render&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* render work */</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h4 id="direct-firebase-access">Direct Firebase access<a class="headerlink" href="#direct-firebase-access" title="Permanent link">&para;</a></h4>
+<p>If you need the underlying GitLive <code>FirebaseAnalytics</code> (e.g., custom user properties beyond the helper API):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">import</span><span class="w"> </span><span class="nn">dev.gitlive.firebase.Firebase</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">import</span><span class="w"> </span><span class="nn">dev.gitlive.firebase.analytics.analytics</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">import</span><span class="w"> </span><span class="nn">io.github.mobilebytelabs.kmptoolkit.analytics.firebase.FirebaseAnalyticsHelper</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="kd">val</span><span class="w"> </span><span class="nv">helper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FirebaseAnalyticsHelper</span><span class="p">(</span><span class="n">Firebase</span><span class="p">.</span><span class="na">analytics</span><span class="p">)</span>
+</code></pre></div>
+<p><code>FirebaseAnalyticsHelper</code> is only available on firebaseMain (Android/iOS/JS/JVM). Cross-platform code should call <code>provideAnalyticsHelper()</code> instead — it returns the same helper on supported platforms and <code>NoOpAnalyticsHelper</code> elsewhere.</p>
+<h3 id="auto-injected-kmp_platform-param">Auto-injected <code>kmp_platform</code> param<a class="headerlink" href="#auto-injected-kmp_platform-param" title="Permanent link">&para;</a></h3>
+<p>Every event gets a <code>kmp_platform</code> param injected by the helper — disambiguates events in BigQuery / Firebase Console by platform-of-origin:</p>
+<table>
+<thead>
+<tr>
+<th>Source target</th>
+<th><code>kmp_platform</code> value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>androidMain</code></td>
+<td><code>"android"</code></td>
+</tr>
+<tr>
+<td><code>iosMain</code> (×3)</td>
+<td><code>"ios"</code></td>
+</tr>
+<tr>
+<td><code>macosMain</code> (×2)</td>
+<td><code>"macos"</code></td>
+</tr>
+<tr>
+<td><code>tvosMain</code> (×3)</td>
+<td><code>"tvos"</code></td>
+</tr>
+<tr>
+<td><code>watchosMain</code> (×4)</td>
+<td><code>"watchos"</code></td>
+</tr>
+<tr>
+<td><code>jvmMain</code></td>
+<td><code>"jvm"</code></td>
+</tr>
+<tr>
+<td><code>jsMain</code></td>
+<td><code>"js"</code></td>
+</tr>
+<tr>
+<td><code>linuxMain</code> (×2)</td>
+<td><code>"linux"</code></td>
+</tr>
+<tr>
+<td><code>mingwMain</code></td>
+<td><code>"mingw"</code></td>
+</tr>
+<tr>
+<td><code>wasmJsMain</code></td>
+<td><code>"wasmjs"</code></td>
+</tr>
+<tr>
+<td><code>wasmWasiMain</code></td>
+<td><code>"wasmwasi"</code></td>
+</tr>
+</tbody>
+</table>
+<p>Why a custom key, not GA4's built-in <code>platform</code>:
+- GA4's auto-<code>platform</code> is coarse: only <code>"android" | "ios" | "web"</code>
+- MP HTTP events don't get auto-<code>platform</code> unless we set it
+- Sub-platforms (watchOS vs iOS, tvOS vs macOS — all "Apple") collapse to <code>"ios"</code> in GA4's field
+- We need single signal that's reliable across native and MP transports</p>
+<p><strong>Override per-helper</strong> for finer-grained signal:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">FirebaseAnalyticsHelper</span><span class="p">(</span><span class="n">Firebase</span><span class="p">.</span><span class="na">analytics</span><span class="p">,</span><span class="w"> </span><span class="n">platformOverride</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;android-tv&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">StubAnalyticsHelper</span><span class="p">(</span><span class="n">platformOverride</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ios-tablet&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Override per-event</strong> by setting <code>kmp_platform</code> manually — auto-injection respects existing values:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">analytics</span><span class="p">.</span><span class="na">logEvent</span><span class="p">(</span><span class="n">EventTypes</span><span class="p">.</span><span class="na">BUTTON_CLICK</span><span class="p">,</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="n">ParamKeys</span><span class="p">.</span><span class="na">PLATFORM</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="s">&quot;android-tablet&quot;</span><span class="p">,</span><span class="w">   </span><span class="c1">// takes precedence over kmpPlatform</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="n">ParamKeys</span><span class="p">.</span><span class="na">BUTTON_NAME</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="s">&quot;save&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="p">)</span>
+</code></pre></div>
+<p><code>TestAnalyticsHelper</code> does NOT auto-inject — keeps test assertions explicit.</p>
+<h3 id="firebase-analytics-constraints">Firebase Analytics constraints<a class="headerlink" href="#firebase-analytics-constraints" title="Permanent link">&para;</a></h3>
+<p>The adapter automatically truncates to Firebase's limits:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Max</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Event name</td>
+<td>40 chars</td>
+<td>truncated by <code>.take(40)</code></td>
+</tr>
+<tr>
+<td>Param key</td>
+<td>40 chars</td>
+<td>truncated by <code>.take(40)</code></td>
+</tr>
+<tr>
+<td>Param value</td>
+<td>100 chars</td>
+<td>truncated by <code>.take(100)</code></td>
+</tr>
+<tr>
+<td>User property name</td>
+<td>24 chars</td>
+<td>truncated by <code>.take(24)</code></td>
+</tr>
+<tr>
+<td>User property value</td>
+<td>36 chars</td>
+<td>truncated by <code>.take(36)</code></td>
+</tr>
+<tr>
+<td>User ID</td>
+<td>256 chars</td>
+<td>truncated by <code>.take(256)</code></td>
+</tr>
+<tr>
+<td>Params per event</td>
+<td>25</td>
+<td>enforced upstream by <code>AnalyticsEvent.init</code> (throws on &gt; 25)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Best practice</strong>: design your event taxonomy to fit naturally. The bundled <code>EventValidator</code> enforces a stricter regex (<code>^[a-z][a-z0-9_]{1,39}$</code>) which keeps you in spec.</p>
+<h3 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nd">@Test</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">`clicking save logs button_click event`</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">analytics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TestAnalyticsHelper</span><span class="p">()</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">viewModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SettingsViewModel</span><span class="p">(</span><span class="n">analytics</span><span class="p">)</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="n">viewModel</span><span class="p">.</span><span class="na">onSaveClick</span><span class="p">()</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">analytics</span><span class="p">.</span><span class="na">events</span><span class="p">.</span><span class="na">single</span><span class="p">()</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">EventTypes</span><span class="p">.</span><span class="na">BUTTON_CLICK</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="na">type</span><span class="p">)</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="s">&quot;save&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="na">extras</span><span class="p">.</span><span class="na">first</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nb">it</span><span class="p">.</span><span class="na">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ParamKeys</span><span class="p">.</span><span class="na">BUTTON_NAME</span><span class="w"> </span><span class="p">}.</span><span class="na">value</span><span class="p">)</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="privacy">Privacy<a class="headerlink" href="#privacy" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use the <code>pii: true</code> flag on params in your screen YAML (per framework <code>/idea analytics</code> schema) to mark sensitive fields — these are NEVER auto-instrumented</li>
+<li>Hash/obfuscate <code>user_id</code> before passing to <code>setUserId()</code> — never use raw email/phone</li>
+<li>Respect platform settings: iOS App Tracking Transparency (ATT), Android Limited Ad Tracking</li>
+<li>Provide an opt-out toggle in app settings; bind it to swap to <code>NoOpAnalyticsHelper</code> at runtime</li>
+</ul>
+<h3 id="project-consumer-pattern">Project consumer pattern<a class="headerlink" href="#project-consumer-pattern" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>my-project/source/my-project/
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>├── core/
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>│   └── analytics/                        ← thin glue layer per project
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>│       ├── build.gradle.kts              ← depends on cmp-firebase-analytics
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>│       └── di/AnalyticsModule.kt         ← Koin module: pick mode per build flavor
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>└── feature/settings/
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    └── SettingsViewModel.kt              ← depends only on AnalyticsHelper interface
+</code></pre></div>
+<p>Heavy lifting is here. Per-project <code>core/analytics</code> is just Koin wiring + project-specific event taxonomy.</p>
+<h3 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Framework <code>/idea analytics</code> — auto-instrumentation generator + Claude-driven growth analysis</li>
+<li>GitLive Firebase Kotlin SDK — https://github.com/GitLiveApp/firebase-kotlin-sdk</li>
+<li>Plan: <code>plan-layer/plans/PLAN-fw-260504-idea-analytics.md</code> (in claude-product-cycle framework)</li>
+</ul>
+<h3 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h3>
+<p>Apache 2.0</p>
+<h2 id="module-reference">Module reference<a class="headerlink" href="#module-reference" title="Permanent link">&para;</a></h2>
+<p>Module Identity (auto-gen)</p>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>Package</th>
+<th>Current version</th>
+<th>Maven</th>
+<th>Since</th>
+<th>API tier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>io.github.mobilebytelabs:cmp-firebase-analytics</code></td>
+<td><code>com.mobilebytelabs.kmptoolkit.firebase.analytics</code></td>
+<td><code>UNKNOWN</code></td>
+<td><a href="https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-firebase-analytics">Central</a></td>
+<td>2026-05-30</td>
+<td>experimental</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Module purpose (one paragraph):</strong> <!-- AUTHOR: WIP — initial draft from 2026-05-30. One-paragraph module purpose (≤200 words). Seed from idea-layer/cmp-firebase-analytics/SPEC.md if present. --></p>
+<hr />
+<h3 id="2-per-platform-parity-matrix-auto-gen">§2 Per-Platform Parity Matrix (auto-gen)<a class="headerlink" href="#2-per-platform-parity-matrix-auto-gen" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th style="text-align: center;">Source-set present</th>
+<th style="text-align: center;">Real impl</th>
+<th style="text-align: center;">UnsupportedPlatform stub</th>
+<th style="text-align: center;">.kt count</th>
+<th>Last reviewed</th>
+<th>Coverage</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>androidMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>iosMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>macosMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>jvmMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>jsMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>wasmJsMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>mingwMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>linuxMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>tvosMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>watchosMain</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ real</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>2026-06-01</td>
+<td>(legacy:full)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
+Legend (Coverage enum, since 2026-06-01): <code>full</code> (all public-API methods backed by OS primitive) · <code>partial</code> (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · <code>wontfix-OS</code> (OS lacks the primitive) · <code>wontfix-infra</code> (impl possible but CI/toolchain blocks it) · <code>(legacy:full|stub)</code> (auto-derived; pre-opt-in modules — add a <code>// LD-2-coverage: {enum}</code> comment to the platform's primary <code>.kt</code> file to graduate). See <code>RULE-LIB-DEVELOPMENT-MD-001</code> LD-2 + ADRs for accepted wontfix cases.</p>
+<hr />
+<h2 id="api-reference">API reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
+<p>Each release ships the module's full Dokka HTML site inside its
+<a href="https://repo1.maven.org/maven2/io/github/mobilebytelabs/cmp-firebase-analytics/"><code>-javadoc.jar</code></a> artifact on Maven Central.</p>
+<p>In IntelliJ / Android Studio the IDE mounts the jar and surfaces it
+automatically in hover popups, Quick Documentation, and Symbol search.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+    
+  </body>
+</html>
