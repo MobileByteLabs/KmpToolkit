@@ -5,9 +5,17 @@ plugins {
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.vanniktech.mavenPublish) apply false
+    alias(libs.plugins.dokka) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.spotless)
 }
+
+// Dokka is applied per-module via the `io.github.mobilebytelabs.kmptoolkit.dokka`
+// convention plugin from `build-logic/convention/` — the `apply false` above
+// is the classpath hook that makes `org.jetbrains.dokka` resolvable from the
+// convention plugin's `pluginManager.apply("org.jetbrains.dokka")` call.
+// Convention pattern mirrors worker-kmp; see
+// build-logic/convention/src/main/kotlin/DokkaConventionPlugin.kt.
 
 // Detekt configuration for the entire project
 detekt {

@@ -7,7 +7,9 @@
 
 A collection of production-ready **Kotlin Multiplatform** libraries — one dependency per feature, works out of the box on every platform.
 
-📖 **Full usage docs:** **[Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki)** · 🚀 **[Releases](https://github.com/MobileByteLabs/KmpToolkit/releases)** · 📦 **[Maven Central](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs)**
+📖 **Full usage docs:** **[Docs site](https://mobilebytelabs.github.io/KmpToolkit/)** · **[Wiki](https://github.com/MobileByteLabs/KmpToolkit/wiki)** · 🚀 **[Releases](https://github.com/MobileByteLabs/KmpToolkit/releases)** · 📦 **[Maven Central](https://central.sonatype.com/search?q=g%3Aio.github.mobilebytelabs)**
+
+> The [Docs site](https://mobilebytelabs.github.io/KmpToolkit/) ships an API reference for every module via Dokka HTML bundled inside each Maven Central `-javadoc.jar` artifact — IntelliJ / Android Studio surface it automatically in hover popups.
 
 ## Modules
 

@@ -1,0 +1,47 @@
+name: Publish docs (mkdocs → GitHub Pages)
+
+on:
+  push:
+    branches: [development]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'cmp-*/README.md'
+      - 'cmp-*/DEVELOPMENT.md'
+      - '.github/workflows/docs-publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-publish
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install mkdocs + plugins
+        run: |
+          pip install \
+            mkdocs-material \
+            mkdocs-include-markdown-plugin \
+            mkdocs-macros-plugin
+
+      - name: Build site (strict mode)
+        run: mkdocs build --strict
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          # cname: docs.example.com   # set only if a custom domain is configured at org level
