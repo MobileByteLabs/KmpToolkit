@@ -229,8 +229,59 @@ def main() -> int:
         if subdir.is_dir() and not any(subdir.iterdir()):
             subdir.rmdir()
 
+    # Phase 5 — Auto-generate _Sidebar.md if the consumer didn't ship one.
+    # Consumer-authored docs/_Sidebar.md (now at dst/_Sidebar.md after flatten)
+    # always wins. Generator groups by source subdirectory for sections.
+    sidebar = dst / "_Sidebar.md"
+    if not sidebar.exists():
+        sidebar.write_text(_generate_sidebar(slug_map, dst))
+        print(f"auto-generated: _Sidebar.md ({len(slug_map)} pages)")
+
     print(f"\nDone. {changed} file(s) had links rewritten. WIKI={WIKI}")
     return 0
+
+
+def _generate_sidebar(slug_map: dict[Path, str], tree_root: Path) -> str:
+    """
+    Build a wiki Sidebar grouped by source subdirectory.
+
+    Consumers can ship their own `docs/_Sidebar.md` to override — this generator
+    only fires when none exists. Keep it minimal + alphabetical; consumer-authored
+    sidebars get richer copy when worth the maintenance.
+    """
+    root = tree_root.resolve(strict=False)
+    sections: dict[str, list[tuple[str, str]]] = {}
+    home_slug: str | None = None
+
+    for abs_path, slug in slug_map.items():
+        try:
+            rel = abs_path.relative_to(root)
+        except ValueError:
+            continue
+        stem = abs_path.stem
+        if stem in {"Home", "_Sidebar", "_Footer"}:
+            if stem == "Home":
+                home_slug = slug
+            continue
+        # Section header = first path part if nested, else "General".
+        section = rel.parts[0] if len(rel.parts) > 1 else "General"
+        # Display name = stem with - and _ → spaces, title-cased.
+        display = stem.replace("-", " ").replace("_", " ").title()
+        sections.setdefault(section, []).append((display, slug))
+
+    lines: list[str] = []
+    if home_slug:
+        lines.append(f"**[Home]({WIKI}/{home_slug})**")
+        lines.append("")
+
+    for section_name in sorted(sections.keys(), key=lambda s: (s == "General", s.lower())):
+        header = section_name.replace("-", " ").replace("_", " ").title()
+        lines.append(f"**{header}**")
+        for display, slug in sorted(sections[section_name]):
+            lines.append(f"- [{display}]({WIKI}/{slug})")
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
 
 
 if __name__ == "__main__":
