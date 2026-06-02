@@ -1,3 +1,5 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinMultiplatform
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -7,6 +9,7 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
     alias(libs.plugins.binaryCompatibilityValidator)
+    id("io.github.mobilebytelabs.kmptoolkit.dokka")
 }
 
 // ============================================================================
@@ -165,6 +168,16 @@ kotlin {
 // MAVEN CENTRAL PUBLISHING CONFIGURATION
 // ============================================================================
 mavenPublishing {
+    // Bundle Dokka v2 HTML output inside -javadoc.jar so consumers browsing
+    // Maven Central artifacts get real API docs rather than an empty jar.
+    // Task name is the Dokka v2 ID; the DokkaConventionPlugin in build-logic
+    // registers it via `org.jetbrains.dokka` + DokkaExtension.
+    configure(
+        KotlinMultiplatform(
+            javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
+            sourcesJar = true,
+        ),
+    )
     signAllPublications()
 
     pom {

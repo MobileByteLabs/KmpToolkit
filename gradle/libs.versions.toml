@@ -11,6 +11,7 @@ android-compileSdk = "36"
 android-targetSdk = "36"
 vanniktechMavenPublish = "0.36.0"
 kotlinx-binary-compatibility-validator = "0.17.0"
+dokka = "2.0.0"
 
 # Code Quality
 detekt = "1.23.8"
@@ -59,6 +60,9 @@ app-cash-turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine
 
 # Detekt
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+
+# Dokka — gradle-plugin artifact consumed by build-logic/convention/ for DokkaConventionPlugin
+dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 
 # AndroidX
 androidx-activity = { module = "androidx.activity:activity", version.ref = "androidx-activityKtx" }
@@ -152,4 +156,5 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "kotlinx-binary-compatibility-validator" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

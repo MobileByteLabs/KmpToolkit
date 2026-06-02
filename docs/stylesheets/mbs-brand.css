@@ -1,0 +1,23 @@
+/* MobileByteLabs brand palette for kmp-toolkit docs site. */
+:root {
+    --md-primary-fg-color: #3949AB;
+    --md-primary-fg-color--light: #5C6BC0;
+    --md-primary-fg-color--dark: #283593;
+    --md-accent-fg-color: #FFC107;
+}
+
+.md-header__title {
+    font-weight: 700;
+}
+
+/* Slightly tighter code-block padding so embedded long Kotlin snippets fit. */
+.md-typeset pre > code {
+    padding: 0.65em 1em;
+}
+
+/* Make module landing pages' embedded README headings stand apart from
+   the per-module page title. */
+.md-typeset h2 {
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    padding-bottom: 0.2em;
+}

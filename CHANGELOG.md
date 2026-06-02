@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Documentation infrastructure (`kmp-toolkit-docs-mkdocs-cookbook`)
+
+- **Documentation site** at https://mobilebytelabs.github.io/KmpToolkit/ —
+  mkdocs-material-powered, auto-published on push to `development` via
+  `.github/workflows/docs-publish.yml`. Includes per-module landing pages
+  for all 21 cmp-* modules + getting-started guide + cookbook with 12
+  task-oriented recipes across 4 topic areas (inter-app comms, network
+  monitor, observability, storage).
+- **Dokka 2.0 API reference** bundled as `-javadoc.jar` in every Maven
+  Central artifact via the new `io.github.mobilebytelabs.kmptoolkit.dokka`
+  convention plugin (`build-logic/convention/`) — IntelliJ / Android Studio
+  hover-jump-to-symbol now shows full KDoc out of the box.
+- Cookbook recipe template at `docs/_partials/cookbook-recipe-template.md`
+  for community contributions.
+- `scripts/audit-kdoc-coverage.sh` to enumerate public symbols without
+  KDoc — runs locally; not yet a hard gate (deferred to a follow-up
+  `kmp-toolkit-kdoc-backfill` plan once the 286 missing-symbol backlog is
+  worked through).
+
 ### Added — Inter-App Comms v0.4 (closes ADR-09 + Compose adapter modules + opinionated UX)
 
 Plan: [`inter-app-comms-compose-completeness`](../../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/inter-app-comms-compose-completeness/PLAN.md) — 12-sub-plan epic on v0.3-alpha foundation.

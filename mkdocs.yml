@@ -1,0 +1,125 @@
+site_name: kmp-toolkit
+site_description: Cross-platform utilities for Kotlin Multiplatform apps — 21 modules published to Maven Central
+site_url: https://mobilebytelabs.github.io/KmpToolkit/
+repo_url: https://github.com/MobileByteLabs/KmpToolkit
+repo_name: MobileByteLabs/KmpToolkit
+edit_uri: edit/development/docs/
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+extra_css:
+  - stylesheets/mbs-brand.css
+
+# Pre-existing per-module long-form docs predate this mkdocs site and use
+# relative links that resolve only in the GitHub UI (not under mkdocs).
+# Keep them on disk for GitHub readers but exclude from the strict build —
+# the canonical docs surface is the mkdocs nav above (Home + Getting started
+# + Modules + Cookbook). When a legacy doc gets migrated, drop its line below.
+exclude_docs: |
+  BUBBLE.md
+  CLIPBOARD_MONITOR.md
+  FEATURE_REQUEST.md
+  REMOTE_CONFIG.md
+  REMOTE_CONFIG_SAMPLES.md
+  app-intents/
+  bubble/
+  clipboard/
+  firebase-analytics/
+  in-app-update/
+  intent-launcher/
+  inter-app-comms/
+  network-monitor/
+  open-url/
+  pdf-generator/
+  remote-config/
+  share/
+  toast/
+  user-tickets/
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - include-markdown:
+      rewrite_relative_urls: true
+  - macros
+
+# Embedded READMEs/DEVELOPMENT.md contain relative links that resolve from
+# the module's GitHub directory (e.g. `../cmp-network-monitor/CHANGELOG.md`)
+# but not from the mkdocs docs/ tree. They remain valid for GitHub readers
+# of the source README; downgrade the strict-mode warning to info so the
+# docs site still builds. Authoritative link targets in nav stay validated.
+validation:
+  links:
+    not_found: info
+    absolute_links: ignore
+    unrecognized_links: info
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Modules:
+      - cmp-app-intents: modules/cmp-app-intents.md
+      - cmp-app-intents-compose: modules/cmp-app-intents-compose.md
+      - cmp-bubble: modules/cmp-bubble.md
+      - cmp-clipboard: modules/cmp-clipboard.md
+      - cmp-deep-link: modules/cmp-deep-link.md
+      - cmp-firebase-analytics: modules/cmp-firebase-analytics.md
+      - cmp-in-app-update: modules/cmp-in-app-update.md
+      - cmp-intent-launcher: modules/cmp-intent-launcher.md
+      - cmp-intent-launcher-compose: modules/cmp-intent-launcher-compose.md
+      - cmp-library: modules/cmp-library.md
+      - cmp-network-monitor: modules/cmp-network-monitor.md
+      - cmp-network-monitor-compose: modules/cmp-network-monitor-compose.md
+      - cmp-observe: modules/cmp-observe.md
+      - cmp-observe-koin: modules/cmp-observe-koin.md
+      - cmp-open-url: modules/cmp-open-url.md
+      - cmp-pdf-generator: modules/cmp-pdf-generator.md
+      - cmp-product-tickets: modules/cmp-product-tickets.md
+      - cmp-remote-config: modules/cmp-remote-config.md
+      - cmp-share: modules/cmp-share.md
+      - cmp-share-compose: modules/cmp-share-compose.md
+      - cmp-toast: modules/cmp-toast.md
+  - Cookbook:
+      - Inter-app comms: cookbook/inter-app-comms/index.md
+      - Network monitor: cookbook/network-monitor/index.md
+      - Observability: cookbook/observability/index.md
+      - Storage: cookbook/storage/index.md
