@@ -10,6 +10,43 @@ captures the three content types (narrative, cookbook recipes, per-module
 pages), the conventions each one follows, and the publishing pipeline that
 serves them.
 
+Serves two audiences: human contributors (read top to bottom) and AI agents
+(grep for the structured sections — Agent quick reference, Invariants,
+Scaling rubric, Validation commands).
+
+## Agent quick reference
+
+Common operations as copy-paste recipes. Each row is the *complete* action.
+
+| Want to… | Recipe |
+|----------|--------|
+| Add a cookbook recipe | (1) `cp docs/_partials/cookbook-recipe-template.md docs/cookbook/<topic>/<slug>.md` (2) Fill in YAML frontmatter (`title`, `reviewed_by.date`, `reviewed_by.version`) (3) Author body — Quick start (≤15 lines kotlin) + Caveats (per-platform bullets) + Related links (4) Append entry to `docs/cookbook/<topic>/index.md` recipe list. **Don't** add to `mkdocs.yml` nav (recipes are reached via topic index only). |
+| Add a cookbook topic | (1) `mkdir docs/cookbook/<topic>` (2) Author `docs/cookbook/<topic>/index.md` listing recipes + relevant modules (3) Add `- <Title>: cookbook/<topic>/index.md` under Cookbook in `mkdocs.yml` → `nav:`. |
+| New module shipped — landing page (README path) | (1) Write `cmp-<name>/README.md` (the source of truth) (2) Create `docs/modules/cmp-<name>.md` that uses the `mkdocs-include-markdown-plugin` directive to embed `../../cmp-<name>/README.md` (see any existing module page for live syntax) (3) Add alphabetically into `mkdocs.yml` → `nav: Modules:` (4) Apply Dokka plugin in `cmp-<name>/build.gradle.kts` (`id("io.github.mobilebytelabs.kmptoolkit.dokka")`) + wire `JavadocJar.Dokka("dokkaGeneratePublicationHtml")` in `vanniktech.mavenPublish` config. |
+| New module shipped — placeholder page (no README yet) | (1) Create `docs/modules/cmp-<name>.md` with the standard placeholder block ("Full docs coming soon, see GitHub source") + Maven Central + API ref note (2) Add to `mkdocs.yml` → `nav: Modules:` alphabetically (3) Apply Dokka plugin as above. |
+| Migrate placeholder → README-embedded | (1) Write `cmp-<name>/README.md` (2) Replace the page body in `docs/modules/cmp-<name>.md` with the include-markdown directive (3) Same PR. |
+| Add a narrative page | (1) Author `docs/<slug>.md` (2) Add `- <Title>: <slug>.md` to top-level nav in `mkdocs.yml`. |
+| Test build locally | `pip install -r docs/requirements.txt && mkdocs build --strict` |
+| Live preview | `mkdocs serve` → open `http://127.0.0.1:8000` |
+| Trigger deploy manually | `gh workflow run docs-publish.yml --repo MobileByteLabs/KmpToolkit --ref development` |
+| Upgrade docs pipeline | Bump `@vX.Y.Z` pin in `.github/workflows/docs-publish.yml` |
+| Investigate `/` 404 | Verify `docs/index.md` exists; mkdocs needs it for the root. |
+| Migrate a legacy `docs/<module>/` subdir | (1) Move usable content into `cmp-<module>/README.md` or into cookbook recipes (2) Delete the legacy subdir (3) Remove its line from `mkdocs.yml` → `exclude_docs:`. |
+
+## Invariants
+
+| If you change… | Also update… | Why |
+|----------------|--------------|-----|
+| New `cmp-<name>/` Gradle module | (1) `docs/modules/cmp-<name>.md` landing page (2) `mkdocs.yml` → `nav: Modules:` (3) `cmp-<name>/build.gradle.kts` Dokka plugin + JavadocJar config (4) `cmp-<name>/CHANGELOG.md` (5) root `CHANGELOG.md` entry | Otherwise module ships without docs, API ref, or release notes. |
+| New cookbook recipe | The matching `docs/cookbook/<topic>/index.md` (add to recipe list) | Recipe is invisible unless the topic index links to it. |
+| Recipe verified against new release | Bump `reviewed_by.date` + `reviewed_by.version` in the recipe's frontmatter | Without bump, recipe-freshness audit treats it as stale. |
+| Module's `cmp-<name>/README.md` content | Nothing — `docs/modules/cmp-<name>.md` re-includes via plugin on every build | This is the point of the include-markdown pattern. |
+| Module's `cmp-<name>/DEVELOPMENT.md` content | Nothing — DEVELOPMENT.md is per-module developer doc, not part of the site nav (but `cmp-*/DEVELOPMENT.md` IS in the workflow `paths:` trigger so deploy re-runs) | Deploy refreshes but no other file changes needed. |
+| Module renamed (`cmp-old` → `cmp-new`) | (1) Rename `docs/modules/cmp-old.md` → `cmp-new.md` (2) Update `mkdocs.yml` nav entry (3) Grep for inbound `[link](cmp-old.md)` references in cookbook recipes + fix | Build fails on dangling links otherwise. |
+| Migrated legacy `docs/<module>/` subdir | Remove its line from `mkdocs.yml` → `exclude_docs:` | Otherwise the migration is incomplete; future authors see it still excluded and may duplicate work. |
+| Bumped caller pin (`@v1.9.1` → `@v1.10.x`) | Verify tag exists at `MobileByteLabs/mbl-actionhub` | Pinning a non-existent tag fails workflow resolution. |
+| Bumped `mkdocs-material` in `docs/requirements.txt` | Run `mkdocs build --strict` locally + visually preview | Material can introduce theme breaks across minors. |
+
 ## The three surfaces
 
 | Surface | Source | Lands at |
@@ -267,3 +304,92 @@ inside the Maven publish pipeline (per-module `dokkaGeneratePublicationHtml`
 task, bundled into `-javadoc.jar` via `vanniktech.mavenPublish`'s
 `JavadocJar.Dokka("dokkaGeneratePublicationHtml")` config). All three
 pipelines are independent; a failure in one doesn't block the others.
+
+## Scaling rubric
+
+KmpToolkit's docs structure today (21 modules, 12 cookbook recipes across
+4 topics, 14 excluded legacy subdirs awaiting migration) is sized for
+"≥ 15 modules with heavy how-to content." Use this rubric to understand
+what to add/restructure as the library scales further:
+
+| Current state | What to add next |
+|---------------|------------------|
+| **21 modules, 12 recipes today** (now) | Migrate one legacy `docs/<module>/` subdir per release until `exclude_docs:` is empty. Each migration: lift content into `cmp-<module>/README.md` (replaces `docs/modules/cmp-<module>.md` placeholder) and/or split into 1-3 cookbook recipes. |
+| **25+ modules** | Group modules in nav by capability cluster (Inter-app comms, Network, Storage, etc.) instead of flat alphabetical. Edit `mkdocs.yml` → `nav: Modules:` to add subsections. |
+| **30+ cookbook recipes** | Introduce sub-topics within a cookbook section (e.g. `cookbook/network-monitor/{detection,reaction,testing}/...`). Each sub-topic gets its own `index.md`. |
+| **Recipe-freshness automation needed** | Add a CI gate that fails when ≥ N recipes have `reviewed_by.version` more than one minor behind current. (Not built today — manual audit per release.) |
+| **Cookbook page count > 100** | Add a search-tag index page that groups recipes by tag (Android-only, requires-permission, async-flow, etc.). Tags live in recipe frontmatter; render via a custom mkdocs macro. |
+| **Multi-version docs needed** (e.g. v3 + v4 coexisting) | Add `mike` plugin for versioned docs. Significant ceremony; only adopt when users genuinely need to read v3 docs after v4 ships. |
+
+Anti-patterns:
+- **Don't** create a new cookbook topic for a single recipe — wait for ≥ 3.
+- **Don't** add per-module pages for modules without `cmp-*/README.md` AND
+  without a clear "ships standalone" story — placeholder pages pile up.
+- **Don't** link cookbook recipes from `mkdocs.yml` nav directly — keep nav
+  at topic-index level. Currently 12 recipes; direct nav would mean 12
+  entries instead of 4.
+
+## Validation commands
+
+Exact CLI snippets agents can run without modification.
+
+```bash
+# Strict build (what CI runs)
+pip install -r docs/requirements.txt
+mkdocs build --strict
+
+# Live preview
+mkdocs serve  # → http://127.0.0.1:8000
+
+# Show only WARNING/ERROR from strict build (filter INFO noise)
+mkdocs build --strict 2>&1 | grep -E "^(WARNING|ERROR)"
+
+# Count cookbook recipes
+find docs/cookbook -name "*.md" -not -name "index.md" | wc -l
+
+# Audit: every cookbook recipe ≤ 80 lines (AC12)
+for f in docs/cookbook/**/*.md; do
+  [ "$(basename "$f")" = "index.md" ] && continue
+  lines=$(wc -l < "$f")
+  [ "$lines" -gt 80 ] && echo "OVERLONG ($lines lines): $f"
+done
+
+# Audit: every cookbook recipe has ≥ 1 kotlin block (AC13)
+for f in docs/cookbook/**/*.md; do
+  [ "$(basename "$f")" = "index.md" ] && continue
+  grep -q '```kotlin' "$f" || echo "MISSING kotlin block: $f"
+done
+
+# Audit: cookbook recipes with stale reviewed_by.version (not 3.5.x)
+grep -L "version: 3.5" docs/cookbook/**/*.md 2>/dev/null | grep -v "index.md"
+
+# Cross-check: every cmp-* Gradle module has a docs/modules/cmp-*.md
+diff <(ls -1d cmp-*/ 2>/dev/null | sed 's|/||') \
+     <(ls -1 docs/modules/cmp-*.md | xargs -n1 basename | sed 's|\.md||') \
+  | head -20
+
+# Cross-check: every cmp-* module applies the Dokka convention plugin
+for d in cmp-*/; do
+  grep -q "io.github.mobilebytelabs.kmptoolkit.dokka" "$d/build.gradle.kts" \
+    || echo "MISSING Dokka plugin: $d"
+done
+
+# Show current caller pin
+grep "docs-publish-mkdocs.yml@" .github/workflows/docs-publish.yml
+
+# Trigger deploy manually
+gh workflow run docs-publish.yml --repo MobileByteLabs/KmpToolkit --ref development
+
+# Inspect Pages config (build_type must be "workflow")
+gh api repos/MobileByteLabs/KmpToolkit/pages --jq '"build_type: \(.build_type)\nstatus: \(.status)"'
+
+# Watch latest docs-publish run
+gh run watch $(gh run list --workflow=docs-publish.yml --repo MobileByteLabs/KmpToolkit --limit 1 --json databaseId -q '.[0].databaseId') --exit-status
+
+# Verify site is live
+curl -sI https://mobilebytelabs.github.io/KmpToolkit/ | head -1   # expect HTTP/2 200
+```
+
+Each failure in these checks maps to a fix in the "When the site breaks"
+table above. Run all the audits before opening a release PR to catch
+drift before users see it.
