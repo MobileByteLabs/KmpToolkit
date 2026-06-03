@@ -124,4 +124,5 @@ nav:
       - Observability: cookbook/observability/index.md
       - Storage: cookbook/storage/index.md
   - Contributing:
-      - Docs authoring guide: DEVELOPMENT.md
+      - Docs guide (template): DEVELOPMENT-TEMPLATE.md
+      - Docs guide (KmpToolkit): DEVELOPMENT.md
