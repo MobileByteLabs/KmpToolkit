@@ -1,5 +1,20 @@
+---
+title: "cmp-product-tickets"
+description: "User-facing feature-request + bug-report module backed by Supabase."
+---
+
 # cmp-product-tickets
-_README.md not yet authored for this module — see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-product-tickets) for now._
+
+!!! info "README in progress"
+    A canonical `cmp-product-tickets/README.md` hasn't been authored yet. Until it
+    lands, see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-product-tickets)
+    for the live code + KDoc, and the **Module reference** below for the
+    contributor-facing developer notes.
+
+    Want to help? Open a PR adding `cmp-product-tickets/README.md` and convert this
+    page to the README-embedded flavor (see other module pages for the
+    pattern).
+
 
 ## Module reference
 {%

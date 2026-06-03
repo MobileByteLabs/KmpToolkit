@@ -1,5 +1,20 @@
+---
+title: "cmp-library"
+description: "Shared utilities consumed by other cmp-* modules — coroutine dispatchers, exception handling."
+---
+
 # cmp-library
-_README.md not yet authored for this module — see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-library) for now._
+
+!!! info "README in progress"
+    A canonical `cmp-library/README.md` hasn't been authored yet. Until it
+    lands, see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-library)
+    for the live code + KDoc, and the **Module reference** below for the
+    contributor-facing developer notes.
+
+    Want to help? Open a PR adding `cmp-library/README.md` and convert this
+    page to the README-embedded flavor (see other module pages for the
+    pattern).
+
 
 ## Module reference
 {%

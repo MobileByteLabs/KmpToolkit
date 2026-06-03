@@ -1,3 +1,8 @@
+---
+title: "cmp-share-compose"
+description: "Compose Multiplatform helpers for cmp-share."
+---
+
 # cmp-share-compose
 {%
    include-markdown "../../cmp-share-compose/README.md"

@@ -1,3 +1,8 @@
+---
+title: "Storage cookbook"
+description: "Recipes for clipboard read/write across platforms — cmp-clipboard."
+---
+
 # Storage cookbook
 
 Recipes for clipboard interop and ad-hoc IO patterns shared across platforms.

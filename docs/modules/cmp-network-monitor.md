@@ -1,3 +1,8 @@
+---
+title: "cmp-network-monitor"
+description: "Reactive network connectivity monitoring — StateFlow of online/offline across platforms."
+---
+
 # cmp-network-monitor
 {%
    include-markdown "../../cmp-network-monitor/README.md"

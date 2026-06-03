@@ -1,5 +1,20 @@
+---
+title: "cmp-in-app-update"
+description: "Android in-app updates (immediate + flexible) with no-op fallbacks on other platforms."
+---
+
 # cmp-in-app-update
-_README.md not yet authored for this module — see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-in-app-update) for now._
+
+!!! info "README in progress"
+    A canonical `cmp-in-app-update/README.md` hasn't been authored yet. Until it
+    lands, see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-in-app-update)
+    for the live code + KDoc, and the **Module reference** below for the
+    contributor-facing developer notes.
+
+    Want to help? Open a PR adding `cmp-in-app-update/README.md` and convert this
+    page to the README-embedded flavor (see other module pages for the
+    pattern).
+
 
 ## Module reference
 {%

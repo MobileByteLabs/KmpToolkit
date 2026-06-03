@@ -1,3 +1,8 @@
+---
+title: "Observability cookbook"
+description: "Recipes for wiring Firebase Crashlytics + Analytics + Performance and Supabase telemetry — cmp-observe + cmp-observe-koin + cmp-firebase-analytics."
+---
+
 # Observability cookbook
 
 Recipes for wiring kmp-toolkit's observability surface — Firebase Crashlytics

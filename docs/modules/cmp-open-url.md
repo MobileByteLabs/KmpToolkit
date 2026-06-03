@@ -1,5 +1,20 @@
+---
+title: "cmp-open-url"
+description: "Open URLs in the user's default browser/handler from commonMain."
+---
+
 # cmp-open-url
-_README.md not yet authored for this module — see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-open-url) for now._
+
+!!! info "README in progress"
+    A canonical `cmp-open-url/README.md` hasn't been authored yet. Until it
+    lands, see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-open-url)
+    for the live code + KDoc, and the **Module reference** below for the
+    contributor-facing developer notes.
+
+    Want to help? Open a PR adding `cmp-open-url/README.md` and convert this
+    page to the README-embedded flavor (see other module pages for the
+    pattern).
+
 
 ## Module reference
 {%

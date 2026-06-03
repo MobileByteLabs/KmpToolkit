@@ -1,269 +1,281 @@
 ---
-title: "Docs authoring guide"
+title: Docs guide (KmpToolkit)
+description: KmpToolkit-specific authoring conventions — three content types, cookbook recipe enforcement, per-module page duality, legacy directory migration, Dokka API ref integration.
 ---
 
-# Docs authoring guide
+# Docs guide (KmpToolkit)
 
-How to write, structure, and ship the documentation that lives under `docs/`.
-KmpToolkit has a richer docs surface than a single-module library — this guide
-captures the three content types (narrative, cookbook recipes, per-module
-pages), the conventions each one follows, and the publishing pipeline that
-serves them.
+!!! abstract "What this file is"
+    KmpToolkit-specific extensions on top of the canonical blueprint in
+    [`DEVELOPMENT-TEMPLATE.md`](DEVELOPMENT-TEMPLATE.md) — **read that first.**
+
+    This file is **owned by this repo**. Unlike `DEVELOPMENT-TEMPLATE.md`
+    (which is sync'd from `mbl-library-template-kmp`), this one is
+    hand-authored and captures KmpToolkit's distinctive shape:
+
+    - A **third published surface** (Dokka API reference bundled inside `-javadoc.jar`)
+    - **Three content types** (narrative, per-module pages, cookbook recipes)
+    - **Cookbook recipe enforcement** (CI-checked format constraints)
+    - **Legacy directory migration** (14 excluded `docs/<module>/` subdirs)
+
+---
 
 ## The three surfaces
 
-| Surface | Source | Lands at |
-|---------|--------|----------|
-| **mkdocs site** (canonical) | `docs/**`, `mkdocs.yml` | `https://mobilebytelabs.github.io/KmpToolkit/` |
-| **Dokka API reference** | Kotlin `///` KDoc in source | Bundled inside each module's `-javadoc.jar` on Maven Central |
-| **GitHub Wiki** | `docs/**` mirrored | `https://github.com/MobileByteLabs/KmpToolkit/wiki/<basename>` |
+KmpToolkit publishes documentation across three surfaces, each with its
+own pipeline.
 
-The mkdocs site is the primary product. The Dokka HTML is reference-only and
-opens from Maven Central. The wiki is a passive mirror for users who prefer
-GitHub's UI.
+=== "mkdocs site (canonical)"
+
+    **Source:** `docs/**`, `mkdocs.yml`
+
+    **Lands at:** [`https://mobilebytelabs.github.io/KmpToolkit/`](https://mobilebytelabs.github.io/KmpToolkit/)
+
+    The primary product. Everything in this guide is about authoring for
+    this surface.
+
+=== "Dokka API reference (KmpToolkit-specific)"
+
+    **Source:** Kotlin `///` KDoc in source files
+
+    **Lands at:** Bundled inside each module's `-javadoc.jar` on Maven Central
+
+    Built per-module via the convention plugin at
+    `build-logic/convention/src/main/kotlin/DokkaConventionPlugin.kt`.
+    Each `cmp-*/build.gradle.kts` applies it
+    (`id("io.github.mobilebytelabs.kmptoolkit.dokka")`) and wires the output
+    into `vanniktech.mavenPublish` via
+    `JavadocJar.Dokka("dokkaGeneratePublicationHtml")`. Users open the HTML
+    from the Maven Central UI.
+
+=== "GitHub Wiki"
+
+    **Source:** `docs/**` mirrored
+
+    **Lands at:** `https://github.com/MobileByteLabs/KmpToolkit/wiki/<basename>`
+
+    Passive mirror for users who prefer GitHub's UI. Generic conventions
+    in `DEVELOPMENT-TEMPLATE.md` cover this.
+
+---
 
 ## The three content types
 
-### 1. Narrative docs (`docs/index.md`, `docs/getting-started.md`)
+### 1. Narrative docs
 
-Top-of-funnel pages. Authored prose, full freedom on structure. Keep these
-short — the user is here to find a path into the library, not read a book.
+`docs/index.md`, `docs/getting-started.md` — top-of-funnel pages. Authored
+prose, full freedom on structure. Same conventions as the generic guide
+describes for any library.
 
-### 2. Per-module pages (`docs/modules/cmp-*.md`)
+### 2. Per-module pages
 
-One page per published module. 21 today, mirroring the 21 `cmp-*` modules
-in the source tree. Two flavors:
+One page per published module under `docs/modules/cmp-*.md`. **Two flavors,
+both registered in `mkdocs.yml` → `nav: Modules:`:**
 
-- **README-embedded** (10 modules with `cmp-*/README.md`): the per-module
-  page uses the `mkdocs-include-markdown-plugin` Liquid-style directive to
-  embed the module's source-tree README. See any existing
-  `docs/modules/cmp-network-monitor.md` for the live syntax. **Don't
-  duplicate** the README content into the `docs/modules/` page — let the
-  include do its job.
-- **Placeholder** (11 modules without README.md yet): minimal "this module is
-  shipped; full docs coming" page with a link to the GitHub source.
+=== "README-embedded (recommended)"
 
-Whichever flavor: **always** include a one-line note about the API reference
-being inside the `-javadoc.jar` on Maven Central.
+    **Used by:** 10 modules today (those with `cmp-*/README.md`)
 
-When a module gains a `cmp-*/README.md`, convert its `docs/modules/cmp-*.md`
-placeholder to the embedded form in the same PR.
+    **Pattern:** the per-module page uses the `mkdocs-include-markdown-plugin`
+    Liquid-style directive to embed the module's source-tree README. See
+    [`docs/modules/cmp-network-monitor.md`](modules/cmp-network-monitor.md)
+    for live syntax.
 
-### 3. Cookbook recipes (`docs/cookbook/{topic}/{recipe}.md`)
+    !!! warning "Don't duplicate the README content"
+        Let the include do its job. The per-module page should be a thin
+        wrapper that pulls in the source-tree README at build time.
 
-The bulk of the user-facing docs. Strict format, CI-enforced. Use the
-template at [`_partials/cookbook-recipe-template.md`](_partials/cookbook-recipe-template.md):
+=== "Placeholder (interim)"
 
-```markdown
----
-title: "How do I {task}?"
-reviewed_by:
-  date: 2026-06   # YYYY-MM — bumped on review
-  version: 3.5.x  # last verified kmp-toolkit version
----
+    **Used by:** 11 modules today (those without `cmp-*/README.md` yet)
 
-# How do I {task}?
+    **Pattern:** a minimal page noting "shipped; full docs coming" + GitHub
+    source link + a one-line API reference note pointing at the
+    `-javadoc.jar` on Maven Central.
 
-## Quick start (minimal MWE)
-```kotlin
-// ≤ 15 lines runnable.
-```
+    !!! tip "Promote to README-embedded when the README lands"
+        When a module gains a `cmp-*/README.md`, convert its
+        `docs/modules/cmp-*.md` placeholder to the embedded form **in the
+        same PR**. Reduces the gap between source-tree docs and site docs.
 
-## Caveats / per-platform notes
-- **Android:** …
-- **iOS:** …
+!!! info "Always include the Maven Central API reference note"
+    Both flavors must mention that the API reference is inside the
+    `-javadoc.jar` on Maven Central. This is the only place users discover
+    that pattern.
 
-## Related
-- Module: [cmp-{name}](../../modules/cmp-{name}.md)
-- Sample: [`samples/sample-cmp-{name}/.../File.kt`](https://github.com/MobileByteLabs/KmpToolkit/tree/development/samples/sample-cmp-{name})
-```
+### 3. Cookbook recipes
 
-**Hard constraints (CI-checked):**
+`docs/cookbook/{topic}/{recipe}.md` — the bulk of user-facing how-to docs.
+**Strict format, CI-enforced.** Use the template at
+[`_partials/cookbook-recipe-template.md`](_partials/cookbook-recipe-template.md)
+as the starting point.
 
-- ≤ 80 lines total (`wc -l`)
-- ≥ 1 ` ```kotlin ` code block (`grep`)
-- Frontmatter has `reviewed_by.date` (YYYY-MM) + `version`
-- "How do I {task}?" title — phrased as a user question
+!!! danger "Hard constraints (CI-checked)"
+    - ≤ 80 lines total (`wc -l`)
+    - ≥ 1 ` ```kotlin ` code block (`grep`)
+    - Frontmatter has `reviewed_by.date` (YYYY-MM) + `reviewed_by.version`
+    - "How do I {task}?" title — phrased as a user question
 
-**Soft conventions:**
+!!! tip "Soft conventions"
+    - Quick start is ≤ 15 lines of copy-paste-runnable code
+    - Caveats prefer per-platform bullets over prose
+    - Related links: module page + sample + (optional) ADR
 
-- Quick start is ≤ 15 lines of copy-paste-runnable code
-- Caveats prefer per-platform bullets over prose
-- Related links: module page + sample + (optional) ADR
-
-A new cookbook topic gets its own subdir + an `index.md` topic index that
-lists the recipes + the underlying modules. See
+A new cookbook **topic** gets its own subdir + an `index.md` topic index
+listing recipes + relevant modules. See
 [`docs/cookbook/network-monitor/index.md`](cookbook/network-monitor/index.md)
 for the shape.
 
-## Files with special meaning
+---
 
-| File | Used by | Purpose |
-|------|---------|---------|
-| `index.md` | mkdocs | Root URL of the site (`/`). |
-| `_partials/cookbook-recipe-template.md` | authors (manual copy) | The canonical recipe shape. Don't edit casually — every recipe inherits. |
-| `requirements.txt` | docs-publish workflow | Pinned mkdocs deps. Change a version here, not in the workflow. |
-| `stylesheets/mbs-brand.css` | mkdocs | Brand polish. |
+## Excluded legacy `docs/<module>/` subdirs
 
-The `cmp-*/README.md` and `cmp-*/DEVELOPMENT.md` files at module roots are
-**not under docs/** but feed the docs pipeline (paths trigger the
-docs-publish workflow on push).
+These per-module docs subdirs predate the mkdocs site and use relative
+links that resolve only in the GitHub UI. They live in `docs/` for backward
+compat but are excluded from the mkdocs build via `mkdocs.yml` → `exclude_docs:`.
 
-## Excluded legacy directories
+??? note "Full list (14 directories + 5 root files)"
+    ```
+    docs/app-intents/
+    docs/bubble/
+    docs/clipboard/
+    docs/firebase-analytics/
+    docs/in-app-update/
+    docs/intent-launcher/
+    docs/inter-app-comms/
+    docs/network-monitor/
+    docs/open-url/
+    docs/pdf-generator/
+    docs/remote-config/
+    docs/share/
+    docs/toast/
+    docs/user-tickets/
 
-These per-module docs subdirs predate the mkdocs site and use relative links
-that resolve only in the GitHub UI. They live in `docs/` for backward compat
-but are excluded from the mkdocs build via `mkdocs.yml` → `exclude_docs:`:
+    docs/BUBBLE.md
+    docs/CLIPBOARD_MONITOR.md
+    docs/FEATURE_REQUEST.md
+    docs/REMOTE_CONFIG.md
+    docs/REMOTE_CONFIG_SAMPLES.md
+    ```
 
-```
-docs/app-intents/    docs/bubble/           docs/clipboard/
-docs/firebase-analytics/  docs/in-app-update/    docs/intent-launcher/
-docs/inter-app-comms/  docs/network-monitor/  docs/open-url/
-docs/pdf-generator/  docs/remote-config/    docs/share/
-docs/toast/          docs/user-tickets/     docs/BUBBLE.md
-docs/CLIPBOARD_MONITOR.md  docs/FEATURE_REQUEST.md
-docs/REMOTE_CONFIG.md  docs/REMOTE_CONFIG_SAMPLES.md
-```
+!!! danger "Don't add new content to those directories"
+    Lift content into one of the three current surfaces:
 
-**Don't add new content to those directories.** Either:
+    - **Module-level reference** → write `cmp-*/README.md` (becomes source
+      for `docs/modules/cmp-*.md` via include-markdown)
+    - **How-to** → cookbook recipe under `docs/cookbook/{topic}/`
+    - **Narrative** → top-level `docs/<slug>.md`
 
-- New module-level docs → write a `cmp-*/README.md` (it becomes the source
-  for `docs/modules/cmp-*.md` via include-markdown)
-- New how-to → write a cookbook recipe under `docs/cookbook/{topic}/`
-- New narrative → write under `docs/` root + register in `mkdocs.yml` nav
+When a legacy directory's content gets migrated, drop its line from
+`exclude_docs:` in the same PR.
 
-When a legacy directory's content gets migrated to a current surface, drop
-its line from `exclude_docs:` in the same PR.
+---
 
-## Adding new content
+## Agent quick reference
 
-### A new cookbook recipe
+Generic recipes (add a page, add an asset, override brand colors, test,
+deploy) live in [`DEVELOPMENT-TEMPLATE.md`](DEVELOPMENT-TEMPLATE.md#agent-quick-reference).
+Below are operations specific to KmpToolkit's three-content-type structure.
 
-1. Pick the topic subdir (or create one — see "A new cookbook topic" below)
-2. Copy `_partials/cookbook-recipe-template.md` → `cookbook/{topic}/{slug}.md`
-3. Fill in frontmatter + body (≤80 lines, ≥1 kotlin block)
-4. Add the entry to `cookbook/{topic}/index.md`'s recipe list
-5. **Don't** add individual recipes to `mkdocs.yml` nav — only the topic
-   `index.md` is in nav; recipes are reached via the topic index
+| Want to… | Recipe |
+|----------|--------|
+| Add a cookbook recipe | (1) `cp docs/_partials/cookbook-recipe-template.md docs/cookbook/<topic>/<slug>.md` (2) Fill in YAML frontmatter (`title`, `reviewed_by.date`, `reviewed_by.version`) (3) Author body — Quick start (≤15 lines kotlin) + Caveats + Related links (4) Append entry to `docs/cookbook/<topic>/index.md` recipe list. **Don't** add to `mkdocs.yml` nav. |
+| Add a cookbook topic | (1) `mkdir docs/cookbook/<topic>` (2) Author `docs/cookbook/<topic>/index.md` listing recipes + relevant modules (3) Add `- <Title>: cookbook/<topic>/index.md` under Cookbook in `mkdocs.yml` → `nav:` |
+| New module shipped — README-embedded page | (1) Write `cmp-<name>/README.md` (2) Create `docs/modules/cmp-<name>.md` with the include-markdown directive (see existing modules for syntax) (3) Add alphabetically into `mkdocs.yml` → `nav: Modules:` (4) Apply Dokka plugin in `cmp-<name>/build.gradle.kts` (`id("io.github.mobilebytelabs.kmptoolkit.dokka")`) + wire `JavadocJar.Dokka("dokkaGeneratePublicationHtml")` in `vanniktech.mavenPublish` config |
+| New module shipped — placeholder page | Same as above, but step (2) uses the standard placeholder block ("Full docs coming soon, see GitHub source") + Maven Central + API ref note instead of include-markdown |
+| Migrate placeholder → README-embedded | (1) Write `cmp-<name>/README.md` (2) Replace the page body in `docs/modules/cmp-<name>.md` with the include-markdown directive (3) Same PR |
+| Migrate a legacy `docs/<module>/` subdir | (1) Move usable content into `cmp-<module>/README.md` or into cookbook recipes (2) Delete the legacy subdir (3) Remove its line from `mkdocs.yml` → `exclude_docs:` |
 
-### A new cookbook topic
+---
 
-1. Create `cookbook/{topic}/index.md` listing the recipes + modules
-2. Add the entry to `mkdocs.yml` → `nav: Cookbook:` (one line per topic)
+## Invariants
 
-### A new module landing page
+Generic invariants (`Home.md` ↔ `index.md` sync, new page → nav, etc.)
+live in [`DEVELOPMENT-TEMPLATE.md`](DEVELOPMENT-TEMPLATE.md#invariants).
+Below are KmpToolkit-specific cross-file edit obligations.
 
-When you ship a new `cmp-*` module:
+| If you change… | Also update… | Why |
+|----------------|--------------|-----|
+| New `cmp-<name>/` Gradle module | (1) `docs/modules/cmp-<name>.md` (2) `mkdocs.yml` → `nav: Modules:` (3) `cmp-<name>/build.gradle.kts` Dokka plugin + JavadocJar config (4) `cmp-<name>/CHANGELOG.md` (5) root `CHANGELOG.md` entry | Module ships without docs, API ref, or release notes otherwise |
+| New cookbook recipe | The matching `docs/cookbook/<topic>/index.md` (add to recipe list) | Recipe is invisible unless the topic index links to it |
+| Recipe verified against new release | Bump `reviewed_by.date` + `reviewed_by.version` in frontmatter | Without bump, recipe-freshness audit treats it as stale |
+| Module's `cmp-<name>/README.md` content | Nothing — `docs/modules/cmp-<name>.md` re-includes via plugin on every build | This is the point of the include-markdown pattern |
+| Module renamed (`cmp-old` → `cmp-new`) | (1) Rename `docs/modules/cmp-old.md` → `cmp-new.md` (2) Update `mkdocs.yml` nav entry (3) Grep for inbound `[link](cmp-old.md)` references in cookbook recipes + fix | Build fails on dangling links |
+| Migrated legacy `docs/<module>/` subdir | Remove its line from `mkdocs.yml` → `exclude_docs:` | Migration is incomplete otherwise; future authors see it excluded and may duplicate work |
 
-1. Write `cmp-*/README.md` (the source of truth)
-2. Create `docs/modules/cmp-{name}.md` with an include-markdown that points
-   at the README
-3. Add the entry to `mkdocs.yml` → `nav: Modules:` (alphabetical insertion)
+---
 
-### A new narrative page
+## Scaling rubric
 
-Rare. Authored at `docs/{slug}.md` + registered in `mkdocs.yml` nav.
+Generic scaling rubric (single-module → multi-module shape) lives in
+[`DEVELOPMENT-TEMPLATE.md`](DEVELOPMENT-TEMPLATE.md#scaling-rubric).
+KmpToolkit is sized for ≥ 15 modules with heavy how-to content. Below: what
+to add as it scales further.
 
-## Style guide
+| Current state | What to add next |
+|---------------|------------------|
+| **21 modules, 12 recipes today** (now) | Migrate one legacy `docs/<module>/` subdir per release until `exclude_docs:` is empty. Each migration: lift content into `cmp-<module>/README.md` (replaces `docs/modules/` placeholder) and/or split into 1-3 cookbook recipes. |
+| **25+ modules** | Group modules in nav by capability cluster (Inter-app comms, Network, Storage, etc.) instead of flat alphabetical. Edit `mkdocs.yml` → `nav: Modules:` to add subsections. |
+| **30+ cookbook recipes** | Introduce sub-topics within a cookbook section (e.g. `cookbook/network-monitor/{detection,reaction,testing}/...`). Each sub-topic gets its own `index.md`. |
+| **Recipe-freshness automation needed** | Add a CI gate that fails when ≥ N recipes have `reviewed_by.version` more than one minor behind current. (Not built today — manual audit per release.) |
+| **Cookbook page count > 100** | Add a search-tag index page that groups recipes by tag (Android-only, requires-permission, async-flow, etc.). Tags live in recipe frontmatter; render via a custom mkdocs macro. |
+| **Multi-version docs needed** (v3 + v4 coexisting) | Add `mike` plugin for versioned docs. Significant ceremony; adopt only when users genuinely need v3 docs after v4 ships. |
 
-### Code blocks
+!!! warning "Anti-patterns"
+    - **Don't** create a new cookbook topic for a single recipe — wait for ≥ 3.
+    - **Don't** add per-module pages for modules without `cmp-*/README.md`
+      AND without a clear "ships standalone" story — placeholder pages
+      pile up.
+    - **Don't** link cookbook recipes from `mkdocs.yml` nav directly. Keep
+      nav at topic-index level. Currently 12 recipes; direct nav would mean
+      12 entries instead of 4.
 
-Always declare language. mkdocs-material renders Kotlin, Swift, Bash, YAML,
-JSON, TOML out of the box.
+---
 
-````markdown
-```kotlin
-val monitor = createNetworkMonitor()
-```
-````
+## Validation commands
 
-Inline `code` for symbols, API names, flag names.
+Generic validation (strict build, link audit, site liveness probe) lives
+in [`DEVELOPMENT-TEMPLATE.md`](DEVELOPMENT-TEMPLATE.md#validation-commands).
+Below: audits specific to KmpToolkit's cookbook + multi-module structure.
 
-### Per-platform caveats
+??? example "Full KmpToolkit-specific audit suite"
+    ```bash
+    # Count cookbook recipes
+    find docs/cookbook -name "*.md" -not -name "index.md" | wc -l
 
-When behavior varies, structure as bullet list with bold platform name:
+    # Audit: every cookbook recipe ≤ 80 lines (constraint AC12)
+    for f in docs/cookbook/**/*.md; do
+      [ "$(basename "$f")" = "index.md" ] && continue
+      lines=$(wc -l < "$f")
+      [ "$lines" -gt 80 ] && echo "OVERLONG ($lines lines): $f"
+    done
 
-```markdown
-- **Android:** auto-init via ContentProvider; no manual `init()` needed.
-- **iOS:** call `Bundle.main.URLForResource(...)` from `applicationDidFinishLaunching`.
-- **JVM Desktop:** prints to `System.out`; ANSI color enabled if TTY.
-- **JS / wasmJs:** requires a user gesture on first invocation.
-```
+    # Audit: every cookbook recipe has ≥ 1 kotlin block (constraint AC13)
+    for f in docs/cookbook/**/*.md; do
+      [ "$(basename "$f")" = "index.md" ] && continue
+      grep -q '```kotlin' "$f" || echo "MISSING kotlin block: $f"
+    done
 
-### Tables
+    # Audit: cookbook recipes with stale reviewed_by.version (not current 3.5.x)
+    grep -L "version: 3.5" docs/cookbook/**/*.md 2>/dev/null | grep -v "index.md"
 
-Use for any comparison with ≥ 3 dimensions. The 21-module index in
-[`index.md`](index.md) and the platform-support matrices are good examples.
+    # Cross-check: every cmp-* Gradle module has a docs/modules/cmp-*.md
+    diff <(ls -1d cmp-*/ 2>/dev/null | sed 's|/||') \
+         <(ls -1 docs/modules/cmp-*.md | xargs -n1 basename | sed 's|\.md||') \
+      | head -20
 
-### Links
+    # Cross-check: every cmp-* module applies the Dokka convention plugin
+    for d in cmp-*/; do
+      grep -q "io.github.mobilebytelabs.kmptoolkit.dokka" "$d/build.gradle.kts" \
+        || echo "MISSING Dokka plugin: $d"
+    done
 
-- **Internal** (within `docs/`): relative paths. `mkdocs build --strict`
-  validates these.
-- **Cross-repo source** (`workspaces/mbs/...`): downgraded to INFO-level
-  warning via `mkdocs.yml` → `validation.links.not_found: info`. Expected.
-- **External**: full URLs.
-- **Maven Central / API reference**: prefer
-  `https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-{name}`
-  over the Maven URL — better UX.
+    # Verify the convention plugin sources the Dokka v2 task name
+    grep -r "dokkaGeneratePublicationHtml" cmp-*/build.gradle.kts | wc -l
+    # Expect: 21 (one per cmp-* module)
+    ```
 
-## Test locally
-
-```bash
-pip install -r docs/requirements.txt
-mkdocs serve
-# open http://127.0.0.1:8000
-```
-
-`mkdocs build --strict` is what CI runs. Most common cause of strict
-failures: a new `cookbook/{topic}/{recipe}.md` added without an entry in the
-topic `index.md`'s recipe list (the relative link from the index breaks).
-
-## Recipe-freshness audit
-
-Every recipe has `reviewed_by.date` + `version` in frontmatter. Once per
-release cycle, scan for recipes whose `reviewed_by.version` is more than one
-minor behind current and re-verify their code blocks against the current API.
-Bump the date + version after each successful re-verification.
-
-(No CI gate on this yet; expected manual cadence is per-release.)
-
-## What NOT to do
-
-- **Don't hand-author `site/`** — that directory is the mkdocs build output.
-- **Don't add a new recipe outside the template format** — CI enforces the
-  shape (line count + kotlin block presence). Use the template even for
-  small recipes; consistency is the point.
-- **Don't write content into a legacy `docs/{module}/` subdir** — those are
-  excluded from the build. Use `cmp-*/README.md` or `docs/cookbook/` instead.
-- **Don't edit the workflow** to change build behavior — the logic lives in
-  `mbl-actionhub/docs-publish-mkdocs.yml`. Bump the `@vX.Y.Z` pin in
-  `.github/workflows/docs-publish.yml` to upgrade.
-- **Don't author Liquid templating** in markdown (other than the
-  `include-markdown` plugin's own directive). Liquid-style braces break
-  rendering if Pages is ever set back to legacy Jekyll.
-- **Don't link recipes from `mkdocs.yml` nav directly** — keep nav to topic
-  indexes only; recipes are reached via the index. Direct nav entries clutter
-  the tab bar fast (12 recipes × 4 topics = 48 entries).
-
-## When the site breaks
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `/` returns 404 | `docs/index.md` missing | Restore it. |
-| Build fails: nav references file that doesn't exist | Stale `mkdocs.yml` nav entry | Remove the entry or create the file. |
-| Cookbook recipe rejected by CI for length | Recipe > 80 lines | Split into two recipes OR move detail into a linked sample / ADR. |
-| Cookbook recipe rejected for missing kotlin block | All code blocks are bash / yaml / etc. | Add at least one ` ```kotlin ` block, even if a 3-line snippet. |
-| `mkdocs build --strict` fails on relative link | Cross-repo source link (`workspaces/mbs/...`) | Already downgraded to INFO via `validation.links.not_found: info`. If you're seeing ERROR, check that the link target literally cannot resolve in any way — even GitHub. |
-
-## Pipeline architecture (one-paragraph version)
-
-The mkdocs build + Pages deploy logic lives **once** in
-[`mbl-actionhub/docs-publish-mkdocs.yml`](https://github.com/MobileByteLabs/mbl-actionhub/blob/main/.github/workflows/docs-publish-mkdocs.yml).
-This repo's `.github/workflows/docs-publish.yml` is a 5-line caller pinned to
-a specific version. The wiki sync is a separate workflow
-(`sync-docs-to-wiki.yml`) that mirrors `docs/` to the GitHub Wiki via the
-`mbl-actionhub-docshub` composite action. The Dokka API reference is built
-inside the Maven publish pipeline (per-module `dokkaGeneratePublicationHtml`
-task, bundled into `-javadoc.jar` via `vanniktech.mavenPublish`'s
-`JavadocJar.Dokka("dokkaGeneratePublicationHtml")` config). All three
-pipelines are independent; a failure in one doesn't block the others.
+!!! tip "Run all audits before opening a release PR"
+    Catches drift before users see it. The cookbook line/kotlin/version
+    audits are particularly important — CI's recipe-shape constraints exist
+    because the format is what makes the cookbook scannable.
