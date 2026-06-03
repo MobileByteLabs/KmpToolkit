@@ -123,3 +123,5 @@ nav:
       - Network monitor: cookbook/network-monitor/index.md
       - Observability: cookbook/observability/index.md
       - Storage: cookbook/storage/index.md
+  - Contributing:
+      - Docs authoring guide: DEVELOPMENT.md
