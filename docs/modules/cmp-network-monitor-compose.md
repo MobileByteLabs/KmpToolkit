@@ -1,3 +1,8 @@
+---
+title: "cmp-network-monitor-compose"
+description: "Compose Multiplatform helpers for cmp-network-monitor — auto-switching offline content."
+---
+
 # cmp-network-monitor-compose
 {%
    include-markdown "../../cmp-network-monitor-compose/README.md"

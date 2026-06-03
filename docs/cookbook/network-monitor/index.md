@@ -1,3 +1,8 @@
+---
+title: "Network monitor cookbook"
+description: "Recipes for reacting to connectivity changes — cmp-network-monitor + cmp-network-monitor-compose."
+---
+
 # Network monitor cookbook
 
 Recipes for reacting to connectivity changes — gating UI on online state,

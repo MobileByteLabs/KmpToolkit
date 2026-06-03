@@ -1,3 +1,8 @@
+---
+title: "cmp-intent-launcher-compose"
+description: "Compose Multiplatform helpers for cmp-intent-launcher."
+---
+
 # cmp-intent-launcher-compose
 {%
    include-markdown "../../cmp-intent-launcher-compose/README.md"

@@ -1,3 +1,8 @@
+---
+title: "cmp-firebase-analytics"
+description: "Firebase Analytics for Kotlin Multiplatform — single setup, all platforms."
+---
+
 # cmp-firebase-analytics
 {%
    include-markdown "../../cmp-firebase-analytics/README.md"

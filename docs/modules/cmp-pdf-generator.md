@@ -1,3 +1,8 @@
+---
+title: "cmp-pdf-generator"
+description: "Generate PDFs from Compose content — multi-platform output."
+---
+
 # cmp-pdf-generator
 {%
    include-markdown "../../cmp-pdf-generator/README.md"

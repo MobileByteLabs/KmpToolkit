@@ -1,10 +1,15 @@
+---
+title: "kmp-toolkit"
+description: "Cross-platform utilities for Kotlin Multiplatform apps — share sheets, deep links, network monitoring, in-app updates, observability, and 16 more battle-tested modules published to Maven Central."
+---
+
 # kmp-toolkit
 
-Cross-platform utilities for Kotlin Multiplatform apps — share sheets, deep
-links, network monitoring, in-app updates, observability, and more.
-
-Ships **21 `cmp-*` modules** to Maven Central at
-`io.github.mobilebytelabs:*`, all aligned on a single `kmptoolkit.version`.
+!!! abstract "Cross-platform utilities for Kotlin Multiplatform apps"
+    Share sheets, deep links, network monitoring, in-app updates,
+    observability, and 16 more battle-tested modules — all aligned on a
+    single `kmptoolkit.version` and published to Maven Central at
+    `io.github.mobilebytelabs:*`.
 
 ## Quick links
 
@@ -29,9 +34,11 @@ Ships **21 `cmp-*` modules** to Maven Central at
 
 ## API reference
 
-Each module ships its full Dokka HTML reference inside the Maven Central
-`-javadoc.jar` artifact. IntelliJ / Android Studio surfaces it automatically
-in hover popups, Quick Documentation, and Symbol search.
+!!! info "Dokka HTML lives inside `-javadoc.jar`"
+    Each module ships its full Dokka HTML reference inside the Maven
+    Central `-javadoc.jar` artifact. IntelliJ / Android Studio surfaces
+    it automatically in hover popups, Quick Documentation, and Symbol
+    search.
 
-For an offline copy, download a module's `*-javadoc.jar`, rename to `.zip`,
-and open `index.html`.
+    For an offline copy: download a module's `*-javadoc.jar`, rename to
+    `.zip`, and open `index.html`.

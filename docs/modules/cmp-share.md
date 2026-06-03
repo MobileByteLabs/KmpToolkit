@@ -1,3 +1,8 @@
+---
+title: "cmp-share"
+description: "System share-sheet integration — text, URLs, files, images across platforms."
+---
+
 # cmp-share
 {%
    include-markdown "../../cmp-share/README.md"

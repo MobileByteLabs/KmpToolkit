@@ -1,3 +1,8 @@
+---
+title: "Inter-app comms cookbook"
+description: "Recipes for sharing text, files, images and opening URLs across apps — covering cmp-share, cmp-open-url, cmp-deep-link, and cmp-intent-launcher."
+---
+
 # Inter-app comms cookbook
 
 Recipes for sharing content, launching system intents, and registering app

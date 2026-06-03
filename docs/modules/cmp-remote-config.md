@@ -1,5 +1,20 @@
+---
+title: "cmp-remote-config"
+description: "Firebase Remote Config wrapper for Kotlin Multiplatform."
+---
+
 # cmp-remote-config
-_README.md not yet authored for this module — see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-remote-config) for now._
+
+!!! info "README in progress"
+    A canonical `cmp-remote-config/README.md` hasn't been authored yet. Until it
+    lands, see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-remote-config)
+    for the live code + KDoc, and the **Module reference** below for the
+    contributor-facing developer notes.
+
+    Want to help? Open a PR adding `cmp-remote-config/README.md` and convert this
+    page to the README-embedded flavor (see other module pages for the
+    pattern).
+
 
 ## Module reference
 {%

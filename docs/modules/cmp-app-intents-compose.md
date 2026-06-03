@@ -1,3 +1,8 @@
+---
+title: "cmp-app-intents-compose"
+description: "Compose Multiplatform helpers for cmp-app-intents — declarative intent wiring."
+---
+
 # cmp-app-intents-compose
 {%
    include-markdown "../../cmp-app-intents-compose/README.md"

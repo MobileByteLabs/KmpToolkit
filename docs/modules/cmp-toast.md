@@ -1,5 +1,20 @@
+---
+title: "cmp-toast"
+description: "Cross-platform toast notifications — native UI on each platform."
+---
+
 # cmp-toast
-_README.md not yet authored for this module — see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-toast) for now._
+
+!!! info "README in progress"
+    A canonical `cmp-toast/README.md` hasn't been authored yet. Until it
+    lands, see the [GitHub source](https://github.com/MobileByteLabs/KmpToolkit/tree/development/cmp-toast)
+    for the live code + KDoc, and the **Module reference** below for the
+    contributor-facing developer notes.
+
+    Want to help? Open a PR adding `cmp-toast/README.md` and convert this
+    page to the README-embedded flavor (see other module pages for the
+    pattern).
+
 
 ## Module reference
 {%

@@ -1,3 +1,8 @@
+---
+title: "cmp-app-intents"
+description: "Cross-platform deep-action intents (Android App Actions + iOS App Intents) from commonMain."
+---
+
 # cmp-app-intents
 {%
    include-markdown "../../cmp-app-intents/README.md"

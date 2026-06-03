@@ -1,3 +1,8 @@
+---
+title: "cmp-intent-launcher"
+description: "Launch system intents (email, dialer, settings) from commonMain."
+---
+
 # cmp-intent-launcher
 {%
    include-markdown "../../cmp-intent-launcher/README.md"
