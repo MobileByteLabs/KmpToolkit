@@ -119,6 +119,7 @@ public expect class PdfGenerator() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions = PdfGeneratorOptions(),
+        fileName: String = "document",
     ): PdfResult
 
     /**
@@ -130,6 +131,7 @@ public expect class PdfGenerator() {
         pageConfig: PageConfig = PageConfig(),
         branding: PdfBranding = PdfBranding.none(),
         options: PdfGeneratorOptions = PdfGeneratorOptions(),
+        fileName: String = "document",
     ): PdfResult
 
     /**

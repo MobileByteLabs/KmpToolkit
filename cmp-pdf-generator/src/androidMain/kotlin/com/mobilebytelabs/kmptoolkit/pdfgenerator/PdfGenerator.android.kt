@@ -53,7 +53,7 @@ public actual class PdfGenerator public actual constructor() {
             val finalHtml = htmlContent.injectPageConfigCss(pageConfig)
             val pm = ctx.getSystemService<PrintManager>() ?: throw PdfError.PermissionDenied("PrintManager unavailable")
             val attrs = pageConfig.toPrintAttributes()
-            renderWebViewToPrintAdapter(ctx, finalHtml) { adapter ->
+            renderWebViewToPrintAdapter(ctx, finalHtml, fileName) { adapter ->
                 pm.print(fileName, adapter, attrs)
             }
         }
@@ -63,6 +63,7 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
@@ -78,7 +79,7 @@ public actual class PdfGenerator public actual constructor() {
                     AndroidNativePdfRenderer(document, options, progress).render()
                 }
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(bytes, output, suggestedFileName = "document.pdf")
+            val result = dispatchOutput(bytes, output, suggestedFileName = fileName)
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -94,12 +95,13 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val finalHtml = html.injectPageConfigCss(pageConfig)
             val bytes = renderHtmlToBytes(finalHtml, pageConfig)
-            val result = dispatchOutput(bytes, output, suggestedFileName = "document.pdf")
+            val result = dispatchOutput(bytes, output, suggestedFileName = fileName)
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -131,6 +133,7 @@ public actual class PdfGenerator public actual constructor() {
     private suspend fun renderWebViewToPrintAdapter(
         ctx: Context,
         html: String,
+        fileName: String,
         block: (PrintDocumentAdapter) -> Unit,
     ): Unit = suspendCancellableCoroutine { cont ->
         var webView: WebView? = WebView(ctx)
@@ -146,7 +149,7 @@ public actual class PdfGenerator public actual constructor() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     try {
                         val adapter =
-                            view?.createPrintDocumentAdapter("document")
+                            view?.createPrintDocumentAdapter(fileName)
                                 ?: throw PdfError.EngineFailure(IllegalStateException("Adapter null"))
                         block(adapter)
                         if (cont.isActive) cont.resume(Unit)
@@ -198,7 +201,7 @@ public actual class PdfGenerator public actual constructor() {
                 PdfResult.Success(uri = uri.toString(), byteCount = bytes.size)
             }
 
-            PdfOutput.Share -> {
+            PdfOutput.Share, PdfOutput.Save -> {
                 val file = File(ctx.cacheDir, suggestedFileName).apply { writeBytes(bytes) }
                 val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
                 val intent =
@@ -225,13 +228,6 @@ public actual class PdfGenerator public actual constructor() {
                     PrintAttributes.Builder().build(),
                 )
                 PdfResult.Success(byteCount = bytes.size)
-            }
-
-            PdfOutput.Save -> {
-                throw PdfError.UnsupportedFeature(
-                    "PdfOutput.Save on Android requires hosting Activity wiring via " +
-                        "ActivityResultLauncher<Intent>. Use PdfOutput.File(path) or PdfOutput.Share instead.",
-                )
             }
         }
     }

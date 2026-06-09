@@ -47,13 +47,14 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val html = document.toHtml().injectPageConfigCss(document.config)
             val data = renderHtmlToData(html)
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(data, output, "document.pdf")
+            val result = dispatchOutput(data, output, fileName)
             progress.tryEmit(PdfProgressEvent.Complete(data.length.toInt()))
             result
         } catch (e: Throwable) {
@@ -69,12 +70,13 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val data = renderHtmlToData(html.injectPageConfigCss(pageConfig))
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(data, output, "document.pdf")
+            val result = dispatchOutput(data, output, fileName)
             progress.tryEmit(PdfProgressEvent.Complete(data.length.toInt()))
             result
         } catch (e: Throwable) {

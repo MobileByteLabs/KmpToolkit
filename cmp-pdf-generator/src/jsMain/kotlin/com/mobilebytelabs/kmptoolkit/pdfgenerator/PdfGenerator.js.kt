@@ -40,6 +40,7 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
@@ -54,7 +55,7 @@ public actual class PdfGenerator public actual constructor() {
                 PdfOutput.ByteArrayOutput, is PdfOutput.File, is PdfOutput.Uri, PdfOutput.Share, PdfOutput.Save -> {
                     val bytes = JsPdfLibRenderer(document, progress).render()
                     progress.tryEmit(PdfProgressEvent.Finalizing)
-                    val result = dispatchOutput(bytes, output, "document.pdf")
+                    val result = dispatchOutput(bytes, output, fileName)
                     progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
                     result
                 }
@@ -72,6 +73,7 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {

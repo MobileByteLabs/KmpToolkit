@@ -47,6 +47,7 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
@@ -59,7 +60,7 @@ public actual class PdfGenerator public actual constructor() {
                     JvmNativePdfRenderer(document, options, progress).render()
                 }
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(bytes, output)
+            val result = dispatchOutput(bytes, output, fileName)
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -75,13 +76,14 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val finalHtml = html.injectPageConfigCss(pageConfig)
             val bytes = renderHtmlToBytes(finalHtml, pageConfig)
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(bytes, output)
+            val result = dispatchOutput(bytes, output, fileName)
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -105,7 +107,7 @@ public actual class PdfGenerator public actual constructor() {
             bao.toByteArray()
         }
 
-    private suspend fun dispatchOutput(bytes: ByteArray, output: PdfOutput): PdfResult {
+    private suspend fun dispatchOutput(bytes: ByteArray, output: PdfOutput, fileName: String): PdfResult {
         return when (output) {
             is PdfOutput.File -> {
                 File(output.path).writeBytes(bytes)
@@ -127,24 +129,14 @@ public actual class PdfGenerator public actual constructor() {
                 PdfResult.Success(uri = uri, byteCount = bytes.size)
             }
 
-            PdfOutput.Share -> {
-                val tmp =
-                    File.createTempFile("pdf-", ".pdf").apply {
-                        writeBytes(bytes)
-                        deleteOnExit()
-                    }
-                openWithDefaultApp(tmp)
-                PdfResult.Success(byteCount = bytes.size)
-            }
-
             PdfOutput.Print -> {
                 throw PdfError.UnsupportedFeature(
                     "JVM PdfOutput.Print — use PdfOutput.Save and let user print from viewer",
                 )
             }
 
-            PdfOutput.Save -> {
-                val out = pickSaveFile("document.pdf") ?: return PdfResult.Failure(PdfError.CancellationError)
+            PdfOutput.Save, PdfOutput.Share -> {
+                val out = pickSaveFile(fileName) ?: return PdfResult.Failure(PdfError.CancellationError)
                 out.writeBytes(bytes)
                 openWithDefaultApp(out)
                 PdfResult.Success(byteCount = bytes.size)

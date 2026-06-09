@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -46,6 +47,7 @@ import com.mobilebytelabs.kmptoolkit.pdfgenerator.templates.ReceiptTemplate
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SamplePdfGeneratorApp(generator: PdfGenerator) {
     var lastResult by remember { mutableStateOf("Choose a demo mode below.") }
@@ -83,25 +85,35 @@ fun SamplePdfGeneratorApp(generator: PdfGenerator) {
                 Text("Progress: $progressText", style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(8.dp))
 
-                Button(onClick = {
-                    scope.launch { lastResult = runInvoiceDemo(generator) }
-                }) { Text("1 · Invoice (HTML route → Share)") }
+                Button(
+                    onClick = {
+                        scope.launch { lastResult = runInvoiceDemo(generator) }
+                    },
+                ) { Text("1 · Invoice (HTML route → Share)") }
 
-                Button(onClick = {
-                    scope.launch { lastResult = runReceiptDemo(generator) }
-                }) { Text("2 · Receipt (Template → Save)") }
+                Button(
+                    onClick = {
+                        scope.launch { lastResult = runReceiptDemo(generator) }
+                    },
+                ) { Text("2 · Receipt (Template → Save)") }
 
-                Button(onClick = {
-                    scope.launch { lastResult = runMarkdownDemo(generator) }
-                }) { Text("3 · Markdown → PDF (Save)") }
+                Button(
+                    onClick = {
+                        scope.launch { lastResult = runMarkdownDemo(generator) }
+                    },
+                ) { Text("3 · Markdown → PDF (Save)") }
 
-                Button(onClick = {
-                    scope.launch { lastResult = runDslDemo(generator) }
-                }) { Text("4 · DSL `pdf { … }` (ByteArray)") }
+                Button(
+                    onClick = {
+                        scope.launch { lastResult = runDslDemo(generator) }
+                    },
+                ) { Text("4 · DSL `pdf { … }` (ByteArray)") }
 
-                Button(onClick = {
-                    scope.launch { lastResult = runMultiPageDslDemo(generator) }
-                }) { Text("5 · Multi-page DSL (ByteArray)") }
+                Button(
+                    onClick = {
+                        scope.launch { lastResult = runMultiPageDslDemo(generator) }
+                    },
+                ) { Text("5 · Multi-page DSL (ByteArray)") }
             }
         }
     }
@@ -114,6 +126,7 @@ private suspend fun runInvoiceDemo(gen: PdfGenerator): String {
             html = html,
             output = PdfOutput.Share,
             pageConfig = PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(15)),
+            fileName = "custom_file_name",
         )
     return when (result) {
         is PdfResult.Success -> "Invoice generated · ${result.byteCount} bytes"
@@ -143,6 +156,7 @@ private suspend fun runReceiptDemo(gen: PdfGenerator): String {
         html = html,
         output = PdfOutput.Save,
         pageConfig = PageConfig(size = PageSize.A4),
+        fileName = "custom_file_name",
     )
     return when (result) {
         is PdfResult.Success -> "Receipt saved · ${result.byteCount} bytes"
@@ -177,7 +191,11 @@ private suspend fun runMarkdownDemo(gen: PdfGenerator): String {
         > Blockquotes work too.
         """.trimIndent()
     val html = MarkdownPdfAdapter.markdownToHtml(md, PdfBranding.default())
-    val result = gen.generateFromHtml(html = html, output = PdfOutput.Save)
+    val result = gen.generateFromHtml(
+        html = html,
+        output = PdfOutput.Save,
+        fileName = "custom_file_name",
+    )
     return when (result) {
         is PdfResult.Success -> "Markdown PDF saved · ${result.byteCount} bytes"
         is PdfResult.Failure -> "Markdown failed: ${result.error.message}"
@@ -221,7 +239,11 @@ private suspend fun runDslDemo(gen: PdfGenerator): String {
                 text("Generated via cmp-pdf-generator v0.1.0")
             }
         }
-    val result = gen.generate(doc, PdfOutput.ByteArrayOutput)
+    val result = gen.generate(
+        document = doc,
+        output = PdfOutput.ByteArrayOutput,
+        fileName = "custom_file_name",
+    )
     return when (result) {
         is PdfResult.Success -> {
             val magicOk = result.bytes?.startsWith(byteArrayOf(0x25, 0x50, 0x44, 0x46))
@@ -250,7 +272,11 @@ private suspend fun runMultiPageDslDemo(gen: PdfGenerator): String {
                 }
             }
         }
-    val result = gen.generate(doc, PdfOutput.ByteArrayOutput)
+    val result = gen.generate(
+        document = doc,
+        output = PdfOutput.Save,
+        fileName = "custom_file_name",
+    )
     return when (result) {
         is PdfResult.Success -> "Multi-page bytes: ${result.byteCount}"
         is PdfResult.Failure -> "Multi-page failed: ${result.error.message}"

@@ -30,11 +30,12 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val html = document.toHtml().injectPageConfigCss(document.config)
-            handleOutput(html, output, "document.pdf").also {
+            handleOutput(html, output).also {
                 progress.tryEmit(PdfProgressEvent.Complete(html.length))
             }
         } catch (e: Throwable) {
@@ -50,8 +51,9 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult = try {
-        handleOutput(html.injectPageConfigCss(pageConfig), output, "document.pdf").also {
+        handleOutput(html.injectPageConfigCss(pageConfig), output).also {
             progress.tryEmit(PdfProgressEvent.Complete(html.length))
         }
     } catch (e: Throwable) {
@@ -60,7 +62,7 @@ public actual class PdfGenerator public actual constructor() {
 
     public actual fun progressFlow(): Flow<PdfProgressEvent> = progress.asSharedFlow()
 
-    private suspend fun handleOutput(html: String, output: PdfOutput, fileName: String): PdfResult = when (output) {
+    private suspend fun handleOutput(html: String, output: PdfOutput): PdfResult = when (output) {
         PdfOutput.Print, PdfOutput.Share, PdfOutput.Save -> {
             printViaIframe(html)
             PdfResult.Success()
