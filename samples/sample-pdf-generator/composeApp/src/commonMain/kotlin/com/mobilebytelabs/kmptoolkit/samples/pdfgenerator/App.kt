@@ -274,7 +274,7 @@ private suspend fun runMultiPageDslDemo(gen: PdfGenerator): String {
         }
     val result = gen.generate(
         document = doc,
-        output = PdfOutput.Save,
+        output = PdfOutput.ByteArrayOutput,
         fileName = "custom_file_name",
     )
     return when (result) {

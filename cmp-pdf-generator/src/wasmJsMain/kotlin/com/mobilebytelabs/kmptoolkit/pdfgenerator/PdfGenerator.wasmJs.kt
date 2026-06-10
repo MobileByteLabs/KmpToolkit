@@ -17,6 +17,10 @@ import org.w3c.dom.HTMLIFrameElement
  * wasmJs (browser) implementation. Mirror of the JS impl for the HTML route — uses iframe +
  * `window.print()` for Print/Share/Save outputs. DSL byte route via `pdf-lib` is deferred
  * because the npm interop surface for wasmJs is still maturing.
+ *
+ * Note: On wasmJs, browsers do not provide a reliable way to control the
+ * filename used by the print/save dialog. The `fileName` parameter is accepted
+ * for API consistency across platforms but is currently ignored.
  */
 @ExperimentalPdfGeneratorApi
 public actual class PdfGenerator public actual constructor() {
