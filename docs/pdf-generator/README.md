@@ -28,6 +28,20 @@ val result = generator.generate(doc, PdfOutput.Share)
 
 `PdfOutput.File`, `.ByteArrayOutput`, `.Uri(callback)`, `.Share`, `.Print`, `.Save`.
 
+## Custom file name
+
+`generate(...)` and `generateFromHtml(...)` take an optional `fileName` (default `"document.pdf"`)
+used by the Share / Save / Print flows on every platform. A `.pdf` extension is appended
+automatically when missing, so both forms are equivalent:
+
+```kotlin
+generator.generateFromHtml(html, PdfOutput.Save, fileName = "invoice-2026-0042")      // → invoice-2026-0042.pdf
+generator.generateFromHtml(html, PdfOutput.Save, fileName = "invoice-2026-0042.pdf")  // → invoice-2026-0042.pdf
+```
+
+> wasmJs accepts `fileName` for API parity but ignores it — the browser controls the
+> print/save dialog name.
+
 ## Five pre-built templates
 
 `InvoiceTemplate`, `ReportTemplate`, `ReceiptTemplate`, `StatementTemplate`, `LetterTemplate`.

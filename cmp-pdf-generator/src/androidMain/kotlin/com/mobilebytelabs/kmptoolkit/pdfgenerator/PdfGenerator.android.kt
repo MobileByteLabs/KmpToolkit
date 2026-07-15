@@ -53,7 +53,7 @@ public actual class PdfGenerator public actual constructor() {
             val finalHtml = htmlContent.injectPageConfigCss(pageConfig)
             val pm = ctx.getSystemService<PrintManager>() ?: throw PdfError.PermissionDenied("PrintManager unavailable")
             val attrs = pageConfig.toPrintAttributes()
-            renderWebViewToPrintAdapter(ctx, finalHtml) { adapter ->
+            renderWebViewToPrintAdapter(ctx, finalHtml, fileName) { adapter ->
                 pm.print(fileName, adapter, attrs)
             }
         }
@@ -63,6 +63,7 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
@@ -78,7 +79,7 @@ public actual class PdfGenerator public actual constructor() {
                     AndroidNativePdfRenderer(document, options, progress).render()
                 }
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(bytes, output, suggestedFileName = "document.pdf")
+            val result = dispatchOutput(bytes, output, suggestedFileName = ensurePdfFileName(fileName))
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -94,12 +95,13 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val finalHtml = html.injectPageConfigCss(pageConfig)
             val bytes = renderHtmlToBytes(finalHtml, pageConfig)
-            val result = dispatchOutput(bytes, output, suggestedFileName = "document.pdf")
+            val result = dispatchOutput(bytes, output, suggestedFileName = ensurePdfFileName(fileName))
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -131,6 +133,7 @@ public actual class PdfGenerator public actual constructor() {
     private suspend fun renderWebViewToPrintAdapter(
         ctx: Context,
         html: String,
+        documentName: String,
         block: (PrintDocumentAdapter) -> Unit,
     ): Unit = suspendCancellableCoroutine { cont ->
         var webView: WebView? = WebView(ctx)
@@ -146,7 +149,7 @@ public actual class PdfGenerator public actual constructor() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     try {
                         val adapter =
-                            view?.createPrintDocumentAdapter("document")
+                            view?.createPrintDocumentAdapter(documentName)
                                 ?: throw PdfError.EngineFailure(IllegalStateException("Adapter null"))
                         block(adapter)
                         if (cont.isActive) cont.resume(Unit)
