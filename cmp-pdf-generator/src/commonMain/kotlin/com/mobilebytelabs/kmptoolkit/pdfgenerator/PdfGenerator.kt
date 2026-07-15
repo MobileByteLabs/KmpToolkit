@@ -114,15 +114,24 @@ public expect class PdfGenerator() {
 
     /**
      * Render a [PdfDocument] to the chosen [output].
+     *
+     * @param fileName Suggested name for the produced file. A `.pdf` extension is added
+     *   automatically when missing (see [ensurePdfFileName]). Surfaced by the Share / Save /
+     *   Print flows on every platform; ignored on wasmJs where the browser controls the name.
      */
     public suspend fun generate(
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions = PdfGeneratorOptions(),
+        fileName: String = DEFAULT_PDF_FILE_NAME,
     ): PdfResult
 
     /**
      * Render raw [html] to the chosen [output], with optional branding overrides.
+     *
+     * @param fileName Suggested name for the produced file. A `.pdf` extension is added
+     *   automatically when missing (see [ensurePdfFileName]). Surfaced by the Share / Save /
+     *   Print flows on every platform; ignored on wasmJs where the browser controls the name.
      */
     public suspend fun generateFromHtml(
         html: String,
@@ -130,6 +139,7 @@ public expect class PdfGenerator() {
         pageConfig: PageConfig = PageConfig(),
         branding: PdfBranding = PdfBranding.none(),
         options: PdfGeneratorOptions = PdfGeneratorOptions(),
+        fileName: String = DEFAULT_PDF_FILE_NAME,
     ): PdfResult
 
     /**

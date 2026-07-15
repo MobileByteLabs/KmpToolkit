@@ -114,6 +114,7 @@ private suspend fun runInvoiceDemo(gen: PdfGenerator): String {
             html = html,
             output = PdfOutput.Share,
             pageConfig = PageConfig(size = PageSize.A4, margins = EdgeMargins.uniform(15)),
+            fileName = "invoice-2026-0042", // ".pdf" is appended automatically
         )
     return when (result) {
         is PdfResult.Success -> "Invoice generated · ${result.byteCount} bytes"
@@ -143,6 +144,7 @@ private suspend fun runReceiptDemo(gen: PdfGenerator): String {
         html = html,
         output = PdfOutput.Save,
         pageConfig = PageConfig(size = PageSize.A4),
+        fileName = "receipt-RCP-2026-0042.pdf",
     )
     return when (result) {
         is PdfResult.Success -> "Receipt saved · ${result.byteCount} bytes"
@@ -177,7 +179,7 @@ private suspend fun runMarkdownDemo(gen: PdfGenerator): String {
         > Blockquotes work too.
         """.trimIndent()
     val html = MarkdownPdfAdapter.markdownToHtml(md, PdfBranding.default())
-    val result = gen.generateFromHtml(html = html, output = PdfOutput.Save)
+    val result = gen.generateFromHtml(html = html, output = PdfOutput.Save, fileName = "markdown-demo")
     return when (result) {
         is PdfResult.Success -> "Markdown PDF saved · ${result.byteCount} bytes"
         is PdfResult.Failure -> "Markdown failed: ${result.error.message}"

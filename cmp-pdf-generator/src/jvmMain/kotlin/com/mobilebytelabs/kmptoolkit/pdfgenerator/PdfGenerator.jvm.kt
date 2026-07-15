@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import java.awt.Desktop
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.file.Files
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -47,6 +48,7 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
@@ -59,7 +61,7 @@ public actual class PdfGenerator public actual constructor() {
                     JvmNativePdfRenderer(document, options, progress).render()
                 }
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(bytes, output)
+            val result = dispatchOutput(bytes, output, fileName)
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -75,13 +77,14 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val finalHtml = html.injectPageConfigCss(pageConfig)
             val bytes = renderHtmlToBytes(finalHtml, pageConfig)
             progress.tryEmit(PdfProgressEvent.Finalizing)
-            val result = dispatchOutput(bytes, output)
+            val result = dispatchOutput(bytes, output, fileName)
             progress.tryEmit(PdfProgressEvent.Complete(bytes.size))
             result
         } catch (e: Throwable) {
@@ -105,7 +108,8 @@ public actual class PdfGenerator public actual constructor() {
             bao.toByteArray()
         }
 
-    private suspend fun dispatchOutput(bytes: ByteArray, output: PdfOutput): PdfResult {
+    private suspend fun dispatchOutput(bytes: ByteArray, output: PdfOutput, fileName: String): PdfResult {
+        val safeName = ensurePdfFileName(fileName)
         return when (output) {
             is PdfOutput.File -> {
                 File(output.path).writeBytes(bytes)
@@ -128,11 +132,14 @@ public actual class PdfGenerator public actual constructor() {
             }
 
             PdfOutput.Share -> {
-                val tmp =
-                    File.createTempFile("pdf-", ".pdf").apply {
-                        writeBytes(bytes)
-                        deleteOnExit()
-                    }
+                // Open in the default viewer under the caller-supplied name (so the viewer's
+                // title / "Save As" default to it). Written into a unique temp directory so the
+                // exact file name is preserved without clobbering an existing same-named file.
+                val dir = Files.createTempDirectory("pdf-").toFile().apply { deleteOnExit() }
+                val tmp = File(dir, safeName).apply {
+                    writeBytes(bytes)
+                    deleteOnExit()
+                }
                 openWithDefaultApp(tmp)
                 PdfResult.Success(byteCount = bytes.size)
             }
@@ -144,7 +151,7 @@ public actual class PdfGenerator public actual constructor() {
             }
 
             PdfOutput.Save -> {
-                val out = pickSaveFile("document.pdf") ?: return PdfResult.Failure(PdfError.CancellationError)
+                val out = pickSaveFile(safeName) ?: return PdfResult.Failure(PdfError.CancellationError)
                 out.writeBytes(bytes)
                 openWithDefaultApp(out)
                 PdfResult.Success(byteCount = bytes.size)

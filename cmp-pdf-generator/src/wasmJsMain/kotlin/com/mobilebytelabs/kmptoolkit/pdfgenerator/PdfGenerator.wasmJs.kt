@@ -17,6 +17,10 @@ import org.w3c.dom.HTMLIFrameElement
  * wasmJs (browser) implementation. Mirror of the JS impl for the HTML route — uses iframe +
  * `window.print()` for Print/Share/Save outputs. DSL byte route via `pdf-lib` is deferred
  * because the npm interop surface for wasmJs is still maturing.
+ *
+ * Note: browsers do not expose a reliable way to control the file name used by the print/save
+ * dialog, so the `fileName` argument is accepted for cross-platform API parity but is ignored
+ * here — the user picks the name in the browser's own dialog.
  */
 @ExperimentalPdfGeneratorApi
 public actual class PdfGenerator public actual constructor() {
@@ -30,11 +34,12 @@ public actual class PdfGenerator public actual constructor() {
         document: PdfDocument,
         output: PdfOutput,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult {
         progress.tryEmit(PdfProgressEvent.Started)
         return try {
             val html = document.toHtml().injectPageConfigCss(document.config)
-            handleOutput(html, output, "document.pdf").also {
+            handleOutput(html, output, ensurePdfFileName(fileName)).also {
                 progress.tryEmit(PdfProgressEvent.Complete(html.length))
             }
         } catch (e: Throwable) {
@@ -50,8 +55,9 @@ public actual class PdfGenerator public actual constructor() {
         pageConfig: PageConfig,
         branding: PdfBranding,
         options: PdfGeneratorOptions,
+        fileName: String,
     ): PdfResult = try {
-        handleOutput(html.injectPageConfigCss(pageConfig), output, "document.pdf").also {
+        handleOutput(html.injectPageConfigCss(pageConfig), output, ensurePdfFileName(fileName)).also {
             progress.tryEmit(PdfProgressEvent.Complete(html.length))
         }
     } catch (e: Throwable) {
