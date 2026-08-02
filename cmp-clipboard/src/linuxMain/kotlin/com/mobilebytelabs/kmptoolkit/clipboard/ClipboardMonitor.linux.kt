@@ -90,7 +90,7 @@ internal class LinuxClipboardMonitor : ClipboardMonitor {
         val change = ClipboardChange(
             content = content,
             contentType = contentType,
-            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+            timestamp = kotlin.time.Clock.System.now().toEpochMilliseconds(),
             source = ClipboardSource.External,
             previousContent = previousContent,
         )

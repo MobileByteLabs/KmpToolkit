@@ -14,7 +14,7 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.BODY

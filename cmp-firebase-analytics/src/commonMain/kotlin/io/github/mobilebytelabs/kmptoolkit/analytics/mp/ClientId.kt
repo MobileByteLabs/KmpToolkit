@@ -60,7 +60,7 @@ private fun generateClientId(): String {
 
 /**
  * Current Unix-epoch seconds. Pure expect for cross-platform reliability —
- * `kotlinx.datetime.Clock.System.now()` is the simplest portable answer and
+ * `kotlin.time.Clock.System.now()` is the simplest portable answer and
  * is already a transitive dep via commonMain.
  */
-private fun currentEpochSeconds(): Long = kotlinx.datetime.Clock.System.now().epochSeconds
+private fun currentEpochSeconds(): Long = kotlin.time.Clock.System.now().epochSeconds

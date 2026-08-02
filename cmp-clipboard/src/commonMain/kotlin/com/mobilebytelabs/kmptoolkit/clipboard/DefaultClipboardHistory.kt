@@ -75,7 +75,7 @@ internal class DefaultClipboardHistory(override val maxSize: Int) : ClipboardHis
 
         val entry = ClipboardHistoryEntry(
             content = content,
-            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+            timestamp = kotlin.time.Clock.System.now().toEpochMilliseconds(),
             contentType = contentType,
         )
 

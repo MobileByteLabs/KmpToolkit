@@ -9,7 +9,7 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.analytics
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Lightweight performance timer for analytics. Pairs a `start` with a `stop` and emits
