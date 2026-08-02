@@ -1,8 +1,6 @@
 package com.mobilebytelabs.kmptoolkit.deeplink
 
 import com.mobilebytelabs.kmptoolkit.deeplink.internal.UriParser
-import kotlin.time.Clock
-import kotlin.time.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -10,6 +8,8 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Represents a parsed deep link URI.

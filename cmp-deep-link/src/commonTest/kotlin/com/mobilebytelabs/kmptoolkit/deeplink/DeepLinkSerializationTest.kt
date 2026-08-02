@@ -1,10 +1,10 @@
 package com.mobilebytelabs.kmptoolkit.deeplink
 
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Instant
-import kotlinx.serialization.json.Json
 
 /**
  * Guards the kotlin.time.Instant migration (kotlinx-datetime 0.8.0, issue #143):

@@ -14,7 +14,6 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
-import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.BODY
@@ -24,6 +23,7 @@ import kotlinx.html.img
 import kotlinx.html.span
 import kotlinx.html.stream.createHTML
 import kotlin.io.encoding.Base64
+import kotlin.time.Clock
 
 /**
  * Base class for HTML-based PDF templates.
