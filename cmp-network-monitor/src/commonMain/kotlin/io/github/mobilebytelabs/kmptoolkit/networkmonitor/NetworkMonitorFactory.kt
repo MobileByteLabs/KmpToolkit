@@ -26,11 +26,10 @@ expect fun createNetworkMonitor(config: NetworkMonitorConfig = NetworkMonitorCon
 fun createNetworkMonitor(provider: ConnectivityProvider): NetworkMonitor =
     if (provider is NetworkMonitor) provider else ProviderBackedNetworkMonitor(provider)
 
-private class ProviderBackedNetworkMonitor(
-    private val delegate: ConnectivityProvider,
-) : NetworkMonitor, ConnectivityProvider by delegate {
+private class ProviderBackedNetworkMonitor(private val delegate: ConnectivityProvider) :
+    NetworkMonitor,
+    ConnectivityProvider by delegate {
     // `force()` is a NetworkMonitor convenience (not on the engine) — best-effort: the caller can
     // observe the refreshed state via the flows. Providers with their own scope override probe().
     override fun force() { /* delegate exposes no scope; consumers call probe() for a suspending refresh */ }
 }
-

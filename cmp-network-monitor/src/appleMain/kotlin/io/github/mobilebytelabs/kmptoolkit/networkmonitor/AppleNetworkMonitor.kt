@@ -14,15 +14,15 @@ import kotlinx.cinterop.value
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -192,13 +192,6 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
         }
     }
 
-    /**
-     * Reachability with any-success over [NetworkMonitorConfig.effectiveValidationUrls] using an
-     * HTTP **204 sentinel** — real internet only if an endpoint returns HTTP 204 (generate_204).
-     * A captive portal redirects generate_204 to its login page (NSURLSession follows the redirect
-     * → final status 200, not 204), so it is correctly NOT validated — the portal accuracy the raw
-     * TCP connect could not provide. This brings Apple to full parity with Android/Jvm/Js.
-     */
     /**
      * Reachability with any-success over [NetworkMonitorConfig.effectiveValidationUrls] via a
      * non-blocking TCP connect — a single blocked/down host no longer reads as false-offline.

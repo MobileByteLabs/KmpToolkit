@@ -2,8 +2,8 @@ package io.github.mobilebytelabs.kmptoolkit.networkmonitor
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -159,7 +159,13 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
             false
         }
         config.onValidationResult?.invoke(
-            ValidationResult(url = url, success = ok, statusCode = code.takeIf { it >= 0 }, latencyMs = currentTimeMillis() - t0),
+            ValidationResult(
+                url = url,
+                success = ok,
+                statusCode = code.takeIf { it >= 0 },
+                latencyMs =
+                currentTimeMillis() - t0,
+            ),
         )
         return ok
     }

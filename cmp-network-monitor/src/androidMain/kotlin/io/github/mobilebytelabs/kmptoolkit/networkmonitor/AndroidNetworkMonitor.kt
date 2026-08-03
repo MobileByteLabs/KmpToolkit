@@ -18,13 +18,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
@@ -317,7 +317,13 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
             false
         }
         config.onValidationResult?.invoke(
-            ValidationResult(url = url, success = ok, statusCode = code.takeIf { it >= 0 }, latencyMs = System.currentTimeMillis() - t0),
+            ValidationResult(
+                url = url,
+                success = ok,
+                statusCode = code.takeIf { it >= 0 },
+                latencyMs =
+                System.currentTimeMillis() - t0,
+            ),
         )
         return ok
     }
