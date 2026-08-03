@@ -1,25 +1,28 @@
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/compose/ComposableSingletons$NetworkAwareContentKt {
 	public static final field INSTANCE Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/compose/ComposableSingletons$NetworkAwareContentKt;
 	public fun <init> ()V
-	public final fun getLambda$-1914750662$cmp_network_monitor_compose ()Lkotlin/jvm/functions/Function2;
+	public final fun getLambda$1762675098$cmp_network_monitor_compose ()Lkotlin/jvm/functions/Function2;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/compose/ConnectivityBannerKt {
-	public static final fun ConnectivityBanner-jA1GFJw (Landroidx/compose/ui/Modifier;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Ljava/lang/String;JJLandroidx/compose/runtime/Composer;II)V
+	public static final fun ConnectivityBanner-X-z6DiA (Landroidx/compose/ui/Modifier;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Ljava/lang/String;JJJLandroidx/compose/ui/graphics/vector/ImageVector;Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;II)V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/compose/LocalNetworkMonitorKt {
+	public static final fun ProvideNetworkMonitor (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;I)V
 	public static final fun getLocalNetworkMonitor ()Landroidx/compose/runtime/ProvidableCompositionLocal;
+	public static final fun rememberOrLocalNetworkMonitor (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;Landroidx/compose/runtime/Composer;II)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/compose/NetworkAwareContentKt {
-	public static final fun NetworkAwareContent (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Landroidx/compose/runtime/Composer;II)V
+	public static final fun NetworkAwareContent (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;JLkotlin/jvm/functions/Function3;Landroidx/compose/runtime/Composer;II)V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/compose/RememberNetworkMonitorKt {
-	public static final fun collectIsOnlineAsState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Landroidx/compose/runtime/Composer;I)Landroidx/compose/runtime/State;
-	public static final fun collectNetworkQualityAsState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Landroidx/compose/runtime/Composer;I)Landroidx/compose/runtime/State;
-	public static final fun collectNetworkStatusAsState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Landroidx/compose/runtime/Composer;I)Landroidx/compose/runtime/State;
+	public static final fun collectIsOnlineAsState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;JLandroidx/compose/runtime/Composer;II)Landroidx/compose/runtime/State;
+	public static final fun collectMonitoringAsState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Landroidx/compose/runtime/Composer;I)Landroidx/compose/runtime/State;
+	public static final fun collectNetworkQualityAsState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;JLandroidx/compose/runtime/Composer;II)Landroidx/compose/runtime/State;
+	public static final fun collectNetworkStatusAsState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;JLandroidx/compose/runtime/Composer;II)Landroidx/compose/runtime/State;
 	public static final fun rememberNetworkMonitor (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;Landroidx/compose/runtime/Composer;II)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 	public static final fun rememberScopedNetworkMonitor (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;Landroidx/compose/runtime/Composer;II)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 }
