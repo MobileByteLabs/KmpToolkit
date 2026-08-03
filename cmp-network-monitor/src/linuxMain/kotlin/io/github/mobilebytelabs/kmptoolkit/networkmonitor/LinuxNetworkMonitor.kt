@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import platform.posix.AF_INET
 import platform.posix.EINPROGRESS
 import platform.posix.F_GETFL
@@ -149,11 +150,13 @@ internal class LinuxNetworkMonitor(private val config: NetworkMonitorConfig) : N
      * Same pattern as Apple's tcpReachabilityCheck().
      */
     @Suppress("ReturnCount")
-    private fun tcpConnectCheck(): Boolean = memScoped {
-        val host = config.validationUrl
+    private fun tcpConnectCheck(): Boolean = config.effectiveValidationUrls.any { tcpConnectOne(it) }
+
+    private fun tcpConnectOne(url: String): Boolean = memScoped {
+        val host = url
             .removePrefix("https://").removePrefix("http://")
             .substringBefore("/").substringBefore(":")
-        val port = if (config.validationUrl.startsWith("https://")) "443" else "80"
+        val port = if (url.startsWith("https://")) "443" else "80"
 
         val hints = alloc<addrinfo>()
         hints.ai_family = AF_INET
@@ -290,6 +293,15 @@ internal class LinuxNetworkMonitor(private val config: NetworkMonitorConfig) : N
     }
 
     private var closed = false
+
+    override suspend fun probe(): NetworkStatus = withContext(Dispatchers.IO) {
+        updateState(checkNetwork())
+        networkStatus.value
+    }
+
+    override fun force() {
+        scope.launch { probe() }
+    }
 
     override fun close() {
         if (!closed) {

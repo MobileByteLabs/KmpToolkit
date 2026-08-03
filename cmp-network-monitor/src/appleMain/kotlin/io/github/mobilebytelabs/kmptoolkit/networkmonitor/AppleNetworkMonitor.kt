@@ -1,16 +1,6 @@
 package io.github.mobilebytelabs.kmptoolkit.networkmonitor
 
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.IntVar
-import kotlinx.cinterop.UIntVar
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.allocPointerTo
-import kotlinx.cinterop.convert
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.pointed
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.sizeOf
-import kotlinx.cinterop.value
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -21,8 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import platform.Network.nw_interface_type_cellular
 import platform.Network.nw_interface_type_loopback
 import platform.Network.nw_interface_type_other
@@ -41,27 +37,13 @@ import platform.Network.nw_path_status_satisfiable
 import platform.Network.nw_path_status_satisfied
 import platform.Network.nw_path_uses_interface_type
 import platform.darwin.dispatch_queue_create
-import platform.posix.AF_INET
-import platform.posix.EINPROGRESS
-import platform.posix.F_GETFL
-import platform.posix.F_SETFL
-import platform.posix.IPPROTO_TCP
-import platform.posix.O_NONBLOCK
-import platform.posix.POLLOUT
-import platform.posix.SOCK_STREAM
-import platform.posix.SOL_SOCKET
-import platform.posix.SO_ERROR
-import platform.posix.addrinfo
-import platform.posix.close
-import platform.posix.connect
-import platform.posix.errno
-import platform.posix.fcntl
-import platform.posix.freeaddrinfo
-import platform.posix.getaddrinfo
-import platform.posix.getsockopt
-import platform.posix.poll
-import platform.posix.pollfd
-import platform.posix.socket
+import platform.Foundation.NSHTTPURLResponse
+import platform.Foundation.NSMutableURLRequest
+import platform.Foundation.NSURL
+import platform.Foundation.NSURLRequestReloadIgnoringLocalCacheData
+import platform.Foundation.NSURLSession
+import platform.Foundation.NSURLSessionConfiguration
+import platform.Foundation.dataTaskWithRequest
 
 /**
  * Apple [NetworkMonitor] backed by NWPathMonitor.
@@ -95,6 +77,19 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
         null,
     )
 
+    private val _monitoring = MutableStateFlow(false)
+    override val monitoring: StateFlow<Boolean> = _monitoring.asStateFlow()
+
+    private var revalidationJob: Job? = null
+    private var nativeCancelled = false
+
+    private fun cancelNative() {
+        if (!nativeCancelled) {
+            nativeCancelled = true
+            nw_path_monitor_cancel(monitor)
+        }
+    }
+
     init {
         nw_path_monitor_set_queue(monitor, queue)
         nw_path_monitor_set_update_handler(monitor) { path ->
@@ -121,7 +116,39 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
                 updateOffline()
             }
         }
+        if (config.autoStart) start()
+    }
+
+    override fun start() {
+        if (closed || _monitoring.value) return
         nw_path_monitor_start(monitor)
+        _monitoring.value = true
+        startRevalidationLoop()
+    }
+
+    /**
+     * NOTE: NWPathMonitor's `cancel` is terminal — it cannot be resumed. On Apple, [stop] therefore
+     * releases the native monitor like [close] does for the native part; [start] after [stop] is a
+     * guarded no-op. Use [close] for full teardown.
+     */
+    override fun stop() {
+        if (!_monitoring.value) return
+        _monitoring.value = false
+        revalidationJob?.cancel()
+        revalidationJob = null
+        cancelNative()
+    }
+
+    /** Opt-in: re-probe on an interval while online so a silently-dead connection is caught. */
+    private fun startRevalidationLoop() {
+        if (config.revalidateWhileOnlineMs <= 0L || config.validationStrategy == ValidationStrategy.NativeOnly) return
+        revalidationJob?.cancel()
+        revalidationJob = scope.launch {
+            while (isActive) {
+                delay(config.revalidateWhileOnlineMs)
+                if (_isOnline.value && !reachabilityCheck()) updateOffline()
+            }
+        }
     }
 
     private fun handleNativeOnline(info: NetworkInfo) {
@@ -130,92 +157,73 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
 
             ValidationStrategy.HttpOnly -> {
                 scope.launch {
-                    if (tcpReachabilityCheck()) updateOnline(info) else updateOffline()
+                    if (reachabilityCheck()) updateOnline(info) else updateOffline()
                 }
             }
 
             ValidationStrategy.NativeThenHttp -> {
                 updateOnline(info) // optimistic native update
                 scope.launch {
-                    if (!tcpReachabilityCheck()) updateOffline()
+                    if (!reachabilityCheck()) updateOffline()
                 }
             }
         }
     }
 
     /**
-     * Validates connectivity by opening a non-blocking TCP socket to the validation URL's host.
-     * Uses POSIX sockets with `fcntl(O_NONBLOCK)` + `select()` to enforce
-     * [NetworkMonitorConfig.validationTimeoutMs] as a connect deadline.
-     * Without this, blocking `connect()` can hang ~75s on unreachable hosts.
+     * Reachability with any-success over [NetworkMonitorConfig.effectiveValidationUrls] using an
+     * HTTP **204 sentinel** — real internet only if an endpoint returns HTTP 204 (generate_204).
+     * A captive portal redirects generate_204 to its login page (NSURLSession follows the redirect
+     * → final status 200, not 204), so it is correctly NOT validated — the portal accuracy the raw
+     * TCP connect could not provide. This brings Apple to full parity with Android/Jvm/Js.
      */
-    @Suppress("ReturnCount")
-    private fun tcpReachabilityCheck(): Boolean = memScoped {
-        val host = config.validationUrl
-            .removePrefix("https://").removePrefix("http://")
-            .substringBefore("/").substringBefore(":")
-        val port = if (config.validationUrl.startsWith("https://")) "443" else "80"
-
-        val hints = alloc<addrinfo>()
-        hints.ai_family = AF_INET
-        hints.ai_socktype = SOCK_STREAM
-        hints.ai_protocol = IPPROTO_TCP
-
-        val result = allocPointerTo<addrinfo>()
-        if (getaddrinfo(host, port, hints.ptr, result.ptr) != 0) return false
-
-        val addrInfo = result.value ?: return false
-        try {
-            val sock = socket(
-                addrInfo.pointed.ai_family,
-                addrInfo.pointed.ai_socktype,
-                addrInfo.pointed.ai_protocol,
-            )
-            if (sock < 0) return false
-
-            try {
-                // Set socket to non-blocking mode
-                val flags = fcntl(sock, F_GETFL, 0)
-                if (fcntl(sock, F_SETFL, flags or O_NONBLOCK) < 0) {
-                    return false
-                }
-
-                val connectResult = connect(
-                    sock,
-                    addrInfo.pointed.ai_addr,
-                    addrInfo.pointed.ai_addrlen,
-                )
-
-                if (connectResult == 0) return true // immediate connect (rare)
-
-                if (errno != EINPROGRESS) return false
-
-                // Wait for connect with timeout using poll()
-                val pfd = alloc<pollfd>()
-                pfd.fd = sock
-                pfd.events = POLLOUT.convert()
-
-                val pollResult = poll(pfd.ptr, 1u, config.validationTimeoutMs.toInt())
-                if (pollResult <= 0) return false // timeout or error
-
-                // Check if connect succeeded via getsockopt(SO_ERROR)
-                val optVal = alloc<IntVar>()
-                val optLen = alloc<UIntVar>()
-                optLen.value = sizeOf<IntVar>().convert()
-                getsockopt(
-                    sock,
-                    SOL_SOCKET,
-                    SO_ERROR,
-                    optVal.ptr,
-                    optLen.ptr,
-                )
-                optVal.value == 0
-            } finally {
-                close(sock)
-            }
-        } finally {
-            freeaddrinfo(addrInfo)
+    private suspend fun reachabilityCheck(): Boolean {
+        for (url in config.effectiveValidationUrls) {
+            if (httpProbe(url)) return true
         }
+        return false
+    }
+
+    /** One HTTP validation probe via NSURLSession; online iff the endpoint returns HTTP 204. */
+    private suspend fun httpProbe(url: String): Boolean = suspendCancellableCoroutine { cont ->
+        val nsUrl = NSURL.URLWithString(url)
+        if (nsUrl == null) {
+            config.onValidationResult?.invoke(ValidationResult(url, false, null, -1L))
+            if (cont.isActive) cont.resume(false)
+            return@suspendCancellableCoroutine
+        }
+        // Ephemeral, no cookies: a portal's cookie must not fake "logged in"; fail fast.
+        val sessionConfig = NSURLSessionConfiguration.ephemeralSessionConfiguration().apply {
+            timeoutIntervalForRequest = config.validationTimeoutMs / 1000.0
+            waitsForConnectivity = false
+            requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData
+            HTTPShouldSetCookies = false
+        }
+        val session = NSURLSession.sessionWithConfiguration(sessionConfig)
+        // Default GET — generate_204 returns 204 to GET. (config.validationMethod is honored on the
+        // HttpURLConnection/XHR platforms; NSURLSession uses GET here to avoid an interop setter.)
+        val request = NSMutableURLRequest(uRL = nsUrl)
+        val task = session.dataTaskWithRequest(request) { _, response, error ->
+            val code = (response as? NSHTTPURLResponse)?.statusCode?.toLong()
+            val ok = error == null && code == 204L
+            config.onValidationResult?.invoke(ValidationResult(url, ok, code?.toInt(), -1L))
+            if (cont.isActive) cont.resume(ok)
+        }
+        cont.invokeOnCancellation { task.cancel() }
+        task.resume()
+    }
+
+    override suspend fun probe(): NetworkStatus = withContext(Dispatchers.IO) {
+        // NWPathMonitor pushes current state; when we believe we're online, actively re-confirm
+        // reachability now so a silently-dead connection is corrected on demand.
+        if (_networkStatus.value is NetworkStatus.Available) {
+            val online = when (config.validationStrategy) {
+                ValidationStrategy.NativeOnly -> true
+                ValidationStrategy.HttpOnly, ValidationStrategy.NativeThenHttp -> reachabilityCheck()
+            }
+            if (!online) updateOffline()
+        }
+        _networkStatus.value
     }
 
     private fun updateOnline(info: NetworkInfo) {
@@ -256,11 +264,17 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
         }
     }
 
+    override fun force() {
+        scope.launch { probe() }
+    }
+
     override fun close() {
         if (!closed) {
             closed = true
+            _monitoring.value = false
+            revalidationJob?.cancel()
             scope.cancel()
-            nw_path_monitor_cancel(monitor)
+            cancelNative()
         }
     }
 }
