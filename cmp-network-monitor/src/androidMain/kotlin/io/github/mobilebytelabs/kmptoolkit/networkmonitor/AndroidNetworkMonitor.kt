@@ -242,11 +242,6 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         val activeNetwork = connectivityManager.activeNetwork
         val caps = activeNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
         val hasInternet = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        val isValidated = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-        } else {
-            caps != null
-        }
         // A network flagged as a captive portal has INTERNET but no real connectivity —
         // seed offline so a portal doesn't briefly read online at cold start.
         val isCaptivePortal = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -256,27 +251,22 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         }
 
         // SEED FIX (was: require NET_CAPABILITY_VALIDATED — #113). Android asserts VALIDATED
-        // ASYNCHRONOUSLY (after its own connectivity probe), so on a cold start where the
-        // device is already connected, VALIDATED is often not yet set at construction time —
-        // the old gate then seeded Unavailable/offline and (because the registered callback
-        // ALSO required VALIDATED) frequently never self-corrected until a network change,
-        // leaving connectivity-gated consumers (offline-first stores) stuck showing "No
-        // network". Per NetworkMonitorContract invariant #2 ("if the platform validation is
-        // asynchronous, the initial value MUST assume online and be corrected on the first
-        // callback"), seed ONLINE whenever there is an active INTERNET network that is not a
-        // known captive portal — validated OR validation-pending. The steady-state callback
-        // and (with NativeThenHttp) the HTTP probe still refine/correct afterwards.
+        // ASYNCHRONOUSLY, so on a cold start where the device is already connected VALIDATED is
+        // often not yet set — the old gate seeded offline and (the callback is also VALIDATED-
+        // gated) frequently never self-corrected, leaving offline-first stores stuck "No network".
+        //
+        // Per NetworkMonitorContract invariant #2, seed OPTIMISTICALLY online for an active
+        // INTERNET network that isn't a known captive portal — but route through handleNativeOnline
+        // so the STRATEGY'S CONFIRMATION runs. With the default NativeThenHttp it reports online
+        // immediately AND fires an async HTTP-204 probe that CORRECTS to offline when there is no
+        // REAL internet: e.g. cellular data enabled but NO ACTIVE PLAN, LAN-only, or a network that
+        // never validates. A raw updateOnline() here left that case stuck "connected" — the
+        // VALIDATED-gated callback never fires for a network that never validates. (NativeOnly
+        // consumers opt into speed-over-accuracy and may still read such a network as online.)
         if (activeNetwork != null && caps != null && hasInternet && !isCaptivePortal) {
-            val info = caps.toNetworkInfo()
-            if (isValidated) {
-                handleNativeOnline(info)
-            } else {
-                // Validation pending — optimistic online now, let the callback confirm.
-                updateOnline(info)
-            }
+            handleNativeOnline(caps.toNetworkInfo())
         } else {
-            _networkStatus.value = NetworkStatus.Unavailable
-            _isOnline.value = false
+            updateOffline()
         }
     }
 
