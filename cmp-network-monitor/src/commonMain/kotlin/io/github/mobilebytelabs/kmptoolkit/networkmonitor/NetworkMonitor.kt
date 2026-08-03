@@ -1,54 +1,34 @@
 package io.github.mobilebytelabs.kmptoolkit.networkmonitor
 
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-
 /**
- * Reactive network connectivity monitor.
+ * Reactive network connectivity monitor — the public API consumers code against.
  *
- * Provides hot-shared [StateFlow] properties for current connectivity state and
- * a [SharedFlow] for discrete transition events. Platform implementations use native
- * APIs (ConnectivityManager on Android, NWPathMonitor on Apple, polling on JVM/Linux/Windows,
- * navigator.onLine on JS/WasmJS).
+ * A [NetworkMonitor] IS a [ConnectivityProvider] (the swappable low-level engine) plus consumer
+ * conveniences ([currentStatus], [isMonitoring], [force]). Obtain one via [createNetworkMonitor] —
+ * either the platform default (`createNetworkMonitor(config)`) or by wrapping a custom
+ * [ConnectivityProvider] (`createNetworkMonitor(provider)`).
  *
- * Thread-safety: Safe to collect from any dispatcher. [MutableStateFlow] handles concurrent
- * updates internally. Platform callbacks may fire on arbitrary threads — this is safe.
+ * Platform implementations use native APIs (ConnectivityManager on Android, NWPathMonitor on
+ * Apple, polling on JVM/Linux/Windows, navigator.onLine on JS/WasmJS).
  *
- * Obtain an instance via [createNetworkMonitor].
+ * Thread-safety: safe to collect from any dispatcher. Platform callbacks may fire on arbitrary
+ * threads — this is safe.
  */
-interface NetworkMonitor {
+interface NetworkMonitor : ConnectivityProvider {
 
     /**
-     * Hot-shared state: `true` = validated internet, `false` = no connection.
-     * Emits current state immediately on collection (no cold-start gap).
-     * Single platform callback for all collectors.
-     */
-    val isOnline: StateFlow<Boolean>
-
-    /**
-     * Rich network status with type, metered, and bandwidth info.
-     * Emits [NetworkStatus.Unavailable] when offline.
-     * Bandwidth rounded to nearest 100kbps to avoid spurious emissions.
-     */
-    val networkStatus: StateFlow<NetworkStatus>
-
-    /**
-     * Discrete network change events for logging, analytics, and UI toasts.
-     * Complements [isOnline]/[networkStatus] (current state) with transition events.
-     */
-    val networkChanges: SharedFlow<NetworkChangeEvent>
-
-    /**
-     * Release platform resources (unregister callbacks, cancel monitors, stop polling).
-     * Singleton usage (via [createNetworkMonitor]) typically never calls this.
-     * Required for scoped/test usage to prevent callback leaks.
-     * No-op if already closed. Safe to call multiple times.
-     */
-    fun close()
-
-    /**
-     * One-shot synchronous check. Returns current [networkStatus] value.
-     * NOT suspend — reads [StateFlow.value] directly.
+     * One-shot synchronous read of the current [networkStatus] value. NOT a re-query — reads
+     * [kotlinx.coroutines.flow.StateFlow.value] directly. Use [probe] to actively re-check.
      */
     val currentStatus: NetworkStatus get() = networkStatus.value
+
+    /** Convenience for `monitoring.value` — whether the monitor is actively observing right now. */
+    val isMonitoring: Boolean get() = monitoring.value
+
+    /**
+     * Fire-and-forget request to re-validate connectivity NOW — launches an async [probe] on the
+     * monitor's own scope. Unlike [probe] it does not suspend or return a value; use it from UI
+     * callbacks (pull-to-refresh, foreground resume) to nudge a fresh check. Default no-op.
+     */
+    fun force() {}
 }

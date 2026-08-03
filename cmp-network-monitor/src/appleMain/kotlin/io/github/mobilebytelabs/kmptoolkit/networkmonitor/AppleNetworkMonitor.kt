@@ -14,15 +14,19 @@ import kotlinx.cinterop.value
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import platform.Network.nw_interface_type_cellular
 import platform.Network.nw_interface_type_loopback
 import platform.Network.nw_interface_type_other
@@ -95,6 +99,19 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
         null,
     )
 
+    private val _monitoring = MutableStateFlow(false)
+    override val monitoring: StateFlow<Boolean> = _monitoring.asStateFlow()
+
+    private var revalidationJob: Job? = null
+    private var nativeCancelled = false
+
+    private fun cancelNative() {
+        if (!nativeCancelled) {
+            nativeCancelled = true
+            nw_path_monitor_cancel(monitor)
+        }
+    }
+
     init {
         nw_path_monitor_set_queue(monitor, queue)
         nw_path_monitor_set_update_handler(monitor) { path ->
@@ -121,7 +138,39 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
                 updateOffline()
             }
         }
+        if (config.autoStart) start()
+    }
+
+    override fun start() {
+        if (closed || _monitoring.value) return
         nw_path_monitor_start(monitor)
+        _monitoring.value = true
+        startRevalidationLoop()
+    }
+
+    /**
+     * NOTE: NWPathMonitor's `cancel` is terminal — it cannot be resumed. On Apple, [stop] therefore
+     * releases the native monitor like [close] does for the native part; [start] after [stop] is a
+     * guarded no-op. Use [close] for full teardown.
+     */
+    override fun stop() {
+        if (!_monitoring.value) return
+        _monitoring.value = false
+        revalidationJob?.cancel()
+        revalidationJob = null
+        cancelNative()
+    }
+
+    /** Opt-in: re-probe on an interval while online so a silently-dead connection is caught. */
+    private fun startRevalidationLoop() {
+        if (config.revalidateWhileOnlineMs <= 0L || config.validationStrategy == ValidationStrategy.NativeOnly) return
+        revalidationJob?.cancel()
+        revalidationJob = scope.launch {
+            while (isActive) {
+                delay(config.revalidateWhileOnlineMs)
+                if (_isOnline.value && !reachabilityCheck()) updateOffline()
+            }
+        }
     }
 
     private fun handleNativeOnline(info: NetworkInfo) {
@@ -130,31 +179,41 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
 
             ValidationStrategy.HttpOnly -> {
                 scope.launch {
-                    if (tcpReachabilityCheck()) updateOnline(info) else updateOffline()
+                    if (reachabilityCheck()) updateOnline(info) else updateOffline()
                 }
             }
 
             ValidationStrategy.NativeThenHttp -> {
                 updateOnline(info) // optimistic native update
                 scope.launch {
-                    if (!tcpReachabilityCheck()) updateOffline()
+                    if (!reachabilityCheck()) updateOffline()
                 }
             }
         }
     }
 
     /**
-     * Validates connectivity by opening a non-blocking TCP socket to the validation URL's host.
-     * Uses POSIX sockets with `fcntl(O_NONBLOCK)` + `select()` to enforce
-     * [NetworkMonitorConfig.validationTimeoutMs] as a connect deadline.
-     * Without this, blocking `connect()` can hang ~75s on unreachable hosts.
+     * Reachability with any-success over [NetworkMonitorConfig.effectiveValidationUrls] via a
+     * non-blocking TCP connect — a single blocked/down host no longer reads as false-offline.
+     *
+     * NOTE (follow-up): TCP-connect can't fully distinguish a captive portal (which also accepts
+     * the socket) from real internet. Full parity with the other platforms' HTTP-204 sentinel needs
+     * an NSURLSession GET-204 confined to per-leaf-target source sets (iosMain/macosMain/tvosMain/
+     * watchosMain): `NSHTTPURLResponse.statusCode` is `NSInteger`, whose bit width differs across
+     * Apple targets, so it CANNOT be read in the shared `appleMain` metadata compilation.
      */
+    private fun reachabilityCheck(): Boolean = config.effectiveValidationUrls.any { url ->
+        val ok = tcpConnect(url)
+        config.onValidationResult?.invoke(ValidationResult(url = url, success = ok, statusCode = null, latencyMs = -1L))
+        ok
+    }
+
     @Suppress("ReturnCount")
-    private fun tcpReachabilityCheck(): Boolean = memScoped {
-        val host = config.validationUrl
+    private fun tcpConnect(url: String): Boolean = memScoped {
+        val host = url
             .removePrefix("https://").removePrefix("http://")
             .substringBefore("/").substringBefore(":")
-        val port = if (config.validationUrl.startsWith("https://")) "443" else "80"
+        val port = if (url.startsWith("https://")) "443" else "80"
 
         val hints = alloc<addrinfo>()
         hints.ai_family = AF_INET
@@ -166,49 +225,23 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
 
         val addrInfo = result.value ?: return false
         try {
-            val sock = socket(
-                addrInfo.pointed.ai_family,
-                addrInfo.pointed.ai_socktype,
-                addrInfo.pointed.ai_protocol,
-            )
+            val sock = socket(addrInfo.pointed.ai_family, addrInfo.pointed.ai_socktype, addrInfo.pointed.ai_protocol)
             if (sock < 0) return false
-
             try {
-                // Set socket to non-blocking mode
                 val flags = fcntl(sock, F_GETFL, 0)
-                if (fcntl(sock, F_SETFL, flags or O_NONBLOCK) < 0) {
-                    return false
-                }
-
-                val connectResult = connect(
-                    sock,
-                    addrInfo.pointed.ai_addr,
-                    addrInfo.pointed.ai_addrlen,
-                )
-
-                if (connectResult == 0) return true // immediate connect (rare)
-
+                if (fcntl(sock, F_SETFL, flags or O_NONBLOCK) < 0) return false
+                val connectResult = connect(sock, addrInfo.pointed.ai_addr, addrInfo.pointed.ai_addrlen)
+                if (connectResult == 0) return true
                 if (errno != EINPROGRESS) return false
-
-                // Wait for connect with timeout using poll()
                 val pfd = alloc<pollfd>()
                 pfd.fd = sock
                 pfd.events = POLLOUT.convert()
-
                 val pollResult = poll(pfd.ptr, 1u, config.validationTimeoutMs.toInt())
-                if (pollResult <= 0) return false // timeout or error
-
-                // Check if connect succeeded via getsockopt(SO_ERROR)
+                if (pollResult <= 0) return false
                 val optVal = alloc<IntVar>()
                 val optLen = alloc<UIntVar>()
                 optLen.value = sizeOf<IntVar>().convert()
-                getsockopt(
-                    sock,
-                    SOL_SOCKET,
-                    SO_ERROR,
-                    optVal.ptr,
-                    optLen.ptr,
-                )
+                getsockopt(sock, SOL_SOCKET, SO_ERROR, optVal.ptr, optLen.ptr)
                 optVal.value == 0
             } finally {
                 close(sock)
@@ -216,6 +249,19 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
         } finally {
             freeaddrinfo(addrInfo)
         }
+    }
+
+    override suspend fun probe(): NetworkStatus = withContext(Dispatchers.IO) {
+        // NWPathMonitor pushes current state; when we believe we're online, actively re-confirm
+        // reachability now so a silently-dead connection is corrected on demand.
+        if (_networkStatus.value is NetworkStatus.Available) {
+            val online = when (config.validationStrategy) {
+                ValidationStrategy.NativeOnly -> true
+                ValidationStrategy.HttpOnly, ValidationStrategy.NativeThenHttp -> reachabilityCheck()
+            }
+            if (!online) updateOffline()
+        }
+        _networkStatus.value
     }
 
     private fun updateOnline(info: NetworkInfo) {
@@ -256,11 +302,17 @@ internal class AppleNetworkMonitor(private val config: NetworkMonitorConfig) : N
         }
     }
 
+    override fun force() {
+        scope.launch { probe() }
+    }
+
     override fun close() {
         if (!closed) {
             closed = true
+            _monitoring.value = false
+            revalidationJob?.cancel()
             scope.cancel()
-            nw_path_monitor_cancel(monitor)
+            cancelNative()
         }
     }
 }

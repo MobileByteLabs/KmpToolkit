@@ -74,8 +74,16 @@ internal class JsNetworkMonitor(private val config: NetworkMonitorConfig) : Netw
         }
     }
 
+    private val _monitoring = MutableStateFlow(false)
+    override val monitoring: StateFlow<Boolean> = _monitoring.asStateFlow()
+
     init {
-        // Apply initial validation if strategy requires HTTP
+        if (config.autoStart) start()
+    }
+
+    override fun start() {
+        if (closed || _monitoring.value) return
+        // Apply initial validation if strategy requires HTTP.
         if (window.navigator.onLine && config.validationStrategy != ValidationStrategy.NativeOnly) {
             scope.launch {
                 if (!httpHeadCheck()) updateOffline()
@@ -83,27 +91,66 @@ internal class JsNetworkMonitor(private val config: NetworkMonitorConfig) : Netw
         }
         window.addEventListener("online", onlineHandler)
         window.addEventListener("offline", offlineHandler)
+        _monitoring.value = true
     }
 
-    private suspend fun httpHeadCheck(): Boolean = suspendCancellableCoroutine { cont ->
+    override fun stop() {
+        if (!_monitoring.value) return
+        _monitoring.value = false
+        window.removeEventListener("online", onlineHandler)
+        window.removeEventListener("offline", offlineHandler)
+    }
+
+    // Any-success over the primary + fallback endpoints (sequential; short-circuits on first hit).
+    // NOTE: cross-origin generate_204 HEADs may be CORS-opaque (status 0) in the browser — on JS the
+    // reliable signal is navigator.onLine (NativeOnly); HTTP validation is best-effort here.
+    private suspend fun httpHeadCheck(): Boolean {
+        for (url in config.effectiveValidationUrls) {
+            if (probeUrl(url)) return true
+        }
+        return false
+    }
+
+    private suspend fun probeUrl(url: String): Boolean = suspendCancellableCoroutine { cont ->
         try {
             val xhr = XMLHttpRequest()
-            xhr.open("HEAD", config.validationUrl)
+            xhr.open(config.validationMethod, url)
             xhr.timeout = config.validationTimeoutMs.toInt()
             xhr.onload = {
-                if (cont.isActive) cont.resume(xhr.status.toInt() in 200..399)
+                // 204 sentinel; a captive portal returns 200 with a login page → NOT validated.
+                val code = xhr.status.toInt()
+                val ok = code == 204
+                config.onValidationResult?.invoke(ValidationResult(url, ok, code, -1L))
+                if (cont.isActive) cont.resume(ok)
             }
             xhr.onerror = {
+                config.onValidationResult?.invoke(ValidationResult(url, false, null, -1L))
                 if (cont.isActive) cont.resume(false)
             }
             xhr.ontimeout = {
+                config.onValidationResult?.invoke(ValidationResult(url, false, null, -1L))
                 if (cont.isActive) cont.resume(false)
             }
             cont.invokeOnCancellation { xhr.abort() }
             xhr.send()
         } catch (_: Throwable) {
+            config.onValidationResult?.invoke(ValidationResult(url, false, null, -1L))
             if (cont.isActive) cont.resume(false)
         }
+    }
+
+    override suspend fun probe(): NetworkStatus {
+        if (!window.navigator.onLine) {
+            updateOffline()
+            return _networkStatus.value
+        }
+        val info = detectNetworkInfo()
+        val online = when (config.validationStrategy) {
+            ValidationStrategy.NativeOnly -> true
+            ValidationStrategy.HttpOnly, ValidationStrategy.NativeThenHttp -> httpHeadCheck()
+        }
+        if (online) updateOnline(info) else updateOffline()
+        return _networkStatus.value
     }
 
     private fun updateOnline(info: NetworkInfo) {
@@ -130,14 +177,17 @@ internal class JsNetworkMonitor(private val config: NetworkMonitorConfig) : Netw
 
     private var closed = false
 
+    override fun force() {
+        scope.launch { probe() }
+    }
+
     override fun close() {
         if (!closed) {
             closed = true
-            // M-001 fix: remove listeners BEFORE cancelling the scope. The reverse
+            // M-001 fix: remove listeners (via stop) BEFORE cancelling the scope. The reverse
             // order created a window where an event firing between scope.cancel()
             // and removeEventListener would invoke a handler against a cancelled scope.
-            window.removeEventListener("online", onlineHandler)
-            window.removeEventListener("offline", offlineHandler)
+            stop()
             scope.cancel()
         }
     }

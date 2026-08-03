@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import platform.posix.AF_INET
 import platform.posix.INVALID_SOCKET
 import platform.posix.IPPROTO_TCP
@@ -104,11 +105,13 @@ internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : N
      * TCP connect to the host:port derived from [NetworkMonitorConfig.validationUrl].
      * Falls back to port 443 for https, 80 for http.
      */
-    private fun tcpConnectCheck(): Boolean = memScoped {
-        val host = config.validationUrl
+    private fun tcpConnectCheck(): Boolean = config.effectiveValidationUrls.any { tcpConnectOne(it) }
+
+    private fun tcpConnectOne(url: String): Boolean = memScoped {
+        val host = url
             .removePrefix("https://").removePrefix("http://")
             .substringBefore("/").substringBefore(":")
-        val port = if (config.validationUrl.startsWith("https://")) 443 else 80
+        val port = if (url.startsWith("https://")) 443 else 80
 
         val sock: SOCKET = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
         if (sock == INVALID_SOCKET) return false
@@ -174,6 +177,15 @@ internal class MingwNetworkMonitor(private val config: NetworkMonitorConfig) : N
     }
 
     private var closed = false
+
+    override suspend fun probe(): NetworkStatus = withContext(Dispatchers.IO) {
+        updateState(checkNetwork())
+        networkStatus.value
+    }
+
+    override fun force() {
+        scope.launch { probe() }
+    }
 
     override fun close() {
         if (!closed) {

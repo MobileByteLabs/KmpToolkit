@@ -106,14 +106,38 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/CaptivePor
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/CompositeNetworkMonitor : io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor {
 	public fun <init> (Ljava/util/List;)V
 	public fun close ()V
+	public fun force ()V
 	public fun getCurrentStatus ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkStatus;
+	public fun getMonitoring ()Lkotlinx/coroutines/flow/StateFlow;
 	public fun getNetworkChanges ()Lkotlinx/coroutines/flow/SharedFlow;
 	public fun getNetworkStatus ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun isMonitoring ()Z
 	public fun isOnline ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun probe (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start ()V
+	public fun stop ()V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/CompositeNetworkMonitorKt {
 	public static final fun plus (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
+}
+
+public abstract interface class io/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider {
+	public abstract fun close ()V
+	public fun getMonitoring ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun getNetworkChanges ()Lkotlinx/coroutines/flow/SharedFlow;
+	public abstract fun getNetworkStatus ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun isOnline ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun probe (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start ()V
+	public fun stop ()V
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider$DefaultImpls {
+	public static fun getMonitoring (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider;)Lkotlinx/coroutines/flow/StateFlow;
+	public static fun probe (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun start (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider;)V
+	public static fun stop (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider;)V
 }
 
 public abstract class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkChangeEvent {
@@ -246,60 +270,95 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkInf
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor {
-	public abstract fun close ()V
+public abstract interface class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor : io/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider {
+	public fun force ()V
 	public fun getCurrentStatus ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkStatus;
-	public abstract fun getNetworkChanges ()Lkotlinx/coroutines/flow/SharedFlow;
-	public abstract fun getNetworkStatus ()Lkotlinx/coroutines/flow/StateFlow;
-	public abstract fun isOnline ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun isMonitoring ()Z
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor$DefaultImpls {
+	public static fun force (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)V
 	public static fun getCurrentStatus (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkStatus;
+	public static fun getMonitoring (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Lkotlinx/coroutines/flow/StateFlow;
+	public static fun isMonitoring (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Z
+	public static fun probe (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun start (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)V
+	public static fun stop (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig {
 	public static final field Companion Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig$Companion;
 	public fun <init> ()V
-	public fun <init> (JLjava/lang/String;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZ)V
-	public synthetic fun <init> (JLjava/lang/String;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (JLjava/lang/String;Ljava/util/List;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZJILjava/lang/String;Lkotlin/jvm/functions/Function1;ZZ)V
+	public synthetic fun <init> (JLjava/lang/String;Ljava/util/List;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZJILjava/lang/String;Lkotlin/jvm/functions/Function1;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
+	public final fun component10 ()I
+	public final fun component11 ()Ljava/lang/String;
+	public final fun component12 ()Lkotlin/jvm/functions/Function1;
+	public final fun component13 ()Z
+	public final fun component14 ()Z
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()J
-	public final fun component4 ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;
-	public final fun component5 ()J
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()J
+	public final fun component5 ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;
 	public final fun component6 ()J
-	public final fun component7 ()Z
-	public final fun copy (JLjava/lang/String;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZ)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;
-	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;JLjava/lang/String;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;
+	public final fun component7 ()J
+	public final fun component8 ()Z
+	public final fun component9 ()J
+	public final fun copy (JLjava/lang/String;Ljava/util/List;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZJILjava/lang/String;Lkotlin/jvm/functions/Function1;ZZ)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;JLjava/lang/String;Ljava/util/List;JLio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;JJZJILjava/lang/String;Lkotlin/jvm/functions/Function1;ZZILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAutoStart ()Z
 	public final fun getBackgroundPollIntervalMs ()J
 	public final fun getCaptivePortalDetection ()Z
+	public final fun getDetectFiveG ()Z
+	public final fun getEffectiveValidationUrls ()Ljava/util/List;
 	public final fun getMaxValidationBackoffMs ()J
+	public final fun getOnValidationResult ()Lkotlin/jvm/functions/Function1;
 	public final fun getPollIntervalMs ()J
+	public final fun getRevalidateWhileOnlineMs ()J
+	public final fun getValidationMethod ()Ljava/lang/String;
+	public final fun getValidationPort ()I
 	public final fun getValidationStrategy ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;
 	public final fun getValidationTimeoutMs ()J
 	public final fun getValidationUrl ()Ljava/lang/String;
+	public final fun getValidationUrls ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig$Builder {
 	public fun <init> ()V
+	public final fun getAutoStart ()Z
 	public final fun getBackgroundPollIntervalMs ()J
 	public final fun getCaptivePortalDetection ()Z
+	public final fun getDetectFiveG ()Z
 	public final fun getMaxValidationBackoffMs ()J
+	public final fun getMinutes (I)J
+	public final fun getOnValidationResult ()Lkotlin/jvm/functions/Function1;
 	public final fun getPollIntervalMs ()J
+	public final fun getRevalidateWhileOnlineMs ()J
+	public final fun getSeconds (I)J
+	public final fun getValidationMethod ()Ljava/lang/String;
+	public final fun getValidationPort ()I
 	public final fun getValidationStrategy ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;
 	public final fun getValidationTimeoutMs ()J
 	public final fun getValidationUrl ()Ljava/lang/String;
+	public final fun getValidationUrls ()Ljava/util/List;
+	public final fun setAutoStart (Z)V
 	public final fun setBackgroundPollIntervalMs (J)V
 	public final fun setCaptivePortalDetection (Z)V
+	public final fun setDetectFiveG (Z)V
 	public final fun setMaxValidationBackoffMs (J)V
+	public final fun setOnValidationResult (Lkotlin/jvm/functions/Function1;)V
 	public final fun setPollIntervalMs (J)V
+	public final fun setRevalidateWhileOnlineMs (J)V
+	public final fun setValidationMethod (Ljava/lang/String;)V
+	public final fun setValidationPort (I)V
 	public final fun setValidationStrategy (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;)V
 	public final fun setValidationTimeoutMs (J)V
 	public final fun setValidationUrl (Ljava/lang/String;)V
+	public final fun setValidationUrls (Ljava/util/List;)V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig$Companion {
@@ -321,8 +380,12 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMon
 	public static final fun isConnectedVia (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkType;)Z
 	public static final fun isOnlineDebounced (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;J)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun isOnlineDebounced$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;JILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun isOnlineDebouncedState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;J)Lkotlinx/coroutines/flow/StateFlow;
+	public static synthetic fun isOnlineDebouncedState$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;JILjava/lang/Object;)Lkotlinx/coroutines/flow/StateFlow;
 	public static final fun measureLatency (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun networkQuality (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun networkStatusDebouncedState (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;J)Lkotlinx/coroutines/flow/StateFlow;
+	public static synthetic fun networkStatusDebouncedState$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;JILjava/lang/Object;)Lkotlinx/coroutines/flow/StateFlow;
 	public static final fun onlyWhileOnline (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Lkotlinx/coroutines/flow/Flow;
 	public static final fun onlyWhileOnline (Lkotlinx/coroutines/flow/Flow;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Lkotlinx/coroutines/flow/Flow;
 	public static final fun requireOnline (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)V
@@ -330,6 +393,10 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMon
 	public static synthetic fun retryOnReconnect$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;IJLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public static final fun withNetworkGuard (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun withNetworkState (Lkotlinx/coroutines/flow/Flow;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorFactoryKt {
+	public static final fun createNetworkMonitor (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ConnectivityProvider;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorFactory_jvmKt {
@@ -342,6 +409,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMon
 	public final fun get ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 	public final fun getOrNull ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 	public final fun getRedundantInstallCount ()I
+	public final fun getVersion ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun install (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 	public static synthetic fun install$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorProvider;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitorConfig;ILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;
 	public final fun reset ()V
@@ -462,6 +530,24 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/RetryPolic
 	public static final fun executeWithRetry (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/RetryPolicy;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationResult {
+	public fun <init> (Ljava/lang/String;ZLjava/lang/Integer;J)V
+	public synthetic fun <init> (Ljava/lang/String;ZLjava/lang/Integer;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component4 ()J
+	public final fun copy (Ljava/lang/String;ZLjava/lang/Integer;J)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationResult;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationResult;Ljava/lang/String;ZLjava/lang/Integer;JILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLatencyMs ()J
+	public final fun getStatusCode ()Ljava/lang/Integer;
+	public final fun getSuccess ()Z
+	public final fun getUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy : java/lang/Enum {
 	public static final field HttpOnly Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;
 	public static final field NativeOnly Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/ValidationStrategy;
@@ -481,14 +567,18 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/testing/Fa
 	public fun <init> (ZLio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkStatus;)V
 	public synthetic fun <init> (ZLio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkStatus;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
+	public fun force ()V
 	public fun getCurrentStatus ()Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkStatus;
 	public final fun getEventHistory ()Ljava/util/List;
+	public fun getMonitoring ()Lkotlinx/coroutines/flow/StateFlow;
 	public fun getNetworkChanges ()Lkotlinx/coroutines/flow/SharedFlow;
 	public fun getNetworkStatus ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getStatusHistory ()Ljava/util/List;
 	public final fun getUpdateCount ()I
 	public final fun isClosed ()Z
+	public fun isMonitoring ()Z
 	public fun isOnline ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun probe (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun resetState (Z)V
 	public static synthetic fun resetState$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/testing/FakeNetworkMonitor;ZILjava/lang/Object;)V
 	public final fun setNetworkStatus (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkStatus;)V
@@ -496,5 +586,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/networkmonitor/testing/Fa
 	public final fun simulateFlicker (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkInfo;)V
 	public static synthetic fun simulateFlicker$default (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/testing/FakeNetworkMonitor;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkInfo;ILjava/lang/Object;)V
 	public final fun simulateHandoff (Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkType;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkType;)V
+	public fun start ()V
+	public fun stop ()V
 }
 

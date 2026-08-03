@@ -8,18 +8,25 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import android.telephony.TelephonyCallback
+import android.telephony.TelephonyDisplayInfo
+import android.telephony.TelephonyManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URI
 
@@ -119,57 +126,147 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         }
     }
 
-    init {
-        // Register callback first, then seed — callback events fired before seed
-        // completes are queued on `seedComplete` (M-002) rather than dropped.
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .apply {
-                // API 23+: require Android's own validation probe to pass before
-                // reporting online. Aligns with the system "No internet connection"
-                // notification. Pre-API-23: no VALIDATED capability exists — fall
-                // back to INTERNET-only (existing behaviour on very old devices).
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                }
+    private val _monitoring = MutableStateFlow(false)
+    override val monitoring: StateFlow<Boolean> = _monitoring.asStateFlow()
+
+    // API 23+: require Android's own validation probe (VALIDATED) so callbacks fire only for
+    // networks the OS confirmed can reach the internet. Pre-API-23: INTERNET-only (old behaviour).
+    private val request: NetworkRequest = NetworkRequest.Builder()
+        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        .apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
             }
-            .build()
+        }
+        .build()
 
-        // Android 14+ (API 34): registerNetworkCallback with Handler is deprecated
-        // Use the standard callback API which works across all versions
+    private var revalidationJob: Job? = null
+
+    @Volatile
+    private var is5g = false
+    private var telephonyCallback: TelephonyCallback? = null
+
+    init {
+        if (config.autoStart) start()
+    }
+
+    override fun start() {
+        if (closed || _monitoring.value) return
+        // Register callback first, then seed — early callback events queue on `seedComplete` (M-002)
+        // rather than being dropped. Android 14+ deprecates the Handler overload; standard API works.
         connectivityManager.registerNetworkCallback(request, networkCallback)
-
-        // Register memory pressure callback (T102)
         context.applicationContext.registerComponentCallbacks(memoryCallback)
-
-        // Seed initial state, then release the gate so queued callback events drain.
-        // try/finally guarantees the gate releases even if seedInitialState() throws —
-        // otherwise queued callbacks would leak as permanently-suspended continuations
-        // until close() cancels the scope (M-002 defensive).
+        // try/finally guarantees the gate releases even if seedInitialState() throws. On a re-start
+        // seedComplete is already complete, so the guard skips re-completion (callbacks drain live).
         try {
             seedInitialState()
         } finally {
-            seedComplete.complete(Unit)
+            if (!seedComplete.isCompleted) seedComplete.complete(Unit)
+        }
+        startRevalidationLoop()
+        if (config.detectFiveG) registerTelephony()
+        _monitoring.value = true
+    }
+
+    override fun stop() {
+        if (!_monitoring.value) return
+        _monitoring.value = false
+        revalidationJob?.cancel()
+        revalidationJob = null
+        unregisterTelephony()
+        runCatching { connectivityManager.unregisterNetworkCallback(networkCallback) }
+        runCatching { context.applicationContext.unregisterComponentCallbacks(memoryCallback) }
+    }
+
+    /** Opt-in: re-probe on an interval while online so a silently-dead connection is caught. */
+    private fun startRevalidationLoop() {
+        if (config.revalidateWhileOnlineMs <= 0L || config.validationStrategy == ValidationStrategy.NativeOnly) return
+        revalidationJob?.cancel()
+        revalidationJob = scope.launch {
+            while (isActive) {
+                delay(config.revalidateWhileOnlineMs)
+                if (_isOnline.value && !httpHeadCheck()) updateOffline()
+            }
         }
     }
+
+    /**
+     * Opt-in 5G (NR) detection via [TelephonyDisplayInfo] (API 31+). Requires the READ_PHONE_STATE
+     * runtime permission; if it isn't granted the registration throws [SecurityException] and we
+     * stay at [NetworkType.Cellular] (best-effort, never crashes). Replaces the old, inaccurate
+     * bandwidth heuristic — [with5g] upgrades Cellular → FiveG only on a genuine NR signal.
+     */
+    private fun registerTelephony() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        try {
+            val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager ?: return
+            val cb = object : TelephonyCallback(), TelephonyCallback.DisplayInfoListener {
+                override fun onDisplayInfoChanged(telephonyDisplayInfo: TelephonyDisplayInfo) {
+                    is5g = isNr(telephonyDisplayInfo)
+                }
+            }
+            telephonyCallback = cb
+            tm.registerTelephonyCallback(context.mainExecutor, cb)
+        } catch (_: SecurityException) {
+            // READ_PHONE_STATE not granted — stay at Cellular.
+        } catch (_: Exception) {
+            // Any telephony error — degrade gracefully.
+        }
+    }
+
+    private fun unregisterTelephony() {
+        val cb = telephonyCallback ?: return
+        telephonyCallback = null
+        is5g = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            runCatching {
+                (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)
+                    ?.unregisterTelephonyCallback(cb)
+            }
+        }
+    }
+
+    private fun isNr(info: TelephonyDisplayInfo): Boolean {
+        val override = info.overrideNetworkType
+        return override == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA ||
+            override == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE ||
+            override == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED ||
+            info.networkType == TelephonyManager.NETWORK_TYPE_NR
+    }
+
+    /** Upgrade Cellular → FiveG when opt-in NR detection is active and NR is currently present. */
+    private fun NetworkInfo.with5g(): NetworkInfo =
+        if (config.detectFiveG && type == NetworkType.Cellular && is5g) copy(type = NetworkType.FiveG) else this
 
     private fun seedInitialState() {
         val activeNetwork = connectivityManager.activeNetwork
         val caps = activeNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
-        // On API 23+, mirror the NetworkRequest gate: only go online if the network
-        // has passed Android's own internet validation probe. Pre-API-23 falls back
-        // to trusting the native callback (INTERNET capability present = online).
-        val isValidated = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+        val hasInternet = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        // A network flagged as a captive portal has INTERNET but no real connectivity —
+        // seed offline so a portal doesn't briefly read online at cold start.
+        val isCaptivePortal = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
         } else {
-            caps != null
+            false
         }
-        if (activeNetwork != null && caps != null && isValidated) {
-            val info = caps.toNetworkInfo()
-            handleNativeOnline(info)
+
+        // SEED FIX (was: require NET_CAPABILITY_VALIDATED — #113). Android asserts VALIDATED
+        // ASYNCHRONOUSLY, so on a cold start where the device is already connected VALIDATED is
+        // often not yet set — the old gate seeded offline and (the callback is also VALIDATED-
+        // gated) frequently never self-corrected, leaving offline-first stores stuck "No network".
+        //
+        // Per NetworkMonitorContract invariant #2, seed OPTIMISTICALLY online for an active
+        // INTERNET network that isn't a known captive portal — but route through handleNativeOnline
+        // so the STRATEGY'S CONFIRMATION runs. With the default NativeThenHttp it reports online
+        // immediately AND fires an async HTTP-204 probe that CORRECTS to offline when there is no
+        // REAL internet: e.g. cellular data enabled but NO ACTIVE PLAN, LAN-only, or a network that
+        // never validates. A raw updateOnline() here left that case stuck "connected" — the
+        // VALIDATED-gated callback never fires for a network that never validates. (NativeOnly
+        // consumers opt into speed-over-accuracy and may still read such a network as online.)
+        if (activeNetwork != null && caps != null && hasInternet && !isCaptivePortal) {
+            handleNativeOnline(caps.toNetworkInfo())
         } else {
-            _networkStatus.value = NetworkStatus.Unavailable
-            _isOnline.value = false
+            updateOffline()
         }
     }
 
@@ -192,20 +289,70 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         }
     }
 
-    private fun httpHeadCheck(): Boolean = try {
-        val conn = URI(config.validationUrl).toURL().openConnection() as HttpURLConnection
-        conn.requestMethod = "HEAD"
-        conn.connectTimeout = config.validationTimeoutMs.toInt()
-        conn.readTimeout = config.validationTimeoutMs.toInt()
-        conn.useCaches = false
-        val code = conn.responseCode
-        conn.disconnect()
-        code in 200..399
-    } catch (_: Exception) {
-        false
+    /**
+     * Reachability probe with any-success over [NetworkMonitorConfig.effectiveValidationUrls] and a
+     * strict 204 sentinel. Online iff the primary OR any fallback endpoint returns the generate_204
+     * sentinel — a single blocked/rate-limited/down host no longer reads as false-offline, and a
+     * captive portal (200 + login page, or a 3xx redirect) is correctly NOT validated.
+     */
+    private fun httpHeadCheck(): Boolean = config.effectiveValidationUrls.any { probeUrl(it) }
+
+    private fun probeUrl(url: String): Boolean {
+        val t0 = System.currentTimeMillis()
+        var code = -1
+        val ok = try {
+            val conn = URI(url).toURL().openConnection() as HttpURLConnection
+            conn.requestMethod = config.validationMethod
+            conn.connectTimeout = config.validationTimeoutMs.toInt()
+            conn.readTimeout = config.validationTimeoutMs.toInt()
+            conn.instanceFollowRedirects = false
+            conn.useCaches = false
+            code = conn.responseCode
+            val len = conn.contentLengthLong
+            conn.disconnect()
+            // 204 (generate_204 sentinel) = real internet. A captive portal returns 200 with a login
+            // page (content-length > 0) or a 3xx redirect — neither is the sentinel → NOT online.
+            code == 204 || (code == 200 && len <= 0L)
+        } catch (_: Exception) {
+            false
+        }
+        config.onValidationResult?.invoke(
+            ValidationResult(
+                url = url,
+                success = ok,
+                statusCode = code.takeIf { it >= 0 },
+                latencyMs =
+                System.currentTimeMillis() - t0,
+            ),
+        )
+        return ok
     }
 
-    private fun updateOnline(info: NetworkInfo) {
+    override suspend fun probe(): NetworkStatus = withContext(Dispatchers.IO) {
+        // Ground truth NOW — re-query platform capabilities, don't trust the cached flow.
+        val activeNetwork = connectivityManager.activeNetwork
+        val caps = activeNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
+        val hasInternet = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        val isCaptivePortal = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
+        } else {
+            false
+        }
+        if (activeNetwork == null || caps == null || !hasInternet || isCaptivePortal) {
+            updateOffline()
+        } else {
+            val info = caps.toNetworkInfo()
+            val online = when (config.validationStrategy) {
+                ValidationStrategy.NativeOnly -> true
+                ValidationStrategy.HttpOnly, ValidationStrategy.NativeThenHttp -> httpHeadCheck()
+            }
+            if (online) updateOnline(info) else updateOffline()
+        }
+        _networkStatus.value
+    }
+
+    private fun updateOnline(rawInfo: NetworkInfo) {
+        val info = rawInfo.with5g()
         val newStatus = NetworkStatus.Available(info)
         val oldStatus = _networkStatus.value
         if (newStatus == oldStatus) return
@@ -259,12 +406,15 @@ internal class AndroidNetworkMonitor(private val context: Context, private val c
         }
     }
 
+    override fun force() {
+        scope.launch { probe() }
+    }
+
     override fun close() {
         if (!closed) {
             closed = true
+            stop()
             scope.cancel()
-            connectivityManager.unregisterNetworkCallback(networkCallback)
-            context.applicationContext.unregisterComponentCallbacks(memoryCallback)
         }
     }
 }
@@ -279,10 +429,10 @@ private fun NetworkCapabilities?.toNetworkInfo(): NetworkInfo {
     val type = when {
         hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkType.WiFi
 
-        hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-            // Detect 5G via high downstream bandwidth heuristic (>100 Mbps typical for 5G NR)
-            if (linkDownstreamBandwidthKbps >= 100_000) NetworkType.FiveG else NetworkType.Cellular
-        }
+        // NetworkType.FiveG is intentionally NOT inferred from a bandwidth heuristic: fast LTE-A
+        // exceeds 100 Mbps and slow 5G falls under it, so the heuristic mislabels the connection
+        // type. Accurate NR detection needs TelephonyManager/ServiceState (API 29+) — a later pass.
+        hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkType.Cellular
 
         hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetworkType.Ethernet
 

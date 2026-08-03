@@ -76,6 +76,14 @@ fun NetworkMonitor.collectIsOnlineAsState(debounceMs: Long = 0L): State<Boolean>
 }
 
 /**
+ * Collect [NetworkMonitor.monitoring] (whether the monitor is actively observing — `true` between
+ * `start()` and `stop()`/`close()`) as Compose [State]. Lets UI reflect a paused/started monitor
+ * without polling. Pairs with [NetworkMonitor.start]/[NetworkMonitor.stop].
+ */
+@Composable
+fun NetworkMonitor.collectMonitoringAsState(): State<Boolean> = monitoring.collectAsState()
+
+/**
  * Collect [NetworkMonitor.networkStatus] as Compose [State].
  *
  * @param debounceMs Optional debounce window in milliseconds. See

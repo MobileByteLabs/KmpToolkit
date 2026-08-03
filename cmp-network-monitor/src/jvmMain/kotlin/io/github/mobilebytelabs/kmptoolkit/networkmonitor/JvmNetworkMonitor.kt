@@ -2,6 +2,7 @@ package io.github.mobilebytelabs.kmptoolkit.networkmonitor
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.NetworkInterface
@@ -48,33 +50,47 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
         maxDelayMs = config.maxValidationBackoffMs,
     )
 
+    private val _monitoring = MutableStateFlow(false)
+    override val monitoring: StateFlow<Boolean> = _monitoring.asStateFlow()
+
+    private var pollJob: Job? = null
+
     init {
-        // Seed from disk cache for fast cold-start, then update with live check
+        // Seed from disk cache for fast cold-start (cheap; no observing started yet).
         val cached = loadCachedNetworkState()
         if (cached != null && cached.wasOnline &&
             (currentTimeMillis() - cached.timestampMs) < CachedNetworkState.MAX_AGE_MS
         ) {
             updateState(cached.toNetworkInfo())
         }
+        if (config.autoStart) start()
+    }
 
-        // Seed initial state synchronously (overrides cache if different)
+    override fun start() {
+        if (closed || _monitoring.value) return
+        // Seed initial state synchronously (overrides cache if different).
         updateState(checkNetwork())
-
-        // Start adaptive polling loop
-        scope.launch {
+        pollJob = scope.launch {
             while (isActive) {
                 delay(adaptivePolling.intervalMs)
                 val info = checkNetwork()
                 val changed = updateState(info)
                 if (changed) {
                     adaptivePolling.reportChange()
-                    // Persist to disk cache on state change
                     saveCachedNetworkState(CachedNetworkState.from(_networkStatus.value) ?: continue)
                 } else {
                     adaptivePolling.reportStable()
                 }
             }
         }
+        _monitoring.value = true
+    }
+
+    override fun stop() {
+        if (!_monitoring.value) return
+        _monitoring.value = false
+        pollJob?.cancel()
+        pollJob = null
     }
 
     private fun checkNetwork(): NetworkInfo? {
@@ -115,25 +131,49 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
             return _isOnline.value // maintain current state
         }
 
-        return try {
-            val connection = URI(config.validationUrl).toURL().openConnection() as HttpURLConnection
-            connection.requestMethod = "HEAD"
+        // Any-success over the primary + fallback endpoints, strict 204 sentinel.
+        val success = config.effectiveValidationUrls.any { probeUrl(it) }
+        if (success) validationBackoff.reportSuccess() else validationBackoff.reportFailure()
+        return success
+    }
+
+    private fun probeUrl(url: String): Boolean {
+        val t0 = currentTimeMillis()
+        var code = -1
+        val ok = try {
+            val connection = URI(url).toURL().openConnection() as HttpURLConnection
+            connection.requestMethod = config.validationMethod
             connection.connectTimeout = config.validationTimeoutMs.toInt()
             connection.readTimeout = config.validationTimeoutMs.toInt()
             connection.instanceFollowRedirects = false
             connection.useCaches = false
             try {
-                val code = connection.responseCode
-                val success = code in 200..399
-                if (success) validationBackoff.reportSuccess() else validationBackoff.reportFailure()
-                success
+                code = connection.responseCode
+                val len = connection.contentLengthLong
+                // 204 sentinel = real internet; captive portal (200 + body, or 3xx) is NOT validated.
+                code == 204 || (code == 200 && len <= 0L)
             } finally {
                 connection.disconnect()
             }
         } catch (_: Exception) {
-            validationBackoff.reportFailure()
             false
         }
+        config.onValidationResult?.invoke(
+            ValidationResult(
+                url = url,
+                success = ok,
+                statusCode = code.takeIf { it >= 0 },
+                latencyMs =
+                currentTimeMillis() - t0,
+            ),
+        )
+        return ok
+    }
+
+    override suspend fun probe(): NetworkStatus = withContext(Dispatchers.IO) {
+        // Ground truth now: re-run the native + HTTP check and update the flows.
+        updateState(checkNetwork())
+        _networkStatus.value
     }
 
     private fun detectNetworkInfo(): NetworkInfo {
@@ -212,9 +252,14 @@ internal class JvmNetworkMonitor(private val config: NetworkMonitorConfig) : Net
 
     private var closed = false
 
+    override fun force() {
+        scope.launch { probe() }
+    }
+
     override fun close() {
         if (!closed) {
             closed = true
+            stop()
             scope.cancel()
         }
     }

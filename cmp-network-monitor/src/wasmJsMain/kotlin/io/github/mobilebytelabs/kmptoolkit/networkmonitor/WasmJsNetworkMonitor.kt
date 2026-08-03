@@ -44,17 +44,26 @@ private external fun jsUnregisterOffline(h: JsEventHandler)
 
 @OptIn(ExperimentalWasmJsInterop::class)
 @JsFun(
-    """(url, timeoutMs, onSuccess, onFailure) => {
+    """(url, method, timeoutMs, onResult) => {
     try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
-        fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal })
-            .then(() => { clearTimeout(timer); onSuccess(); })
-            .catch(() => { clearTimeout(timer); onFailure(); });
-    } catch(e) { onFailure(); }
+        // cors + redirect:manual so we can READ the status (204 sentinel) for same-origin /
+        // CORS-enabled endpoints and a captive-portal redirect isn't silently followed.
+        fetch(url, { method: method, mode: 'cors', redirect: 'manual', cache: 'no-store', signal: controller.signal })
+            .then((r) => { clearTimeout(timer); onResult(r.status); })
+            .catch(() => {
+                clearTimeout(timer);
+                // Cross-origin without CORS headers (e.g. google generate_204) -> opaque; fall back
+                // to no-cors reachability where the status is unreadable (-1 = reachable-but-opaque).
+                fetch(url, { method: method, mode: 'no-cors', cache: 'no-store' })
+                    .then(() => onResult(-1))
+                    .catch(() => onResult(0));
+            });
+    } catch(e) { onResult(0); }
 }""",
 )
-private external fun jsFetchHead(url: JsString, timeoutMs: JsNumber, onSuccess: () -> Unit, onFailure: () -> Unit)
+private external fun jsFetchStatus(url: JsString, method: JsString, timeoutMs: JsNumber, onResult: (Int) -> Unit)
 
 /**
  * WasmJS [NetworkMonitor] backed by `navigator.onLine` + online/offline events.
@@ -145,14 +154,39 @@ internal class WasmJsNetworkMonitor(private val config: NetworkMonitorConfig) : 
         }
     }
 
+    /**
+     * HTTP validation via `fetch`. `204` from a generate_204 endpoint = verified real internet
+     * (and correctly rejects a captive portal, whose 200/redirect is not 204). NOTE: reading the
+     * status cross-origin is CORS-limited — a same-origin `validationUrl` (e.g. the app backend's
+     * `/generate_204`) is required for true 204 detection on the web; otherwise the probe falls
+     * back to opaque reachability (`-1`, treated as online) so cross-origin defaults don't regress.
+     */
     @OptIn(ExperimentalWasmJsInterop::class)
     private fun fetchHeadCheck(callback: (Boolean) -> Unit) {
-        jsFetchHead(
+        jsFetchStatus(
             config.validationUrl.toJsString(),
+            config.validationMethod.toJsString(),
             config.validationTimeoutMs.toInt().toJsNumber(),
-            onSuccess = { callback(true) },
-            onFailure = { callback(false) },
-        )
+        ) { status ->
+            // 204 = verified; -1 = opaque-reachable (cross-origin fallback, can't verify → online);
+            // anything else (portal 200, error 0) = not validated.
+            val ok = status == 204 || status == -1
+            config.onValidationResult?.invoke(
+                ValidationResult(config.validationUrl, ok, status.takeIf { it >= 0 }, -1L),
+            )
+            callback(ok)
+        }
+    }
+
+    override suspend fun probe(): NetworkStatus {
+        // Re-read navigator.onLine now (the reliable WasmJS signal) and re-sync the flows.
+        _networkStatus.value = currentStatus()
+        _isOnline.value = jsIsOnline()
+        return networkStatus.value
+    }
+
+    override fun force() {
+        scope.launch { probe() }
     }
 
     private var closed = false
