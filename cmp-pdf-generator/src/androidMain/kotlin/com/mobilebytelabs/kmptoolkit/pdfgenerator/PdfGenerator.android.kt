@@ -12,6 +12,7 @@ import android.print.PrintAttributes
 import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
 import android.print.PrintManager
+import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.core.content.FileProvider
@@ -22,10 +23,13 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 /**
  * Android implementation of [PdfGenerator].
@@ -118,17 +122,90 @@ public actual class PdfGenerator public actual constructor() {
     )
 
     /**
-     * Android can't easily extract bytes from a WebView-driven `PrintDocumentAdapter` because
-     * `PrintDocumentAdapter.LayoutResultCallback` and `WriteResultCallback` constructors are
-     * package-private to `android.print`. For HTML→bytes on Android, declare the document
-     * via the [pdf] DSL (which uses `android.graphics.pdf.PdfDocument`) or use the JVM target
-     * server-side. HTML→bytes on Android is deferred to v0.2.
+     * Render [html] to a real, multi-page PDF byte array.
+     *
+     * Loads the HTML into an offscreen [WebView], lays it out at the page's point-width, then
+     * paints vertical page-height slices onto [android.graphics.pdf.PdfDocument] pages (the same
+     * engine the DSL path uses). This is the reflection-free route: it sidesteps
+     * `PrintDocumentAdapter`'s package-private `LayoutResultCallback`/`WriteResultCallback` (the
+     * reason HTML→bytes was previously unavailable). Runs on the main thread — WebView requires it.
+     *
+     * With real bytes in hand, every [PdfOutput] flows through [dispatchOutput], so Share / File /
+     * Uri / Print / ByteArray all work (fixes #152).
      */
-    private fun renderHtmlToBytes(html: String, pageConfig: PageConfig): ByteArray = throw PdfError.UnsupportedFeature(
-        "HTML→ByteArray output not supported on Android. Use PdfOutput.Share/Print/File, " +
-            "or declare the document via the DSL (`pdf { … }`) which routes through " +
-            "`android.graphics.pdf.PdfDocument` and supports ByteArrayOutput.",
-    )
+    private suspend fun renderHtmlToBytes(html: String, pageConfig: PageConfig): ByteArray =
+        withContext(Dispatchers.Main) {
+            requireContext() // fail fast with a clear error before spinning up a WebView
+            val (pageWidthPt, pageHeightPt) = pageConfig.toPointDimensions()
+            var webView: WebView? = WebView(requireContext())
+            val wv = webView ?: throw PdfError.EngineFailure(IllegalStateException("WebView unavailable"))
+            try {
+                wv.settings.javaScriptEnabled = false
+                wv.settings.textZoom = 100 // no auto font scaling — 1 CSS px maps to 1 PDF point
+                awaitHtmlLoaded(wv, html)
+                wv.measure(
+                    View.MeasureSpec.makeMeasureSpec(pageWidthPt, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                )
+                wv.layout(0, 0, wv.measuredWidth, wv.measuredHeight)
+                val contentHeightPt = wv.measuredHeight.coerceAtLeast(pageHeightPt)
+                val pageCount = ceil(contentHeightPt.toDouble() / pageHeightPt).toInt().coerceAtLeast(1)
+
+                val doc = android.graphics.pdf.PdfDocument()
+                try {
+                    for (i in 0 until pageCount) {
+                        val info =
+                            android.graphics.pdf.PdfDocument.PageInfo
+                                .Builder(pageWidthPt, pageHeightPt, i + 1)
+                                .create()
+                        val page = doc.startPage(info)
+                        page.canvas.apply {
+                            save()
+                            clipRect(0, 0, pageWidthPt, pageHeightPt)
+                            translate(0f, -(i.toFloat() * pageHeightPt))
+                            wv.draw(this)
+                            restore()
+                        }
+                        doc.finishPage(page)
+                    }
+                    ByteArrayOutputStream().use { out ->
+                        doc.writeTo(out)
+                        out.toByteArray()
+                    }
+                } finally {
+                    doc.close()
+                }
+            } finally {
+                wv.stopLoading()
+                wv.destroy()
+                webView = null
+            }
+        }
+
+    /** Load [html] into [wv] and suspend until `onPageFinished` (or a WebView error). */
+    private suspend fun awaitHtmlLoaded(wv: WebView, html: String): Unit = suspendCancellableCoroutine { cont ->
+        cont.invokeOnCancellation { wv.stopLoading() }
+        wv.webViewClient =
+            object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    if (cont.isActive) cont.resume(Unit)
+                }
+
+                override fun onReceivedError(
+                    view: WebView?,
+                    errorCode: Int,
+                    description: String?,
+                    failingUrl: String?,
+                ) {
+                    if (cont.isActive) {
+                        cont.resumeWithException(
+                            PdfError.EngineFailure(IllegalStateException("WebView: $description")),
+                        )
+                    }
+                }
+            }
+        wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+    }
 
     private suspend fun renderWebViewToPrintAdapter(
         ctx: Context,
@@ -240,6 +317,14 @@ public actual class PdfGenerator public actual constructor() {
     }
 
     private fun hasComplexContent(page: PdfPage): Boolean = page.elements.any { it is PdfElement.Html }
+}
+
+/** PageConfig → (widthPt, heightPt) in PostScript points (1/72"), honoring orientation. */
+internal fun PageConfig.toPointDimensions(): Pair<Int, Int> {
+    val mmToPt = 72.0 / 25.4
+    val widthPt = (size.widthMm * mmToPt).roundToInt()
+    val heightPt = (size.heightMm * mmToPt).roundToInt()
+    return if (orientation == Orientation.LANDSCAPE) heightPt to widthPt else widthPt to heightPt
 }
 
 /** Map PageConfig → Android PrintAttributes. */

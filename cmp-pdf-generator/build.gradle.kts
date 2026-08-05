@@ -56,6 +56,8 @@ kotlin {
 
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
 
         compilerOptions {
@@ -105,6 +107,13 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.core)
             implementation(libs.kotlinx.coroutines.android)
+        }
+
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.androidx.test.runner)
+            implementation(libs.androidx.test.ext.junit)
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
 
         jvmMain.dependencies {
