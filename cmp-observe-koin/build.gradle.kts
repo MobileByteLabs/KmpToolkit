@@ -63,7 +63,7 @@ kotlin {
     // transitively trigger the cmp-observe Framework link step which fails on
     // `ld: framework 'FirebaseCore' not found` (Firebase Apple SDK is provisioned
     // via CocoaPods at consumer integration time). Following the cmp-observe +
-    // cmp-firebase-analytics pattern (klib-only publication for iOS).
+    // cmp-firebase pattern (klib-only publication for iOS).
 
     js(IR) {
         browser()

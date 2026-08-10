@@ -51,7 +51,7 @@ exclude_docs: |
   app-intents/
   bubble/
   clipboard/
-  firebase-analytics/
+  firebase/
   in-app-update/
   intent-launcher/
   inter-app-comms/
@@ -102,7 +102,7 @@ nav:
       - cmp-bubble: modules/cmp-bubble.md
       - cmp-clipboard: modules/cmp-clipboard.md
       - cmp-deep-link: modules/cmp-deep-link.md
-      - cmp-firebase-analytics: modules/cmp-firebase-analytics.md
+      - cmp-firebase: modules/cmp-firebase.md
       - cmp-in-app-update: modules/cmp-in-app-update.md
       - cmp-intent-launcher: modules/cmp-intent-launcher.md
       - cmp-intent-launcher-compose: modules/cmp-intent-launcher-compose.md

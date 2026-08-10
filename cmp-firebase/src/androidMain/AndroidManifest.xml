@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+        FirebaseInitProvider runs FirebaseKit.initialize() at app startup so the
+        consuming app needs zero setup code (enables Crashlytics collection once
+        Firebase's own google-services auto-init has run).
+
+        No authority content is served; initOrder is below Firebase's own
+        provider so Firebase is configured first. Init is wrapped defensively.
+        -->
+        <provider
+            android:name="io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseInitProvider"
+            android:authorities="${applicationId}.kmptoolkit.firebase.init"
+            android:exported="false"
+            android:initOrder="98" />
+    </application>
+
+</manifest>

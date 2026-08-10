@@ -85,7 +85,7 @@ kotlin {
     // the iOS Framework link step which fails on `ld: framework 'FirebaseCore'
     // not found` because GitLive Firebase relies on CocoaPods-provisioned Firebase
     // Apple frameworks at link time. Consumer apps add the Firebase CocoaPods +
-    // build the Framework on their side. Following the cmp-firebase-analytics
+    // build the Framework on their side. Following the cmp-firebase
     // pattern (klib-only publication for iOS).
 
     js(IR) {
@@ -156,7 +156,7 @@ kotlin {
         // depend on com.google.firebase:firebase-{crashlytics,analytics,perf}
         // WITHOUT pinned versions — the BOM resolves them. Without this, Gradle
         // fails with "Could not find com.google.firebase:firebase-crashlytics:."
-        // (empty version). Matches the cmp-firebase-analytics pattern.
+        // (empty version). Matches the cmp-firebase pattern.
         androidMain.dependencies {
             implementation(project.dependencies.platform(libs.firebase.bom))
         }

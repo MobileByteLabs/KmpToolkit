@@ -32,7 +32,7 @@ include(":cmp-network-monitor-compose") // Network Monitor Compose — Compose M
 include(":cmp-observe")
 include(":cmp-observe-koin") // Zero-config Koin companion for cmp-observe
 // Firebase Analytics — 21/21 KMP targets (GitLive on 11, Measurement Protocol HTTP on 10)
-include(":cmp-firebase-analytics")
+include(":cmp-firebase") // Firebase — Analytics + Crashlytics (unified, in-library setup)
 // PDF Generator — cross-platform PDF generation (HTML / Markdown / DSL input; multi-output)
 include(":cmp-pdf-generator")
 // Inter-app comms suite (Phase 1 scaffolds; full impl per plan-layer/.../inter-app-comms-suite/)

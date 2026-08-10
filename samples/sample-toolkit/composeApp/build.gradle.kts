@@ -65,7 +65,7 @@ kotlin {
             implementation(project(":cmp-deep-link"))
             implementation(project(":cmp-network-monitor"))
             implementation(project(":cmp-network-monitor-compose"))
-            implementation(project(":cmp-firebase-analytics"))
+            implementation(project(":cmp-firebase"))
             implementation(project(":cmp-pdf-generator"))
             implementation(project(":cmp-share"))
             implementation(project(":cmp-intent-launcher"))
