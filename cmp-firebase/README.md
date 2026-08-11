@@ -60,7 +60,7 @@ Crash reporting mirrors the analytics two-tier design, but with a **different, s
 | **crashlyticsFirebaseMain** | Android, iOS (×3), macOS (×2) | **6** | `FirebaseCrashReporter` — native Firebase Crashlytics (auto-captures uncaught crashes) **and** builds a structured `CrashReport` |
 | **crashlyticsFallbackMain** | JVM, JS, tvOS (×3), watchOS (×4), Linux (×2), mingwX64, wasmJs | **13** | `LoggingCrashReporter` — no Crashlytics ingestion REST API exists, so it builds the same `CrashReport` and logs it as JSON via Kermit |
 
-> GitLive Crashlytics 2.4.0 ships on Android + iOS + macOS only — **not** tvOS/watchOS/JVM/JS/native (verified against its published artifacts). Analytics reaches more targets than Crashlytics, hence the separate split.
+> GitLive Crashlytics 2.5.0 ships on Android + iOS + macOS only — **not** tvOS/watchOS/JVM/JS/native (verified against its published artifacts). Analytics reaches more targets than Crashlytics, hence the separate split.
 
 The whole point of `CrashReport` is **AI-feedability** — on *every* platform you get the exception class, the human message, the **full cause chain**, and stack frames broken out to **`file:line`**, serializable to JSON:
 

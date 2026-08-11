@@ -117,7 +117,7 @@ kotlin {
     // wasmWasi target intentionally omitted — Ktor / Kermit / multiplatform-settings
     // do not publish wasmWasi variants. 20/21 targets supported.
     //
-    // GitLive Firebase Analytics 2.4.x target matrix verified at:
+    // GitLive Firebase Analytics 2.5.x target matrix verified at:
     //   https://github.com/GitLiveApp/firebase-kotlin-sdk/blob/master/firebase-analytics/build.gradle.kts
     sourceSets {
         commonMain.dependencies {
@@ -174,7 +174,7 @@ kotlin {
         //   crashlyticsFirebaseMain (6)  — GitLive Crashlytics: android, ios×3, macos×2
         //   crashlyticsFallbackMain (13) — LoggingCrashReporter: jvm, js, tvos×3, watchos×4, linux×2, mingw, wasmJs
         //
-        // GitLive firebase-crashlytics 2.4.0 publishes ONLY android + iOS + macOS
+        // GitLive firebase-crashlytics 2.5.0 publishes ONLY android + iOS + macOS
         // (NO tvOS/watchOS/JVM/JS/native) — verified against its published artifacts.
         // Crashlytics also has no ingestion REST API, so the fallback is a structured
         // Kermit-logged CrashReport (AI-feedable), not a Measurement-Protocol HTTP.
