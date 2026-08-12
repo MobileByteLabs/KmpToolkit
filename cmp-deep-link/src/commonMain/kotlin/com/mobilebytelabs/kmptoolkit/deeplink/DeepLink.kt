@@ -1,13 +1,7 @@
 package com.mobilebytelabs.kmptoolkit.deeplink
 
 import com.mobilebytelabs.kmptoolkit.deeplink.internal.UriParser
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -35,7 +29,6 @@ data class DeepLink(
     val pathSegments: List<String>,
     val queryParams: Map<String, String>,
     val fragment: String?,
-    @Serializable(with = InstantIso8601Serializer::class)
     val timestamp: Instant = Clock.System.now(),
 ) {
     companion object {
@@ -47,23 +40,4 @@ data class DeepLink(
          */
         fun parse(uri: String): DeepLink = UriParser.parse(uri)
     }
-}
-
-/**
- * Serializes a [kotlin.time.Instant] as an ISO-8601 string.
- *
- * kotlinx-datetime 0.8.0 migrated to `kotlin.time.Instant` and dropped its standalone Instant
- * ISO serializer object — serialization of `kotlin.time.Instant` is now owned by
- * kotlinx-serialization 1.9.0+. This repo is on kotlinx-serialization 1.8.1, so we provide a
- * minimal ISO serializer locally. It emits the same wire format the previous
- * `kotlinx.datetime.Instant` serializer used, so persisted JSON stays compatible. Remove once the
- * repo adopts kotlinx-serialization ≥ 1.9.0 (the built-in serializer is then found automatically).
- */
-internal object InstantIso8601Serializer : KSerializer<Instant> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("kotlin.time.Instant", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: Instant) = encoder.encodeString(value.toString())
-
-    override fun deserialize(decoder: Decoder): Instant = Instant.parse(decoder.decodeString())
 }
