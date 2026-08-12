@@ -7,7 +7,7 @@ name: Publish docs (mkdocs → GitHub Pages)
 
 on:
   push:
-    branches: [development]
+    branches: [dev]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'

@@ -1,6 +1,6 @@
 name: Publish trigger (consumer-library-ai-bridge epic AC #24)
 
-# Auto-trigger publish.yml when development branch receives a cmp-*/  change.
+# Auto-trigger publish.yml when the dev branch receives a cmp-*/  change.
 # Delegates to mbl-actionhub's publish-on-development-push.yml@v1.8.0+ reusable workflow
 # for the debounce + dispatch logic.
 #
@@ -8,7 +8,7 @@ name: Publish trigger (consumer-library-ai-bridge epic AC #24)
 
 on:
   push:
-    branches: [development]
+    branches: [dev]
     paths:
       - 'cmp-*/**'
       - 'libs.versions.toml'
@@ -21,4 +21,4 @@ jobs:
     with:
       publish_workflow_name: 'publish.yml'
       debounce_minutes: 30
-      target_ref: 'development'
+      target_ref: 'dev'
