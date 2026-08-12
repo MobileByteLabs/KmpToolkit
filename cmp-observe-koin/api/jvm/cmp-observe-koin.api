@@ -1,0 +1,4 @@
+public final class io/github/mobilebytelabs/kmptoolkit/observe/koin/ObserveKoinModuleKt {
+	public static final fun observeKoinModule (Ljava/util/List;)Lorg/koin/core/module/Module;
+}
+

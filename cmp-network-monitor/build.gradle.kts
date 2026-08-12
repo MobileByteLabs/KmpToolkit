@@ -78,10 +78,6 @@ kotlin {
     // ========================================================================
     // watchOS Targets (arm32 removed — deprecated by Kotlin, Apple requires 64-bit since watchOS 7)
     // ========================================================================
-    watchosX64()
-    watchosArm64()
-    watchosSimulatorArm64()
-    watchosDeviceArm64()
 
     // ========================================================================
     // Linux Targets

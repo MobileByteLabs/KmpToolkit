@@ -8,10 +8,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import io.github.mobilebytelabs.kmptoolkit.analytics.AnalyticsEvent
-import io.github.mobilebytelabs.kmptoolkit.analytics.AnalyticsHelper
-import io.github.mobilebytelabs.kmptoolkit.analytics.Param
-import io.github.mobilebytelabs.kmptoolkit.analytics.StubAnalyticsHelper
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsEvent
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.Param
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.StubAnalyticsHelper
 import com.mobilebytelabs.kmptoolkit.samples.toolkit.features._shared.DemoIntro
 import com.mobilebytelabs.kmptoolkit.samples.toolkit.features._shared.SetupRequiredCard
 

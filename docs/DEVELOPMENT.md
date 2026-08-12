@@ -139,7 +139,7 @@ compat but are excluded from the mkdocs build via `mkdocs.yml` → `exclude_docs
     docs/app-intents/
     docs/bubble/
     docs/clipboard/
-    docs/firebase-analytics/
+    docs/firebase/
     docs/in-app-update/
     docs/intent-launcher/
     docs/inter-app-comms/

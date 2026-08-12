@@ -24,7 +24,7 @@ description: "Cross-platform utilities for Kotlin Multiplatform apps — share s
 |---|---|
 | Inter-app comms | [cmp-share](modules/cmp-share.md), [cmp-intent-launcher](modules/cmp-intent-launcher.md), [cmp-app-intents](modules/cmp-app-intents.md), [cmp-open-url](modules/cmp-open-url.md), [cmp-deep-link](modules/cmp-deep-link.md) |
 | Network | [cmp-network-monitor](modules/cmp-network-monitor.md) |
-| Observability | [cmp-observe](modules/cmp-observe.md), [cmp-observe-koin](modules/cmp-observe-koin.md), [cmp-firebase-analytics](modules/cmp-firebase-analytics.md) |
+| Observability | [cmp-observe](modules/cmp-observe.md), [cmp-observe-koin](modules/cmp-observe-koin.md), [cmp-firebase](modules/cmp-firebase.md) |
 | Storage / IO | [cmp-clipboard](modules/cmp-clipboard.md), [cmp-pdf-generator](modules/cmp-pdf-generator.md) |
 | UI | [cmp-toast](modules/cmp-toast.md), [cmp-bubble](modules/cmp-bubble.md) |
 | Updates / config | [cmp-in-app-update](modules/cmp-in-app-update.md), [cmp-remote-config](modules/cmp-remote-config.md) |

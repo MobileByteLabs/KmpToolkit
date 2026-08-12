@@ -13,7 +13,7 @@ import com.mobilebytelabs.kmptoolkit.appintents.AppIntentResult
 import com.mobilebytelabs.kmptoolkit.appintents.AppIntents
 import com.mobilebytelabs.kmptoolkit.appintents.ExperimentalAppIntentsApi
 import com.mobilebytelabs.kmptoolkit.appintents.appIntents
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -34,7 +34,7 @@ import kotlin.test.assertNotNull
 class AppIntentsComposeApiSmokeTest {
 
     @Test
-    fun underlying_register_and_invoke_round_trip() = runBlocking {
+    fun underlying_register_and_invoke_round_trip() = runTest {
         // Smoke: prove the imperative API the Composables wrap actually works.
         val config = appIntents {
             intent("smokeTestIntent") {

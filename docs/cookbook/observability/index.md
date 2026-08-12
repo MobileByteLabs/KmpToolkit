@@ -1,6 +1,6 @@
 ---
 title: "Observability cookbook"
-description: "Recipes for wiring Firebase Crashlytics + Analytics + Performance and Supabase telemetry — cmp-observe + cmp-observe-koin + cmp-firebase-analytics."
+description: "Recipes for wiring Firebase Crashlytics + Analytics + Performance and Supabase telemetry — cmp-observe + cmp-observe-koin + cmp-firebase."
 ---
 
 # Observability cookbook
@@ -18,4 +18,4 @@ attribution, per-consumer Analytics health, and Supabase event ingest setup.
 
 - [cmp-observe](../../modules/cmp-observe.md)
 - [cmp-observe-koin](../../modules/cmp-observe-koin.md)
-- [cmp-firebase-analytics](../../modules/cmp-firebase-analytics.md)
+- [cmp-firebase](../../modules/cmp-firebase.md)

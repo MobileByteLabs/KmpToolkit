@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import com.mobilebytelabs.kmptoolkit.intentlauncher.IntentError
 import com.mobilebytelabs.kmptoolkit.intentlauncher.IntentResult
 import com.mobilebytelabs.kmptoolkit.intentlauncher.ResultContracts
-import com.mobilebytelabs.kmptoolkit.intentlauncher.rememberIntentLauncher
+import com.mobilebytelabs.kmptoolkit.intentlauncher.compose.rememberIntentLauncher
 import com.mobilebytelabs.kmptoolkit.samples.toolkit.features._shared.DemoIntro
 import kotlinx.coroutines.launch
 

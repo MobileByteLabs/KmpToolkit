@@ -74,7 +74,9 @@ spotless {
 
     format("misc") {
         target("**/*.md", "**/.gitignore", "**/*.yaml", "**/*.yml")
-        targetExclude("**/build/**", "**/.gradle/**")
+        // .swiftpm-locks / .swiftpm hold GitLive 3.x's firebase-ios-sdk SwiftPM checkout
+        // (vendored third-party .md files) — never format them.
+        targetExclude("**/build/**", "**/.gradle/**", "**/.swiftpm-locks/**", "**/.swiftpm/**")
         trimTrailingWhitespace()
         leadingTabsToSpaces(4)
         endWithNewline()

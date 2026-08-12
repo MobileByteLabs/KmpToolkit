@@ -57,6 +57,10 @@ xcuserdata/
 *.xcuserstate
 Pods/
 
+# SwiftPM — GitLive Firebase 3.x checks out firebase-ios-sdk here (generated, never commit)
+.swiftpm-locks/
+.swiftpm/
+
 # Test results
 test-results/
 test-output/

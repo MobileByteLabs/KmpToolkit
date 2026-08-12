@@ -1,7 +1,7 @@
 # CI Workflow — delegates to mbl-actionhub reusable CI workflow
 #
 # Triggers:
-#   - push to development or main (full build — all modules always verified)
+#   - push to dev (full build — all modules always verified)
 #   - workflow_call (invoked by publish.yml before every Maven publish)
 #
 # PRs are handled separately by pr-check.yml (fast gate, changed modules only).
@@ -10,7 +10,7 @@ name: CI
 
 on:
   push:
-    branches: [ "development", "main" ]
+    branches: [ "dev" ]
   workflow_call:
 
 permissions:
@@ -29,5 +29,5 @@ jobs:
       java-distribution: 'zulu'
       run-quality: true
       # run-ios-tests / run-linux-tests: false (fast gate)
-      # Push to development/main always runs all modules (detect-changes build_all=true)
+      # Push to dev always runs all modules (detect-changes build_all=true)
       # Add run-ios-tests: true on release branches or nightly scheduled runs

@@ -75,11 +75,6 @@ kotlin {
     tvosSimulatorArm64()
 
     // watchOS (v0.2 — onUnsupported; no share-sheet surface)
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    watchosSimulatorArm64()
-    watchosDeviceArm64()
 
     // Linux + mingw (v0.2 — xdg-open / ShellExecuteW for URL share; clipboard fallback for text)
     linuxX64()

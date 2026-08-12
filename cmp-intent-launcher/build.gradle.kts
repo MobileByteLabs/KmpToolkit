@@ -67,11 +67,9 @@ kotlin {
         androidResources.enable = true
     }
 
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 
-    macosX64()
     macosArm64()
 
     // v0.3 expansion — Compose-free core reaches 19 KMP targets.
@@ -80,12 +78,6 @@ kotlin {
     tvosX64()
     tvosArm64()
     tvosSimulatorArm64()
-
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    watchosSimulatorArm64()
-    watchosDeviceArm64()
 
     linuxX64()
     linuxArm64()

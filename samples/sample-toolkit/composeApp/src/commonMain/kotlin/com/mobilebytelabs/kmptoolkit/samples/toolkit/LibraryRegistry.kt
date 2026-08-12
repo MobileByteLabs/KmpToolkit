@@ -143,7 +143,7 @@ object LibraryCatalog {
         ),
         LibraryDemo(
             id = "firebase-analytics",
-            title = "cmp-firebase-analytics",
+            title = "cmp-firebase",
             tagline = "GitLive (11 targets) + Measurement Protocol (10 targets)",
             category = Category.Backend,
             demo = { onStatus ->
