@@ -5,6 +5,8 @@ Firebase Analytics for **Kotlin Multiplatform** — true 21/21 KMP target covera
 ## Documentation
 
 - [SETUP.md](SETUP.md) — Manual integration guide (per-platform setup + MP wiring + DI examples)
+- [ANALYTICS.md](ANALYTICS.md) — **Analytics engine consumption guide** (opt-out, trackers, funnels, offline queue, network telemetry, Compose auto-tracking)
+- [ANALYTICS_DEVELOPMENT.md](ANALYTICS_DEVELOPMENT.md) — **Developer guide** (architecture, opt-out contract, adding backends/trackers, BCV, release)
 - [CLAUDE_AI_SETUP.md](CLAUDE_AI_SETUP.md) — AI-assisted setup via `/sync-firebase-analytics`
 
 ## Quick Start

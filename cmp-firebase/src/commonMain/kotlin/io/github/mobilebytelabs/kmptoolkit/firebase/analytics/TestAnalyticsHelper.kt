@@ -52,6 +52,7 @@ class TestAnalyticsHelper : AnalyticsHelper {
     val consent: Pair<Boolean, Boolean>? get() = _consent
 
     override fun logEvent(event: AnalyticsEvent) {
+        if (!_collectionEnabled) return // opt-out cascade: mirrors the Firebase/MP tiers
         _events.add(event)
     }
 

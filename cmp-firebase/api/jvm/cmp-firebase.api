@@ -5,15 +5,37 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/FirebaseKit {
 	public final fun isInitialized ()Z
 }
 
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsBatch {
+	public final fun add (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsEvent;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsBatch;
+	public final fun add (Ljava/lang/String;[Lkotlin/Pair;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsBatch;
+	public final fun flush ()V
+	public final fun getSize ()I
+}
+
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig {
 	public fun <init> ()V
-	public fun <init> (Z)V
-	public synthetic fun <init> (ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ZZZZZZZJ)V
+	public synthetic fun <init> (ZZZZZZZJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun autoEnabled (ZZ)Z
 	public final fun component1 ()Z
-	public final fun copy (Z)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig;
-	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig;ZILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig;
+	public final fun component2 ()Z
+	public final fun component3 ()Z
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun component6 ()Z
+	public final fun component7 ()Z
+	public final fun component8 ()J
+	public final fun copy (ZZZZZZZJ)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig;ZZZZZZZJILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAutoAppLaunchTiming ()Z
+	public final fun getAutoCrashCapture ()Z
+	public final fun getAutoNetworkTelemetry ()Z
+	public final fun getAutoOfflineQueue ()Z
+	public final fun getAutoPerformanceStats ()Z
+	public final fun getAutoScreenTracking ()Z
 	public final fun getCollectionEnabledByDefault ()Z
+	public final fun getSlowOperationThresholdMs ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -48,8 +70,10 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Analyt
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsExtensionsKt {
+	public static final fun batch (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsBatch;
 	public static final fun log (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun log$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static final fun startTiming (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Ljava/lang/String;[Lkotlin/Pair;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/TimedEvent;
 }
 
 public abstract interface class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper {
@@ -93,6 +117,27 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Analyt
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsProvider_firebaseKt {
 	public static final fun provideAnalyticsHelper ()Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AppLifecycleTracker {
+	public static final field EVENT_BACKGROUND Ljava/lang/String;
+	public static final field EVENT_FOREGROUND Ljava/lang/String;
+	public fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;)V
+	public final fun markAppLaunchComplete ()V
+	public final fun markAppLaunchStart ()V
+	public final fun onEnterBackground ()V
+	public final fun onEnterForeground ()V
+}
+
+public abstract class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/EventCatalog {
+	public fun <init> ()V
+	protected final fun def (Ljava/lang/String;[Ljava/lang/String;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/EventCatalog$EventDef;
+	protected final fun event (Ljava/lang/String;[Lkotlin/Pair;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsEvent;
+}
+
+protected final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/EventCatalog$EventDef {
+	public final fun getType ()Ljava/lang/String;
+	public final fun invoke ([Lkotlin/Pair;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsEvent;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/EventRegistry {
@@ -202,8 +247,57 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Fireba
 	public fun setUserProperty (Ljava/lang/String;Ljava/lang/String;)V
 }
 
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Funnel {
+	public static final field EVENT_ABANDON Ljava/lang/String;
+	public static final field EVENT_COMPLETE Ljava/lang/String;
+	public static final field EVENT_START Ljava/lang/String;
+	public static final field EVENT_STEP Ljava/lang/String;
+	public static final field PARAM_FUNNEL Ljava/lang/String;
+	public static final field PARAM_REASON Ljava/lang/String;
+	public static final field PARAM_STEP Ljava/lang/String;
+	public final fun abandon (Ljava/lang/String;)V
+	public static synthetic fun abandon$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/Funnel;Ljava/lang/String;ILjava/lang/Object;)V
+	public final fun complete ()V
+	public final fun start ()V
+	public final fun step (Ljava/lang/String;)V
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/FunnelKt {
+	public static final fun funnel (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Ljava/lang/String;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/Funnel;
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/MemoryTracker {
+	public static final field DEFAULT_WARN_BYTES J
+	public static final field EVENT_MEMORY Ljava/lang/String;
+	public static final field PARAM_LEVEL Ljava/lang/String;
+	public static final field PARAM_USED_BYTES Ljava/lang/String;
+	public fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;JLkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;JLkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun logMemoryUsage (Ljava/lang/String;)V
+}
+
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/NoOpAnalyticsHelper : io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper {
 	public static final field INSTANCE Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/NoOpAnalyticsHelper;
+	public fun logButtonClick (Ljava/lang/String;Ljava/lang/String;)V
+	public fun logError (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun logEvent (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsEvent;)V
+	public fun logEvent (Ljava/lang/String;Ljava/util/Map;)V
+	public fun logEvent (Ljava/lang/String;[Lkotlin/Pair;)V
+	public fun logFeatureUsed (Ljava/lang/String;Ljava/lang/String;)V
+	public fun logScreenView (Ljava/lang/String;Ljava/lang/String;)V
+	public fun logStateTransition (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun setCollectionEnabled (Z)V
+	public fun setConsent (ZZ)V
+	public fun setUserId (Ljava/lang/String;)V
+	public fun setUserProperty (Ljava/lang/String;Ljava/lang/String;)V
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/OfflineEventQueue : io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper {
+	public static final field DEFAULT_MAX_BUFFERED I
+	public fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;I)V
+	public synthetic fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun flush ()V
+	public final fun getBufferedCount ()I
 	public fun logButtonClick (Ljava/lang/String;Ljava/lang/String;)V
 	public fun logError (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public fun logEvent (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsEvent;)V
@@ -272,8 +366,40 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/ParamK
 	public static final field VALUE Ljava/lang/String;
 }
 
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceStats {
+	public fun <init> (Ljava/lang/String;IDDDDDD)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun component8 ()D
+	public final fun copy (Ljava/lang/String;IDDDDDD)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceStats;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceStats;Ljava/lang/String;IDDDDDDILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceStats;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAverageMs ()D
+	public final fun getCount ()I
+	public final fun getMaxMs ()D
+	public final fun getMedianMs ()D
+	public final fun getMinMs ()D
+	public final fun getOperationName ()Ljava/lang/String;
+	public final fun getP95Ms ()D
+	public final fun getP99Ms ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceTracker {
-	public fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;)V
+	public static final field PARAM_PERFORMANCE_LEVEL Ljava/lang/String;
+	public static final field SLOW_MS J
+	public static final field VERY_SLOW_MS J
+	public fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;JJ)V
+	public synthetic fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun clearMetrics ()V
+	public final fun getPerformanceStats (Ljava/lang/String;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceStats;
+	public final fun logPerformanceSummary (Ljava/lang/String;)V
 	public final fun measure (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 	public final fun start (Ljava/lang/String;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceTracker$Handle;
 	public final fun stop (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/PerformanceTracker$Handle;Ljava/util/Map;)V
@@ -355,6 +481,10 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/TestAn
 	public fun setUserProperty (Ljava/lang/String;Ljava/lang/String;)V
 }
 
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/TimedEvent {
+	public final fun complete ([Lkotlin/Pair;)V
+}
+
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/di/AnalyticsModule {
 	public static final field INSTANCE Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/di/AnalyticsModule;
 	public final fun analyticsHelper (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/di/AnalyticsModule$Mode;Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsConfig;)Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;
@@ -416,6 +546,26 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpC
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig$Companion {
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/net/AnalyticsKtorPluginKt {
+	public static final fun analyticsTelemetryPlugin (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Lkotlin/jvm/functions/Function0;)Lio/ktor/client/plugins/api/ClientPlugin;
+	public static synthetic fun analyticsTelemetryPlugin$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lio/ktor/client/plugins/api/ClientPlugin;
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/net/AnalyticsTelemetryConfig {
+	public fun <init> ()V
+	public final fun getAnalytics ()Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;
+	public final fun getEnabled ()Lkotlin/jvm/functions/Function0;
+	public final fun setAnalytics (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;)V
+	public final fun setEnabled (Lkotlin/jvm/functions/Function0;)V
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/net/NetworkTelemetryKt {
+	public static final field EVENT_OFFLINE_TO_ONLINE Ljava/lang/String;
+	public static final field EVENT_ONLINE_TO_OFFLINE Ljava/lang/String;
+	public static final fun attachNetworkTelemetry (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;Lkotlin/jvm/functions/Function0;)Lkotlinx/coroutines/Job;
+	public static synthetic fun attachNetworkTelemetry$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Lio/github/mobilebytelabs/kmptoolkit/networkmonitor/NetworkMonitor;Lkotlinx/coroutines/CoroutineScope;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashCause {

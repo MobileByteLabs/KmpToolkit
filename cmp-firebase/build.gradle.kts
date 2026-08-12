@@ -125,6 +125,10 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.multiplatform.settings)
+            // Optional wiring: the app opts into network telemetry / offline queue by passing
+            // its NetworkMonitor to attachNetworkTelemetry(...) / OfflineEventQueue(...).
+            // `api` so the NetworkMonitor type is visible at those call sites.
+            api(project(":cmp-network-monitor"))
         }
 
         commonTest.dependencies {

@@ -9,6 +9,8 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
 
+import kotlin.time.Clock
+
 /**
  * Compose-friendly DSL for building events.
  *
@@ -42,3 +44,58 @@ class AnalyticsEventBuilder(private val type: String) {
 
     fun build(): AnalyticsEvent = AnalyticsEvent(type, params.toList())
 }
+
+// ── Timing ──────────────────────────────────────────────────────────────────
+
+/**
+ * A manually-controlled timer. Call [complete] to emit a [EventTypes.LOADING_TIME] event
+ * carrying the elapsed duration plus any base params supplied at [startTiming].
+ */
+class TimedEvent internal constructor(
+    private val analytics: AnalyticsHelper,
+    private val eventType: String,
+    private val baseParams: List<Param>,
+) {
+    private val startedAt: Long = Clock.System.now().toEpochMilliseconds()
+
+    fun complete(vararg extra: Pair<String, String>) {
+        val durationMs = Clock.System.now().toEpochMilliseconds() - startedAt
+        val params = buildList {
+            addAll(baseParams)
+            add(Param(ParamKeys.LOADING_TIME_MS, durationMs.toString()))
+            extra.forEach { (k, v) -> createParam(k, v)?.let(::add) }
+        }
+        analytics.logEvent(AnalyticsEvent(eventType, params))
+    }
+}
+
+/** Begin a manual [TimedEvent]; call [TimedEvent.complete] when the operation finishes. */
+fun AnalyticsHelper.startTiming(eventType: String, vararg params: Pair<String, String>): TimedEvent =
+    TimedEvent(this, eventType, params.mapNotNull { createParam(it.first, it.second) })
+
+// ── Batch ───────────────────────────────────────────────────────────────────
+
+/**
+ * Collect several events and emit them together on [flush] — handy for a burst of related
+ * events you want to log atomically without threading the helper through every call site.
+ */
+class AnalyticsBatch internal constructor(private val analytics: AnalyticsHelper) {
+    private val pending = mutableListOf<AnalyticsEvent>()
+
+    fun add(event: AnalyticsEvent): AnalyticsBatch = apply { pending.add(event) }
+
+    fun add(type: String, vararg params: Pair<String, String>): AnalyticsBatch =
+        add(AnalyticsEvent(type, params.mapNotNull { createParam(it.first, it.second) }))
+
+    /** Emit every buffered event, then clear the buffer. */
+    fun flush() {
+        pending.forEach(analytics::logEvent)
+        pending.clear()
+    }
+
+    /** Number of events waiting to be flushed. */
+    val size: Int get() = pending.size
+}
+
+/** Create an [AnalyticsBatch] for this helper. */
+fun AnalyticsHelper.batch(): AnalyticsBatch = AnalyticsBatch(this)

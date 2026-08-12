@@ -36,4 +36,26 @@ data class AnalyticsConfig(
      * `false` = opt-in-required: nothing is collected until [AnalyticsHelper.setCollectionEnabled]`(true)`.
      */
     val collectionEnabledByDefault: Boolean = true,
-)
+    /** Auto-log `screen_view` (+ `screen_transition`) from the Compose companion. */
+    val autoScreenTracking: Boolean = true,
+    /** Auto-log `app_launch` cold-start timing via `AppLifecycleTracker`. */
+    val autoAppLaunchTiming: Boolean = true,
+    /** Accumulate P95/P99 performance stats via `PerformanceTracker`. */
+    val autoPerformanceStats: Boolean = true,
+    /** Auto-log network transitions + per-request Ktor telemetry. */
+    val autoNetworkTelemetry: Boolean = true,
+    /** Route uncaught failures to the `CrashReporter`. */
+    val autoCrashCapture: Boolean = true,
+    /** Buffer events while offline and flush on reconnect via `OfflineEventQueue`. */
+    val autoOfflineQueue: Boolean = true,
+    /** Durations at/above this are tagged `slow` by `PerformanceTracker`. */
+    val slowOperationThresholdMs: Long = 1000L,
+) {
+    /**
+     * Every auto-tracker checks this before emitting, so the master
+     * [AnalyticsHelper.setCollectionEnabled]`(false)` opt-out (and each per-capability flag)
+     * suppresses the corresponding automatic events.
+     */
+    fun autoEnabled(capability: Boolean, collectionEnabled: Boolean): Boolean =
+        collectionEnabled && capability
+}
