@@ -1,0 +1,138 @@
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentBuilder {
+	public final fun getBii ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getTitle ()Ljava/lang/String;
+	public final fun parameter (Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType;Z)V
+	public static synthetic fun parameter$default (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentBuilder;Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType;ZILjava/lang/Object;)V
+	public final fun perform (Lkotlin/jvm/functions/Function2;)V
+	public final fun searchable (Ljava/lang/String;)V
+	public static synthetic fun searchable$default (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentBuilder;Ljava/lang/String;ILjava/lang/Object;)V
+	public final fun setBii (Ljava/lang/String;)V
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setTitle (Ljava/lang/String;)V
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentDef {
+	public final fun getBii ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getParameters ()Ljava/util/List;
+	public final fun getSearchable ()Z
+	public final fun getSearchableCategory ()Ljava/lang/String;
+	public final fun getTitle ()Ljava/lang/String;
+}
+
+public abstract class com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult {
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Dialog : com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Dialog;
+	public static synthetic fun copy$default (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Dialog;Ljava/lang/String;ILjava/lang/Object;)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Dialog;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Done : com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Done;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Failed : com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Failed;
+	public static synthetic fun copy$default (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Failed;Ljava/lang/String;ILjava/lang/Object;)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Failed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Snippet : com/mobilebytelabs/kmptoolkit/appintents/AppIntentResult {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Snippet;
+	public static synthetic fun copy$default (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Snippet;Ljava/lang/String;ILjava/lang/Object;)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentResult$Snippet;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMarkdown ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntents {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntents;
+	public final fun invokeForTesting (Ljava/lang/String;Ljava/util/Map;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invokeForTesting$default (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntents;Ljava/lang/String;Ljava/util/Map;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun register (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig;)V
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentsBuilder {
+	public final fun intent (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig {
+	public final fun getIntents ()Ljava/util/List;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentsKt {
+	public static final fun appIntents (Lkotlin/jvm/functions/Function1;)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/AppIntentsRuntime {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsRuntime;
+	public final fun current ()Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig;
+	public final fun invoke (Ljava/lang/String;Ljava/util/Map;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun register (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig;)V
+}
+
+public abstract interface annotation class com/mobilebytelabs/kmptoolkit/appintents/ExperimentalAppIntentsApi : java/lang/annotation/Annotation {
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/ParamDef {
+	public fun <init> (Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType;Z)Lcom/mobilebytelabs/kmptoolkit/appintents/ParamDef;
+	public static synthetic fun copy$default (Lcom/mobilebytelabs/kmptoolkit/appintents/ParamDef;Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType;ZILjava/lang/Object;)Lcom/mobilebytelabs/kmptoolkit/appintents/ParamDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getType ()Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType;
+	public fun hashCode ()I
+	public final fun isRequired ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class com/mobilebytelabs/kmptoolkit/appintents/ParamType {
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/ParamType$Bool : com/mobilebytelabs/kmptoolkit/appintents/ParamType {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType$Bool;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/ParamType$Entity : com/mobilebytelabs/kmptoolkit/appintents/ParamType {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType$Entity;
+	public static synthetic fun copy$default (Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType$Entity;Ljava/lang/String;ILjava/lang/Object;)Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType$Entity;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEntityName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/ParamType$Integer : com/mobilebytelabs/kmptoolkit/appintents/ParamType {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType$Integer;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/ParamType$Number : com/mobilebytelabs/kmptoolkit/appintents/ParamType {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType$Number;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/ParamType$Text : com/mobilebytelabs/kmptoolkit/appintents/ParamType {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/ParamType$Text;
+}
+

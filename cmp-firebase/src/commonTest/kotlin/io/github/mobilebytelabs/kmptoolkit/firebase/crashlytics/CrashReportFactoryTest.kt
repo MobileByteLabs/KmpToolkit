@@ -15,13 +15,12 @@ import kotlin.test.assertTrue
 
 class CrashReportFactoryTest {
 
-    private fun thrown(block: () -> Unit): Throwable =
-        try {
-            block()
-            error("expected block to throw")
-        } catch (t: Throwable) {
-            t
-        }
+    private fun thrown(block: () -> Unit): Throwable = try {
+        block()
+        error("expected block to throw")
+    } catch (t: Throwable) {
+        t
+    }
 
     @Test
     fun captures_class_message_and_platform() {

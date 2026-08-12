@@ -73,24 +73,23 @@ private val FRAME_REGEX =
  * frames resolve to `class`/`method`/`file`/`line`; on other targets we keep the
  * [StackFrame.raw] line and fill whatever the regex can recover.
  */
-internal fun parseStackFrames(rawTrace: String): List<StackFrame> =
-    rawTrace.lineSequence()
-        .map { it.trim() }
-        .filter { it.startsWith("at ") }
-        .map { line ->
-            val m = FRAME_REGEX.find(line)
-            if (m != null) {
-                val file = m.groupValues[3].takeIf { it.isNotBlank() }
-                val line0 = m.groupValues[4].toIntOrNull()
-                StackFrame(
-                    declaringClass = m.groupValues[1].takeIf { it.isNotBlank() },
-                    method = m.groupValues[2].takeIf { it.isNotBlank() },
-                    file = file,
-                    line = line0,
-                    raw = line,
-                )
-            } else {
-                StackFrame(raw = line)
-            }
+internal fun parseStackFrames(rawTrace: String): List<StackFrame> = rawTrace.lineSequence()
+    .map { it.trim() }
+    .filter { it.startsWith("at ") }
+    .map { line ->
+        val m = FRAME_REGEX.find(line)
+        if (m != null) {
+            val file = m.groupValues[3].takeIf { it.isNotBlank() }
+            val line0 = m.groupValues[4].toIntOrNull()
+            StackFrame(
+                declaringClass = m.groupValues[1].takeIf { it.isNotBlank() },
+                method = m.groupValues[2].takeIf { it.isNotBlank() },
+                file = file,
+                line = line0,
+                raw = line,
+            )
+        } else {
+            StackFrame(raw = line)
         }
-        .toList()
+    }
+    .toList()

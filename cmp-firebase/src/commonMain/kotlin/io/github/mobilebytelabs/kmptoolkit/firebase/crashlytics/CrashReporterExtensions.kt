@@ -21,19 +21,17 @@ import kotlinx.coroutines.CoroutineExceptionHandler
  * val scope = CoroutineScope(SupervisorJob() + FirebaseKit.crashReporter.asCoroutineExceptionHandler())
  * ```
  */
-fun CrashReporter.asCoroutineExceptionHandler(): CoroutineExceptionHandler =
-    CoroutineExceptionHandler { _, throwable ->
-        recordException(throwable, fatal = false)
-    }
+fun CrashReporter.asCoroutineExceptionHandler(): CoroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+    recordException(throwable, fatal = false)
+}
 
 /**
  * Run [block], recording any thrown exception to this reporter, then rethrow.
  * Handy for wrapping a risky call site without changing its control flow.
  */
-inline fun <T> CrashReporter.recording(block: () -> T): T =
-    try {
-        block()
-    } catch (t: Throwable) {
-        recordException(t, fatal = false)
-        throw t
-    }
+inline fun <T> CrashReporter.recording(block: () -> T): T = try {
+    block()
+} catch (t: Throwable) {
+    recordException(t, fatal = false)
+    throw t
+}

@@ -61,10 +61,6 @@ kotlin {
     tvosArm64()
     tvosSimulatorArm64()
 
-    watchosX64()
-    watchosArm64()
-    watchosSimulatorArm64()
-    watchosDeviceArm64()
 
     linuxX64()
     linuxArm64()
@@ -117,7 +113,7 @@ kotlin {
     // wasmWasi target intentionally omitted — Ktor / Kermit / multiplatform-settings
     // do not publish wasmWasi variants. 20/21 targets supported.
     //
-    // GitLive Firebase Analytics 2.5.x target matrix verified at:
+    // GitLive Firebase Analytics 3.0.x target matrix verified at:
     //   https://github.com/GitLiveApp/firebase-kotlin-sdk/blob/master/firebase-analytics/build.gradle.kts
     sourceSets {
         commonMain.dependencies {
@@ -159,7 +155,6 @@ kotlin {
         jsMain.get().dependsOn(firebaseMain)
 
         // Not supported by GitLive → nonFirebaseMain (Measurement Protocol HTTP)
-        watchosMain.get().dependsOn(nonFirebaseMain)
         linuxMain.get().dependsOn(nonFirebaseMain)
         mingwMain.get().dependsOn(nonFirebaseMain)
         wasmJsMain.get().dependsOn(nonFirebaseMain)
@@ -174,7 +169,7 @@ kotlin {
         //   crashlyticsFirebaseMain (6)  — GitLive Crashlytics: android, ios×3, macos×2
         //   crashlyticsFallbackMain (13) — LoggingCrashReporter: jvm, js, tvos×3, watchos×4, linux×2, mingw, wasmJs
         //
-        // GitLive firebase-crashlytics 2.5.0 publishes ONLY android + iOS + macOS
+        // GitLive firebase-crashlytics 3.0.0-alpha01 publishes ONLY android + iOS + macOS
         // (NO tvOS/watchOS/JVM/JS/native) — verified against its published artifacts.
         // Crashlytics also has no ingestion REST API, so the fallback is a structured
         // Kermit-logged CrashReport (AI-feedable), not a Measurement-Protocol HTTP.
@@ -195,7 +190,6 @@ kotlin {
         jvmMain.get().dependsOn(crashlyticsFallbackMain)
         jsMain.get().dependsOn(crashlyticsFallbackMain)
         tvosMain.get().dependsOn(crashlyticsFallbackMain)
-        watchosMain.get().dependsOn(crashlyticsFallbackMain)
         linuxMain.get().dependsOn(crashlyticsFallbackMain)
         mingwMain.get().dependsOn(crashlyticsFallbackMain)
         wasmJsMain.get().dependsOn(crashlyticsFallbackMain)
@@ -206,16 +200,18 @@ kotlin {
         // nonFirebaseMain platforms; firebaseMain platforms also have the
         // engine available so apps can opt to use MP everywhere.
         androidMain.dependencies {
-            // GitLive's firebase-analytics-android pulls in com.google.firebase:firebase-analytics
-            // and firebase-common WITHOUT versions — the BOM supplies them.
-            implementation(project.dependencies.platform(libs.firebase.bom))
+            // GitLive's firebase-analytics-android + firebase-crashlytics-android pull in
+            // com.google.firebase:firebase-{analytics,crashlytics} + firebase-common WITHOUT
+            // versions — the BOM supplies them. `api` (not implementation) so CONSUMERS inherit
+            // the BOM constraint too; otherwise a consumer's androidCompileClasspath cannot
+            // resolve the unversioned transitive Firebase Android artifacts (empty-version error).
+            api(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.ktor.client.cio)
         }
         jvmMain.dependencies { implementation(libs.ktor.client.cio) }
         iosMain.dependencies { implementation(libs.ktor.client.darwin) }
         macosMain.dependencies { implementation(libs.ktor.client.darwin) }
         tvosMain.dependencies { implementation(libs.ktor.client.darwin) }
-        watchosMain.dependencies { implementation(libs.ktor.client.darwin) }
         jsMain.dependencies { implementation(libs.ktor.client.js) }
         wasmJsMain.dependencies { implementation(libs.ktor.client.js) }
         linuxMain.dependencies { implementation(libs.ktor.client.curl) }

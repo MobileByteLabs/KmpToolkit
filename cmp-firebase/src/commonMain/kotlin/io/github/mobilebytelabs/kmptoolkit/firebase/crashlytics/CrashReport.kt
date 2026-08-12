@@ -58,8 +58,7 @@ data class CrashReport(
     val rawStackTrace: String? = null,
 ) {
     /** Serialize to JSON for logging, upload, or handing to an AI. */
-    fun toJson(pretty: Boolean = false): String =
-        (if (pretty) PrettyJson else CompactJson).encodeToString(this)
+    fun toJson(pretty: Boolean = false): String = (if (pretty) PrettyJson else CompactJson).encodeToString(this)
 
     companion object {
         internal val CompactJson = Json {
@@ -76,10 +75,7 @@ data class CrashReport(
 
 /** One link in a [CrashReport.causeChain]. */
 @Serializable
-data class CrashCause(
-    val throwableClass: String,
-    val message: String? = null,
-)
+data class CrashCause(val throwableClass: String, val message: String? = null)
 
 /**
  * One parsed stack frame. On JVM/Android the trace format

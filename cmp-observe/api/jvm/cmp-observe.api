@@ -1,0 +1,35 @@
+public final class io/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArtifact ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getVersion ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/observe/LibraryObservation {
+	public static final field INSTANCE Lio/github/mobilebytelabs/kmptoolkit/observe/LibraryObservation;
+	public final fun notifyClose (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
+	public final fun notifyInit (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
+	public final fun notifyInitComplete (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
+	public final fun notifyInitFailure (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/Throwable;)V
+	public final fun notifyLifecycle (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/String;Ljava/util/Map;)V
+	public static synthetic fun notifyLifecycle$default (Lio/github/mobilebytelabs/kmptoolkit/observe/LibraryObservation;Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public final fun register (Lio/github/mobilebytelabs/kmptoolkit/observe/LibraryObservationHook;)V
+	public final fun replaceHooks (Lkotlin/jvm/functions/Function1;)V
+}
+
+public abstract interface class io/github/mobilebytelabs/kmptoolkit/observe/LibraryObservationHook {
+	public abstract fun onClose (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
+	public abstract fun onInitComplete (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
+	public abstract fun onInitFailure (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/Throwable;)V
+	public abstract fun onInitStart (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
+	public abstract fun onLifecycleEvent (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/String;Ljava/util/Map;)V
+}
+

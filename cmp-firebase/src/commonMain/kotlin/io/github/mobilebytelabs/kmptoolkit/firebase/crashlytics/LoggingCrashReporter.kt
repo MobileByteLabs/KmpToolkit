@@ -29,9 +29,7 @@ private const val MAX_BREADCRUMBS = 64
  * route your global handler (or a [asCoroutineExceptionHandler]) to
  * [recordException] to capture crashes on these targets.
  */
-class LoggingCrashReporter(
-    private val platform: String = kmpPlatform,
-) : CrashReporter {
+class LoggingCrashReporter(private val platform: String = kmpPlatform) : CrashReporter {
 
     private val stickyKeys = mutableMapOf<String, String>()
     private val breadcrumbs = ArrayDeque<String>()
@@ -40,11 +38,7 @@ class LoggingCrashReporter(
 
     override val lastReport: CrashReport? get() = _lastReport
 
-    override fun recordException(
-        throwable: Throwable,
-        fatal: Boolean,
-        extraKeys: Map<String, String>,
-    ) {
+    override fun recordException(throwable: Throwable, fatal: Boolean, extraKeys: Map<String, String>) {
         val keys = buildMap {
             putAll(stickyKeys)
             putAll(extraKeys)

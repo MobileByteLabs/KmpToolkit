@@ -16,12 +16,12 @@ import kotlin.test.assertTrue
 
 class LoggingCrashReporterTest {
 
-    private fun thrown(block: () -> Unit): Throwable =
-        try {
-            block(); error("expected throw")
-        } catch (t: Throwable) {
-            t
-        }
+    private fun thrown(block: () -> Unit): Throwable = try {
+        block()
+        error("expected throw")
+    } catch (t: Throwable) {
+        t
+    }
 
     @Test
     fun no_report_before_first_record() {

@@ -33,11 +33,7 @@ interface CrashReporter {
      *
      * @param extraKeys one-off keys merged over the sticky [setCustomKey] keys for this record
      */
-    fun recordException(
-        throwable: Throwable,
-        fatal: Boolean = false,
-        extraKeys: Map<String, String> = emptyMap(),
-    )
+    fun recordException(throwable: Throwable, fatal: Boolean = false, extraKeys: Map<String, String> = emptyMap())
 
     /** Add a breadcrumb log line (bounded ring buffer, surfaced in [CrashReport.breadcrumbs]). */
     fun log(message: String)

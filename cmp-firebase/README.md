@@ -8,7 +8,7 @@ Firebase for **Kotlin Multiplatform** — **Analytics + Crashlytics** in one mod
 > Renamed from `cmp-firebase-analytics` (the module now covers Crashlytics too). Package root: `io.github.mobilebytelabs.kmptoolkit.firebase`.
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-firebase)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-firebase)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## What's in the box
@@ -60,7 +60,7 @@ Crash reporting mirrors the analytics two-tier design, but with a **different, s
 | **crashlyticsFirebaseMain** | Android, iOS (×3), macOS (×2) | **6** | `FirebaseCrashReporter` — native Firebase Crashlytics (auto-captures uncaught crashes) **and** builds a structured `CrashReport` |
 | **crashlyticsFallbackMain** | JVM, JS, tvOS (×3), watchOS (×4), Linux (×2), mingwX64, wasmJs | **13** | `LoggingCrashReporter` — no Crashlytics ingestion REST API exists, so it builds the same `CrashReport` and logs it as JSON via Kermit |
 
-> GitLive Crashlytics 2.5.0 ships on Android + iOS + macOS only — **not** tvOS/watchOS/JVM/JS/native (verified against its published artifacts). Analytics reaches more targets than Crashlytics, hence the separate split.
+> GitLive Crashlytics 3.0.0 ships on Android + iOS + macOS only — **not** tvOS/watchOS/JVM/JS/native (verified against its published artifacts). Analytics reaches more targets than Crashlytics, hence the separate split.
 
 The whole point of `CrashReport` is **AI-feedability** — on *every* platform you get the exception class, the human message, the **full cause chain**, and stack frames broken out to **`file:line`**, serializable to JSON:
 
@@ -121,15 +121,22 @@ GitLive Firebase Analytics is brought in transitively as `api` on supported plat
    implementation("com.google.firebase:firebase-analytics")
    ```
 
-### iOS / macOS / tvOS
+### iOS / macOS / tvOS (SwiftPM — GitLive 3.x)
 
-1. Add `GoogleService-Info.plist` to your app target
-2. In your AppDelegate / `@main` App:
+GitLive 3.0.0 links the native Firebase iOS SDK via **SwiftPM** (not CocoaPods). `firebase-ios-sdk` flows across the Maven boundary automatically — **do not re-declare it**. In your app's shared KMP module:
+
+1. Build the shared framework **static** — Firebase's SwiftPM products are static libraries; a dynamic framework crashes at runtime:
+   ```kotlin
+   // shared build.gradle.kts
+   iosArm64().binaries.framework { baseName = "Shared"; isStatic = true }
+   ```
+2. In Xcode, use **direct integration** — add the `embedAndSignAppleFrameworkForXcode` run-script build phase (replaces `pod install`). On each build Gradle resolves the inherited `firebase-ios-sdk`, generates the synthetic Swift package, and embeds/signs the framework.
+3. Set the deployment target to **iOS 15.0** (macOS 10.15, tvOS 15.0) — `firebase-ios-sdk` 12.x minimum.
+4. Add `GoogleService-Info.plist` to your app target and call `FirebaseApp.configure()` once in your `@main` `init` (Firebase-mandated — it identifies *your* project):
    ```swift
    import FirebaseCore
    FirebaseApp.configure()
    ```
-3. Pod dependencies are bundled by GitLive — see your project's Podfile
 
 ### JS / JVM
 

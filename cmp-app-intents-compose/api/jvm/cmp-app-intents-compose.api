@@ -1,0 +1,16 @@
+public final class com/mobilebytelabs/kmptoolkit/appintents/compose/AppIntentsRegistrationKt {
+	public static final fun AppIntentsRegistration (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig;Landroidx/compose/runtime/Composer;I)V
+	public static final fun rememberRegisteredAppIntents (Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig;Landroidx/compose/runtime/Composer;I)Lcom/mobilebytelabs/kmptoolkit/appintents/AppIntentsConfig;
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/compose/AppIntentsRegistryKt {
+	public static final fun AppIntentsRegistry (Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;II)V
+}
+
+public final class com/mobilebytelabs/kmptoolkit/appintents/compose/ComposableSingletons$AppIntentsRegistryKt {
+	public static final field INSTANCE Lcom/mobilebytelabs/kmptoolkit/appintents/compose/ComposableSingletons$AppIntentsRegistryKt;
+	public fun <init> ()V
+	public final fun getLambda$2056188479$io_github_mobilebytelabs_cmp_app_intents_compose ()Lkotlin/jvm/functions/Function3;
+	public final fun getLambda$636826172$io_github_mobilebytelabs_cmp_app_intents_compose ()Lkotlin/jvm/functions/Function3;
+}
+

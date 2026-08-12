@@ -44,11 +44,7 @@ class FirebaseCrashReporter(
 
     override val lastReport: CrashReport? get() = _lastReport
 
-    override fun recordException(
-        throwable: Throwable,
-        fatal: Boolean,
-        extraKeys: Map<String, String>,
-    ) {
+    override fun recordException(throwable: Throwable, fatal: Boolean, extraKeys: Map<String, String>) {
         extraKeys.forEach { (k, v) -> runCatching { crashlytics.setCustomKey(k, v) } }
         runCatching { crashlytics.recordException(throwable) }
             .onFailure { Logger.w(TAG) { "native recordException failed: ${it.message}" } }

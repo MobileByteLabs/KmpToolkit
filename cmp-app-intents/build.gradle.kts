@@ -77,11 +77,6 @@ kotlin {
     tvosSimulatorArm64()
 
     // watchOS targets (v0.2 — FULL App Intents impl; watchOS 10+ Shortcuts via Swift bridge)
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    watchosSimulatorArm64()
-    watchosDeviceArm64()
 
     // Linux + mingw (v0.2 — registry-only; manifest JSON to XDG / APPDATA dir)
     linuxX64()
