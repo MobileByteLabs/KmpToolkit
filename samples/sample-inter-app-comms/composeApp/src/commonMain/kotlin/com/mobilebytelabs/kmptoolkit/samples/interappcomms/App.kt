@@ -44,7 +44,7 @@ import com.mobilebytelabs.kmptoolkit.appintents.ParamType
 import com.mobilebytelabs.kmptoolkit.appintents.appIntents
 import com.mobilebytelabs.kmptoolkit.intentlauncher.IntentResult
 import com.mobilebytelabs.kmptoolkit.intentlauncher.ResultContracts
-import com.mobilebytelabs.kmptoolkit.intentlauncher.rememberIntentLauncher
+import com.mobilebytelabs.kmptoolkit.intentlauncher.compose.rememberIntentLauncher
 import com.mobilebytelabs.kmptoolkit.share.Share
 import com.mobilebytelabs.kmptoolkit.share.ShareOptions
 import com.mobilebytelabs.kmptoolkit.share.ShareResult
@@ -267,6 +267,7 @@ private fun AppIntentsTab(onStatus: (String) -> Unit) {
 // =============================================================================
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun ComposeUxTab(onStatus: (String) -> Unit) {
     val scope = rememberCoroutineScope()
 

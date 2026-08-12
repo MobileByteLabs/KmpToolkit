@@ -205,6 +205,29 @@ val analyticsModule = module {
 }
 ```
 
+You then depend only on the `AnalyticsHelper` **interface** — no Firebase types leak into your feature code — and just call `logEvent(...)` wherever you record.
+
+### Opt-in / opt-out & consent
+
+Firebase automatically collects **user-acquisition** (`first_open` source/medium/campaign) and **behaviour/engagement** (`session_start`, `user_engagement`, `screen_view`) events. Collection is **on by default (opt-in-by-default)**; you control it with two calls on `AnalyticsHelper`:
+
+```kotlin
+// Opt-in-required (GDPR) — start OFF, enable after the user consents:
+val analytics = AnalyticsModule.analyticsHelper(
+    AnalyticsModule.Mode.Firebase,
+    AnalyticsConfig(collectionEnabledByDefault = false),
+)
+
+// End-user opts out in Settings → stops ALL collection incl. the auto acquisition/behaviour events:
+analytics.setCollectionEnabled(false)   // native: persisted; MP tier: stops sending
+analytics.setCollectionEnabled(true)    // opt back in
+
+// Granular GDPR Consent Mode (native Firebase → ANALYTICS_STORAGE / AD_STORAGE):
+analytics.setConsent(analyticsStorage = true, adStorage = false)
+```
+
+`setCollectionEnabled(false)` is honoured on **every** tier — native Firebase (`setAnalyticsCollectionEnabled`, persisted across restarts) and the Measurement-Protocol fallback (the helper simply stops POSTing). No need to swap the binding to `NoOpAnalyticsHelper`.
+
 Then in your ViewModel:
 
 ```kotlin
@@ -336,7 +359,7 @@ The adapter automatically truncates to Firebase's limits:
 - Use the `pii: true` flag on params in your screen YAML (per framework `/idea analytics` schema) to mark sensitive fields — these are NEVER auto-instrumented
 - Hash/obfuscate `user_id` before passing to `setUserId()` — never use raw email/phone
 - Respect platform settings: iOS App Tracking Transparency (ATT), Android Limited Ad Tracking
-- Provide an opt-out toggle in app settings; bind it to swap to `NoOpAnalyticsHelper` at runtime
+- Provide an opt-out toggle in app settings; bind it to `analytics.setCollectionEnabled(false)` (halts collection incl. the auto acquisition/behaviour events on every tier), and/or `setConsent(analyticsStorage = false)` for GDPR Consent Mode
 
 ## Project consumer pattern
 

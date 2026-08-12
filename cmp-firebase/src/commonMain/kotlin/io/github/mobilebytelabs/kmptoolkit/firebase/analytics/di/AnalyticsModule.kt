@@ -9,6 +9,7 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase.analytics.di
 
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsConfig
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.NoOpAnalyticsHelper
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.PerformanceTracker
@@ -53,11 +54,19 @@ object AnalyticsModule {
         NoOp,
     }
 
-    fun analyticsHelper(mode: Mode = Mode.NoOp): AnalyticsHelper = when (mode) {
+    /**
+     * Create the [AnalyticsHelper] for [mode] and apply [config] at startup — notably
+     * [AnalyticsConfig.collectionEnabledByDefault], so the returned helper is already in the
+     * right opt-in/opt-out state. Inject the result once and just call `logEvent(...)`.
+     */
+    fun analyticsHelper(
+        mode: Mode = Mode.NoOp,
+        config: AnalyticsConfig = AnalyticsConfig(),
+    ): AnalyticsHelper = when (mode) {
         Mode.Firebase -> provideAnalyticsHelper()
         Mode.Stub -> StubAnalyticsHelper()
         Mode.NoOp -> NoOpAnalyticsHelper
-    }
+    }.also { it.setCollectionEnabled(config.collectionEnabledByDefault) }
 
     fun performanceTracker(helper: AnalyticsHelper): PerformanceTracker = PerformanceTracker(helper)
 }

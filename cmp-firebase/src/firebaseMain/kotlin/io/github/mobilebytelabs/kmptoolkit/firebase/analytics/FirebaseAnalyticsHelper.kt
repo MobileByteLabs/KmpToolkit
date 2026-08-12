@@ -93,6 +93,24 @@ class FirebaseAnalyticsHelper(
         firebase.setUserId(userId.take(MAX_USER_ID_LEN))
     }
 
+    override fun setCollectionEnabled(enabled: Boolean) {
+        // Master switch: also gates Firebase's automatic user-acquisition + behaviour
+        // events. Persisted by the SDK across app restarts.
+        firebase.setAnalyticsCollectionEnabled(enabled)
+    }
+
+    override fun setConsent(analyticsStorage: Boolean, adStorage: Boolean) {
+        firebase.setConsent(
+            mapOf(
+                FirebaseAnalytics.ConsentType.ANALYTICS_STORAGE to analyticsStorage.toConsentStatus(),
+                FirebaseAnalytics.ConsentType.AD_STORAGE to adStorage.toConsentStatus(),
+            ),
+        )
+    }
+
+    private fun Boolean.toConsentStatus(): FirebaseAnalytics.ConsentStatus =
+        if (this) FirebaseAnalytics.ConsentStatus.GRANTED else FirebaseAnalytics.ConsentStatus.DENIED
+
     private companion object {
         const val MAX_EVENT_NAME_LEN = 40
         const val MAX_PARAM_KEY_LEN = 40

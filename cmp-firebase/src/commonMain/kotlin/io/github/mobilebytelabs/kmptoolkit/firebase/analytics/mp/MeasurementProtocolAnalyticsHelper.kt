@@ -99,6 +99,7 @@ class MeasurementProtocolAnalyticsHelper(
     private val platform: String = platformOverride ?: kmpPlatform
 
     @Volatile private var userId: String? = null
+    @Volatile private var collectionEnabled: Boolean = true
     private val userProperties = mutableMapOf<String, String>()
 
     private val buffer = mutableListOf<AnalyticsEvent>()
@@ -107,6 +108,7 @@ class MeasurementProtocolAnalyticsHelper(
     @Volatile private var flushJob: Job? = null
 
     override fun logEvent(event: AnalyticsEvent) {
+        if (!collectionEnabled) return // opt-out: drop the event, never buffer or POST it
         val enriched = event.withPlatform(platform)
         scope.launch {
             bufferMutex.withLock {
@@ -126,6 +128,16 @@ class MeasurementProtocolAnalyticsHelper(
 
     override fun setUserId(userId: String) {
         this.userId = userId.take(MAX_USER_ID).takeIf { it.isNotBlank() }
+    }
+
+    override fun setCollectionEnabled(enabled: Boolean) {
+        collectionEnabled = enabled
+    }
+
+    override fun setConsent(analyticsStorage: Boolean, adStorage: Boolean) {
+        // The Measurement-Protocol tier has no native Consent Mode; honour
+        // analytics_storage as the collection gate (ad_storage is n/a here).
+        collectionEnabled = analyticsStorage
     }
 
     /**

@@ -106,4 +106,24 @@ interface AnalyticsHelper {
      * NEVER pass PII — use a hashed/obfuscated identifier.
      */
     fun setUserId(userId: String) {}
+
+    /**
+     * Master switch for ALL analytics collection — including Firebase's automatic
+     * **user-acquisition** (`first_open` source/medium/campaign) and
+     * **behaviour/engagement** (`session_start`, `user_engagement`, `screen_view`) events.
+     *
+     * Collection defaults to ON (opt-in-by-default, see [AnalyticsConfig]). Call with
+     * `false` when the end-user opts out — it stops the auto-collected events too, persists
+     * across sessions on native Firebase, and halts event delivery on the Measurement-Protocol
+     * tier. Re-enable by calling with `true`. Default: no-op (overridden where meaningful).
+     */
+    fun setCollectionEnabled(enabled: Boolean) {}
+
+    /**
+     * Granular GDPR/consent control (Firebase **Consent Mode**). [analyticsStorage] gates
+     * analytics data, [adStorage] gates ad data. Native Firebase maps these to
+     * `ANALYTICS_STORAGE` / `AD_STORAGE`; the Measurement-Protocol tier honours
+     * [analyticsStorage] as its collection gate. Default: no-op.
+     */
+    fun setConsent(analyticsStorage: Boolean, adStorage: Boolean = false) {}
 }

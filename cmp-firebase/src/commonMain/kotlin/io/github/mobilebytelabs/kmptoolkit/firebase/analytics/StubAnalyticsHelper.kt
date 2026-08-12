@@ -59,4 +59,12 @@ class StubAnalyticsHelper(
     override fun setUserId(userId: String) {
         Logger.i(TAG) { "🆔 setUserId  $userId" }
     }
+
+    override fun setCollectionEnabled(enabled: Boolean) {
+        Logger.i(TAG) { "⚙️ setCollectionEnabled  $enabled" }
+    }
+
+    override fun setConsent(analyticsStorage: Boolean, adStorage: Boolean) {
+        Logger.i(TAG) { "⚖️ setConsent  analyticsStorage=$analyticsStorage adStorage=$adStorage" }
+    }
 }

@@ -69,6 +69,7 @@ kotlin {
             implementation(project(":cmp-pdf-generator"))
             implementation(project(":cmp-share"))
             implementation(project(":cmp-intent-launcher"))
+            implementation(project(":cmp-intent-launcher-compose"))
             implementation(project(":cmp-app-intents"))
             implementation(project(":cmp-product-tickets"))
             implementation(project(":cmp-remote-config"))

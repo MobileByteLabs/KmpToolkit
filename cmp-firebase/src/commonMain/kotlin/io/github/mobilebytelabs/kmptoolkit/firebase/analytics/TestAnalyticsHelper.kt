@@ -33,6 +33,8 @@ class TestAnalyticsHelper : AnalyticsHelper {
     private val _events = mutableListOf<AnalyticsEvent>()
     private val _userProperties = mutableMapOf<String, String>()
     private var _userId: String? = null
+    private var _collectionEnabled: Boolean = true
+    private var _consent: Pair<Boolean, Boolean>? = null
 
     /** All captured events, in insertion order. */
     val events: List<AnalyticsEvent> get() = _events.toList()
@@ -42,6 +44,12 @@ class TestAnalyticsHelper : AnalyticsHelper {
 
     /** Most recent userId (or null if never set). */
     val userId: String? get() = _userId
+
+    /** Current collection-enabled state (defaults to `true`). */
+    val collectionEnabled: Boolean get() = _collectionEnabled
+
+    /** Most recent consent as `(analyticsStorage, adStorage)`, or null if never set. */
+    val consent: Pair<Boolean, Boolean>? get() = _consent
 
     override fun logEvent(event: AnalyticsEvent) {
         _events.add(event)
@@ -55,11 +63,21 @@ class TestAnalyticsHelper : AnalyticsHelper {
         _userId = userId
     }
 
+    override fun setCollectionEnabled(enabled: Boolean) {
+        _collectionEnabled = enabled
+    }
+
+    override fun setConsent(analyticsStorage: Boolean, adStorage: Boolean) {
+        _consent = analyticsStorage to adStorage
+    }
+
     /** Clear all captured state — call between tests. */
     fun clear() {
         _events.clear()
         _userProperties.clear()
         _userId = null
+        _collectionEnabled = true
+        _consent = null
     }
 
     /** Convenience: count events by type. */
