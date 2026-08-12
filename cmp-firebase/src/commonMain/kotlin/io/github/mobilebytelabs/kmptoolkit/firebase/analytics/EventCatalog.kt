@@ -27,18 +27,14 @@ package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
 abstract class EventCatalog {
 
     /** A declared event: a fixed [type] plus a fixed set of allowed [allowedKeys]. */
-    protected fun def(type: String, vararg allowedKeys: String): EventDef =
-        EventDef(type, allowedKeys.toSet())
+    protected fun def(type: String, vararg allowedKeys: String): EventDef = EventDef(type, allowedKeys.toSet())
 
     /** Build an [AnalyticsEvent] from a raw [type] + pairs (validation handled by AnalyticsEvent). */
     protected fun event(type: String, vararg params: Pair<String, String>): AnalyticsEvent =
         AnalyticsEvent(type, params.map { Param(it.first, it.second) })
 
     /** A compile-time event declaration; invoking it produces a validated [AnalyticsEvent]. */
-    protected class EventDef internal constructor(
-        val type: String,
-        private val allowedKeys: Set<String>,
-    ) {
+    protected class EventDef internal constructor(val type: String, private val allowedKeys: Set<String>) {
         operator fun invoke(vararg params: Pair<String, String>): AnalyticsEvent {
             require(allowedKeys.isEmpty() || params.all { it.first in allowedKeys }) {
                 "Event '$type' allows keys $allowedKeys but got ${params.map { it.first }}"

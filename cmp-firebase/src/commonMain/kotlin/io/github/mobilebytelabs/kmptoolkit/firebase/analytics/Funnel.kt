@@ -22,10 +22,7 @@ package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
  * f.complete()   // or f.abandon("otp_timeout")
  * ```
  */
-class Funnel internal constructor(
-    private val analytics: AnalyticsHelper,
-    private val name: String,
-) {
+class Funnel internal constructor(private val analytics: AnalyticsHelper, private val name: String) {
     fun start() = emit(EVENT_START)
 
     fun step(step: String) = analytics.logEvent(
@@ -42,8 +39,7 @@ class Funnel internal constructor(
         analytics.logEvent(AnalyticsEvent(EVENT_ABANDON, params))
     }
 
-    private fun emit(type: String) =
-        analytics.logEvent(AnalyticsEvent(type, listOf(Param(PARAM_FUNNEL, name))))
+    private fun emit(type: String) = analytics.logEvent(AnalyticsEvent(type, listOf(Param(PARAM_FUNNEL, name))))
 
     private companion object {
         const val EVENT_START = "funnel_start"

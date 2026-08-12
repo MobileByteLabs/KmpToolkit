@@ -59,14 +59,12 @@ object AnalyticsModule {
      * [AnalyticsConfig.collectionEnabledByDefault], so the returned helper is already in the
      * right opt-in/opt-out state. Inject the result once and just call `logEvent(...)`.
      */
-    fun analyticsHelper(
-        mode: Mode = Mode.NoOp,
-        config: AnalyticsConfig = AnalyticsConfig(),
-    ): AnalyticsHelper = when (mode) {
-        Mode.Firebase -> provideAnalyticsHelper()
-        Mode.Stub -> StubAnalyticsHelper()
-        Mode.NoOp -> NoOpAnalyticsHelper
-    }.also { it.setCollectionEnabled(config.collectionEnabledByDefault) }
+    fun analyticsHelper(mode: Mode = Mode.NoOp, config: AnalyticsConfig = AnalyticsConfig()): AnalyticsHelper =
+        when (mode) {
+            Mode.Firebase -> provideAnalyticsHelper()
+            Mode.Stub -> StubAnalyticsHelper()
+            Mode.NoOp -> NoOpAnalyticsHelper
+        }.also { it.setCollectionEnabled(config.collectionEnabledByDefault) }
 
     fun performanceTracker(helper: AnalyticsHelper): PerformanceTracker = PerformanceTracker(helper)
 }

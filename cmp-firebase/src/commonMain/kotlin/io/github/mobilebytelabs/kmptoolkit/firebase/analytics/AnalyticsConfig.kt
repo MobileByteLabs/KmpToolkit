@@ -56,6 +56,5 @@ data class AnalyticsConfig(
      * [AnalyticsHelper.setCollectionEnabled]`(false)` opt-out (and each per-capability flag)
      * suppresses the corresponding automatic events.
      */
-    fun autoEnabled(capability: Boolean, collectionEnabled: Boolean): Boolean =
-        collectionEnabled && capability
+    fun autoEnabled(capability: Boolean, collectionEnabled: Boolean): Boolean = collectionEnabled && capability
 }

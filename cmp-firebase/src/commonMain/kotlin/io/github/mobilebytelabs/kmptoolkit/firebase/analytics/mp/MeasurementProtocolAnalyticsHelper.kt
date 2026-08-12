@@ -99,6 +99,7 @@ class MeasurementProtocolAnalyticsHelper(
     private val platform: String = platformOverride ?: kmpPlatform
 
     @Volatile private var userId: String? = null
+
     @Volatile private var collectionEnabled: Boolean = true
     private val userProperties = mutableMapOf<String, String>()
 
