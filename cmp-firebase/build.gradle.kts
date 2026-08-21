@@ -139,6 +139,7 @@ kotlin {
         val firebaseMain by creating {
             dependsOn(commonMain.get())
             dependencies {
+                api(libs.gitlive.firebase.app)
                 api(libs.gitlive.firebase.analytics)
             }
         }
@@ -149,15 +150,18 @@ kotlin {
             dependsOn(commonMain.get())
         }
 
-        // GitLive-supported → firebaseMain
+        // GitLive-supported native analytics + programmatic init → firebaseMain
         androidMain.get().dependsOn(firebaseMain)
-        jvmMain.get().dependsOn(firebaseMain)
         iosMain.get().dependsOn(firebaseMain)
         macosMain.get().dependsOn(firebaseMain)
         tvosMain.get().dependsOn(firebaseMain)
         jsMain.get().dependsOn(firebaseMain)
 
-        // Not supported by GitLive → nonFirebaseMain (Measurement Protocol HTTP)
+        // Not supported by GitLive → nonFirebaseMain (Measurement Protocol HTTP).
+        // JVM is here too: GitLive's JVM analytics is a no-op stub AND JVM has no
+        // Android Context for programmatic init, so JVM runs on the MP tier
+        // (no-op platformInitializeFirebase + MP analytics).
+        jvmMain.get().dependsOn(nonFirebaseMain)
         linuxMain.get().dependsOn(nonFirebaseMain)
         mingwMain.get().dependsOn(nonFirebaseMain)
         wasmJsMain.get().dependsOn(nonFirebaseMain)

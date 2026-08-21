@@ -8,10 +8,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseConfig
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseKit
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseOptions
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsEvent
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.Param
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.StubAnalyticsHelper
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MpConfig
 import com.mobilebytelabs.kmptoolkit.samples.toolkit.features._shared.DemoIntro
 import com.mobilebytelabs.kmptoolkit.samples.toolkit.features._shared.SetupRequiredCard
 
@@ -35,12 +39,28 @@ fun FirebaseAnalyticsDemoScreen(onStatus: (String) -> Unit) {
     ) { Text("Log AnalyticsEvent (stub)") }
 
     SetupRequiredCard(
-        title = "Wire a real backend for production",
-        explanation = "StubAnalyticsHelper is in-process — events never leave the app. Choose GitLive (mobile) or Measurement Protocol (desktop/web) for actual delivery.",
+        title = "One commonMain init for production",
+        explanation = "One call configures every platform — no google-services.json / GoogleService-Info.plist / Swift configure() line. See exampleCommonMainInit() below.",
         setupSteps = listOf(
-            "Mobile: createGitLiveAnalyticsHelper() — needs Firebase config",
-            "Desktop/Web/Native: MeasurementProtocolAnalyticsHelper(measurementId, apiSecret)",
-            "Register in DI: single AnalyticsHelper instance for the whole app",
+            "commonMain: FirebaseKit.initialize(FirebaseConfig(android=…, apple=…, web=…, measurementProtocol=…))",
+            "Native (Android/iOS/macOS/tvOS/JS): GitLive initializes Firebase from your keys",
+            "Fallback (JVM/desktop/web-wasm/native): Measurement Protocol via the same MpConfig",
+        ),
+    )
+}
+
+/**
+ * Reference: the entire Firebase setup for every platform is this one commonMain
+ * call. Firebase apiKey/appId/projectId are client identifiers (safe in source);
+ * the Measurement-Protocol apiSecret is loaded from a secrets store at runtime.
+ */
+fun exampleCommonMainInit(mpApiSecret: String) {
+    FirebaseKit.initialize(
+        FirebaseConfig(
+            android = FirebaseOptions(applicationId = "1:123:android:abc", apiKey = "AIza…", projectId = "demo"),
+            apple = FirebaseOptions(applicationId = "1:123:ios:def", apiKey = "AIza…", gcmSenderId = "123"),
+            web = FirebaseOptions(applicationId = "1:123:web:ghi", apiKey = "AIza…", authDomain = "demo.firebaseapp.com"),
+            measurementProtocol = MpConfig(measurementId = "G-DEMO", apiSecret = mpApiSecret),
         ),
     )
 }

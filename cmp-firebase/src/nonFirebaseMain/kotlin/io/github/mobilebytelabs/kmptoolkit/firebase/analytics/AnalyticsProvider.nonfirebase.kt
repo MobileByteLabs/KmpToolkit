@@ -9,6 +9,9 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
 
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseRuntime
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MeasurementProtocolAnalyticsHelper
+
 /**
  * Non-Firebase tier actual: watchOS (×4) · Linux (×2) · mingwX64 · wasmJs · wasmWasi.
  *
@@ -42,4 +45,7 @@ package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
  * }
  * ```
  */
-actual fun provideAnalyticsHelper(): AnalyticsHelper = NoOpAnalyticsHelper
+actual fun provideAnalyticsHelper(): AnalyticsHelper =
+    FirebaseRuntime.config?.measurementProtocol
+        ?.let { MeasurementProtocolAnalyticsHelper(config = it, settings = InMemorySettings()) }
+        ?: NoOpAnalyticsHelper

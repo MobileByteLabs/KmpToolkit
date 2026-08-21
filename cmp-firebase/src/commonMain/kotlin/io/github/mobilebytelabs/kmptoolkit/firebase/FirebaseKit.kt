@@ -9,6 +9,8 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase
 
+import co.touchlab.kermit.Logger
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.kmpPlatform
 import io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics.CrashReporter
 import io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics.provideCrashReporter
 
@@ -68,4 +70,29 @@ object FirebaseKit {
         crashReporter.install()
         initialized = true
     }
+
+    /**
+     * Fully-commonMain programmatic init from one per-platform [config].
+     *
+     * Idempotent. Stashes [config] (so the Measurement-Protocol analytics factory
+     * can auto-wire from it), initializes native Firebase for the running platform
+     * where GitLive supports it, then installs the crash reporter. When this
+     * platform has no options (and is not on the MP tier), analytics degrades to
+     * NoOp with a WARN — it never throws (analytics must not break the app).
+     */
+    fun initialize(config: FirebaseConfig) {
+        if (initialized) return
+        FirebaseRuntime.config = config
+        val options = config.optionsForCurrentPlatform()
+        if (options == null && config.measurementProtocol == null) {
+            Logger.w(TAG) {
+                "No Firebase options for platform '$kmpPlatform' and no MpConfig — analytics will NoOp."
+            }
+        }
+        platformInitializeFirebase(options)
+        crashReporter.install()
+        initialized = true
+    }
+
+    private const val TAG = "FirebaseKit"
 }

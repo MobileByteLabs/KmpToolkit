@@ -111,6 +111,37 @@ GitLive Firebase Analytics is brought in transitively as `api` on supported plat
 
 ## Setup
 
+### One commonMain init (no native config files)
+
+The entire Firebase setup for **every platform** can be a single `commonMain`
+call — no `google-services.json`, no `GoogleService-Info.plist`, no Swift
+`FirebaseApp.configure()` line. Pass one `FirebaseConfig` holding each platform's
+keys; the library selects the running platform, initializes Firebase
+programmatically on the GitLive-native tier (Android/iOS/macOS/tvOS/JS) and wires
+the Measurement-Protocol transport on the fallback tier (JVM/Linux/Windows/wasm):
+
+```kotlin
+// commonMain — runs on every target
+FirebaseKit.initialize(
+    FirebaseConfig(
+        android = FirebaseOptions(applicationId = "1:123:android:abc", apiKey = "AIza…", projectId = "my-proj"),
+        apple   = FirebaseOptions(applicationId = "1:123:ios:def",     apiKey = "AIza…", gcmSenderId = "123"), // ios/macos/tvos
+        web     = FirebaseOptions(applicationId = "1:123:web:ghi",     apiKey = "AIza…", authDomain = "my-proj.firebaseapp.com"),
+        measurementProtocol = MpConfig("G-XXXX", apiSecret = secureStore.read("MP_API_SECRET")),
+    ),
+)
+```
+
+Per-platform notes: Apple's native `FIROptions` requires `gcmSenderId`; a platform
+with no options degrades to a NoOp analytics helper with a WARN (it never throws).
+Firebase `apiKey`/`applicationId`/`projectId` are client identifiers (safe in
+source); the Measurement-Protocol `apiSecret` is the only secret — load it from
+your secrets store, never hard-code it. On Android the required `Context` is
+captured internally by `FirebaseInitProvider`, so the call stays 100% commonMain.
+
+The native-config-file paths below still work (the no-arg `FirebaseKit.initialize()`
+keeps the legacy Android auto-init behavior) — use whichever fits your app.
+
 ### Android
 
 1. Add `google-services.json` to `app/`
