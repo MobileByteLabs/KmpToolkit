@@ -1,8 +1,69 @@
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig {
+	public static final field Companion Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Companion;
+	public fun <init> ()V
+	public fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig;)V
+	public synthetic fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public final fun component2 ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public final fun component3 ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public final fun component4 ()Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig;
+	public final fun copy (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig;ILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAndroid ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public final fun getApple ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public final fun getMeasurementProtocol ()Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig;
+	public final fun getWeb ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public fun hashCode ()I
+	public final fun optionsForCurrentPlatform ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Builder {
+	public fun <init> ()V
+	public final fun android (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Builder;
+	public final fun apple (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Builder;
+	public final fun build ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig;
+	public final fun measurementProtocol (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/mp/MpConfig;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Builder;
+	public final fun web (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Builder;
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Companion {
+	public final fun builder ()Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig$Builder;
+}
+
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/FirebaseKit {
 	public static final field INSTANCE Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseKit;
 	public final fun getCrashReporter ()Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;
 	public final fun initialize ()V
+	public final fun initialize (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig;)V
 	public final fun isInitialized ()Z
+}
+
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApiKey ()Ljava/lang/String;
+	public final fun getApplicationId ()Ljava/lang/String;
+	public final fun getAuthDomain ()Ljava/lang/String;
+	public final fun getDatabaseUrl ()Ljava/lang/String;
+	public final fun getGaTrackingId ()Ljava/lang/String;
+	public final fun getGcmSenderId ()Ljava/lang/String;
+	public final fun getProjectId ()Ljava/lang/String;
+	public final fun getStorageBucket ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsBatch {
@@ -115,7 +176,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Analyt
 	public static fun setUserProperty (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Ljava/lang/String;Ljava/lang/String;)V
 }
 
-public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsProvider_firebaseKt {
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsProvider_nonfirebaseKt {
 	public static final fun provideAnalyticsHelper ()Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;
 }
 
@@ -222,29 +283,6 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/EventV
 	public fun hashCode ()I
 	public final fun isValid ()Z
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/FirebaseAnalyticsHelper : io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper {
-	public static final field MAX_EVENT_NAME_LEN I
-	public static final field MAX_PARAM_KEY_LEN I
-	public static final field MAX_PARAM_VALUE_LEN I
-	public static final field MAX_USER_ID_LEN I
-	public static final field MAX_USER_PROP_NAME_LEN I
-	public static final field MAX_USER_PROP_VALUE_LEN I
-	public fun <init> (Ldev/gitlive/firebase/analytics/FirebaseAnalytics;Ljava/lang/String;)V
-	public synthetic fun <init> (Ldev/gitlive/firebase/analytics/FirebaseAnalytics;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun logButtonClick (Ljava/lang/String;Ljava/lang/String;)V
-	public fun logError (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public fun logEvent (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsEvent;)V
-	public fun logEvent (Ljava/lang/String;Ljava/util/Map;)V
-	public fun logEvent (Ljava/lang/String;[Lkotlin/Pair;)V
-	public fun logFeatureUsed (Ljava/lang/String;Ljava/lang/String;)V
-	public fun logScreenView (Ljava/lang/String;Ljava/lang/String;)V
-	public fun logStateTransition (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public fun setCollectionEnabled (Z)V
-	public fun setConsent (ZZ)V
-	public fun setUserId (Ljava/lang/String;)V
-	public fun setUserProperty (Ljava/lang/String;Ljava/lang/String;)V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Funnel {
