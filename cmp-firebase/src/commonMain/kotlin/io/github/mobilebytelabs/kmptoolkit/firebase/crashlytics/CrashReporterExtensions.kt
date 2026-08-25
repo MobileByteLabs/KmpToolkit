@@ -21,8 +21,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
  * val scope = CoroutineScope(SupervisorJob() + FirebaseKit.crashReporter.asCoroutineExceptionHandler())
  * ```
  */
-fun CrashReporter.asCoroutineExceptionHandler(): CoroutineExceptionHandler =
-    asCoroutineExceptionHandler(fatal = false)
+fun CrashReporter.asCoroutineExceptionHandler(): CoroutineExceptionHandler = asCoroutineExceptionHandler(fatal = false)
 
 /**
  * As [asCoroutineExceptionHandler] but records with the given [fatal] flag — pass

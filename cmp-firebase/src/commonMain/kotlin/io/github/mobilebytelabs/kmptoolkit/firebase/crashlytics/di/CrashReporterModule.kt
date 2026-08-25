@@ -47,9 +47,11 @@ object CrashReporterModule {
 
     fun crashReporter(mode: Mode = Mode.Firebase): CrashReporter = when (mode) {
         Mode.Firebase -> provideCrashReporter()
+
         // Mirror to the same all-platform GA4 crash view as Mode.Firebase — without the
         // sink, the documented DEBUG wiring silently disabled the app_crash bridge.
         Mode.Logging -> LoggingCrashReporter(analyticsSink = { provideAnalyticsHelper() })
+
         Mode.NoOp -> NoOpCrashReporter
     }
 }

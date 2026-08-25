@@ -45,7 +45,6 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MeasurementProt
  * }
  * ```
  */
-internal actual fun createPlatformAnalyticsHelper(): AnalyticsHelper =
-    FirebaseRuntime.config?.measurementProtocol
-        ?.let { MeasurementProtocolAnalyticsHelper(config = it, settings = InMemorySettings()) }
-        ?: NoOpAnalyticsHelper
+internal actual fun createPlatformAnalyticsHelper(): AnalyticsHelper = FirebaseRuntime.config?.measurementProtocol
+    ?.let { MeasurementProtocolAnalyticsHelper(config = it, settings = InMemorySettings()) }
+    ?: NoOpAnalyticsHelper

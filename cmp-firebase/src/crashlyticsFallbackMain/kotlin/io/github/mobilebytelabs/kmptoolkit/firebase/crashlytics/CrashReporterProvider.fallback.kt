@@ -18,5 +18,4 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.provideAnalyticsHe
  * to analytics ([provideAnalyticsHelper], lazily) as an `app_crash` event so these
  * Crashlytics-unreachable targets still reach the single all-platform GA4 crash view.
  */
-actual fun provideCrashReporter(): CrashReporter =
-    LoggingCrashReporter(analyticsSink = { provideAnalyticsHelper() })
+actual fun provideCrashReporter(): CrashReporter = LoggingCrashReporter(analyticsSink = { provideAnalyticsHelper() })

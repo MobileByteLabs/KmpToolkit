@@ -65,7 +65,11 @@ class FirebaseCrashReporter(
             breadcrumbs = breadcrumbs.toList(),
         )
         // Mirror to the single all-platform GA4 crash view alongside native Crashlytics.
-        analyticsSink?.logCrash(platform = platform, exceptionType = throwable::class.simpleName ?: "Throwable", fatal = fatal)
+        analyticsSink?.logCrash(
+            platform = platform,
+            exceptionType = throwable::class.simpleName ?: "Throwable",
+            fatal = fatal,
+        )
     }
 
     override fun log(message: String) {

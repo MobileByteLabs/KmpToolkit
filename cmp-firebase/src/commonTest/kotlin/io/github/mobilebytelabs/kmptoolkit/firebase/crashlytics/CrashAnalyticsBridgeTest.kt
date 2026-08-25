@@ -29,11 +29,12 @@ class CrashAnalyticsBridgeTest {
 
     private class RecordingAnalyticsHelper : AnalyticsHelper {
         val events = mutableListOf<AnalyticsEvent>()
-        override fun logEvent(event: AnalyticsEvent) { events.add(event) }
+        override fun logEvent(event: AnalyticsEvent) {
+            events.add(event)
+        }
     }
 
-    private fun AnalyticsEvent.param(key: String): String? =
-        extras.firstOrNull { it.key == key }?.value
+    private fun AnalyticsEvent.param(key: String): String? = extras.firstOrNull { it.key == key }?.value
 
     @Test
     fun fallback_crash_emits_app_crash_event_with_platform_tag() {

@@ -18,5 +18,4 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.provideAnalyticsHe
  * `app_crash` event so native crashes join the single all-platform GA4 crash view
  * alongside the richer native Crashlytics report.
  */
-actual fun provideCrashReporter(): CrashReporter =
-    FirebaseCrashReporter(analyticsSink = { provideAnalyticsHelper() })
+actual fun provideCrashReporter(): CrashReporter = FirebaseCrashReporter(analyticsSink = { provideAnalyticsHelper() })
