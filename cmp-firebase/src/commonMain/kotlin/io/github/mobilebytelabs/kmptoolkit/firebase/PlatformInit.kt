@@ -13,7 +13,7 @@ package io.github.mobilebytelabs.kmptoolkit.firebase
  * Programmatically initialize the platform's native Firebase from [options].
  *
  * - **GitLive tier** (android/ios/macos/tvos/js) → `Firebase.initialize(options)`.
- * - **Measurement-Protocol tier** (jvm/watchos/linux/mingw/wasmjs) → no-op
+ * - **Measurement-Protocol tier** (jvm/linux/mingw/wasmjs) → no-op
  *   (no native Firebase SDK; analytics flows through the MP helper instead).
  *
  * A null [options] (no keys supplied for this platform) is a no-op on every

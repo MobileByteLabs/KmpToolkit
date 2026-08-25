@@ -23,7 +23,7 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MpConfig
  * ### Tier routing
  * - **Native (GitLive)** — `android`, `apple` (ios/macos/tvos), `web` (js) →
  *   `Firebase.initialize(options)`.
- * - **Measurement-Protocol** — jvm / watchos / linux / windows / wasmjs have no
+ * - **Measurement-Protocol** — jvm / linux / windows / wasmjs have no
  *   native Firebase (or a stub); analytics flows through [measurementProtocol].
  *   Leave [measurementProtocol] null to no-op analytics on those targets.
  *
@@ -60,7 +60,7 @@ public data class FirebaseConfig(
         "android" -> android
         "ios", "macos", "tvos" -> apple
         "js" -> web
-        else -> null // jvm / watchos / linux / mingw / wasmjs → MP tier, no native options
+        else -> null // jvm / linux / mingw / wasmjs → MP tier, no native options
     }
 
     /** The [FirebaseOptions] for the platform this code is running on. */

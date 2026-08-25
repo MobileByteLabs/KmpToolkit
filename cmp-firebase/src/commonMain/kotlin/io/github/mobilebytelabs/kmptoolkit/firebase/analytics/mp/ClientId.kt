@@ -26,11 +26,11 @@ private const val CLIENT_ID_KEY = "io.github.mobilebytelabs.kmptoolkit.firebase.
  * key-value persistence:
  * - Android: SharedPreferences
  * - JVM: java.util.prefs.Preferences
- * - iOS / macOS / tvOS / watchOS: NSUserDefaults
+ * - iOS / macOS / tvOS: NSUserDefaults
  * - JS: localStorage
  * - Linux native / mingwX64: in-memory only (TODO: file-backed in 1.4+)
  * - wasmJs: localStorage
- * - wasmWasi: in-memory only (no persistent KV today)
+ * - JVM / Linux / mingw / wasmJs: in-memory only (no persistent KV today)
  *
  * On platforms without persistent storage, the client_id is regenerated each
  * cold start. Events still flow; the unique-user count just over-reports.

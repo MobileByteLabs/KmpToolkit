@@ -88,7 +88,7 @@ class MeasurementProtocolAnalyticsHelper(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     /**
      * Override the auto-injected `kmp_platform` value. Defaults to [kmpPlatform]
-     * (`"watchos" | "linux" | "mingw" | "wasmjs" | "wasmwasi"` on this tier).
+     * (`"jvm" | "linux" | "mingw" | "wasmjs"` on this tier).
      */
     platformOverride: String? = null,
 ) : AnalyticsHelper {

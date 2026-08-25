@@ -12,19 +12,19 @@ package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
 /**
  * The KMP target this code is running on.
  *
- * One of: `"android"`, `"ios"`, `"macos"`, `"tvos"`, `"watchos"`, `"jvm"`,
- * `"js"`, `"linux"`, `"mingw"`, `"wasmjs"`, `"wasmwasi"`.
+ * One of: `"android"`, `"ios"`, `"macos"`, `"tvos"`, `"jvm"`,
+ * `"js"`, `"linux"`, `"mingw"`, `"wasmjs"`.
  *
  * Auto-injected on every event by [FirebaseAnalyticsHelper],
  * [MeasurementProtocolAnalyticsHelper], and [StubAnalyticsHelper] under the
  * key [ParamKeys.PLATFORM] (`"kmp_platform"`). This disambiguates events in
  * BigQuery — without it, a `screen_view` event is just a `screen_view` whether
- * it came from Android, iOS, watchOS, or Linux.
+ * it came from Android, iOS, tvOS, or Linux.
  *
  * Why a separate `kmp_platform` (not GA4's built-in `platform`):
  * - GA4 native auto-`platform` is coarse: `"android"` / `"ios"` / `"web"` only
  * - MP HTTP events don't get auto-`platform` unless we set it
- * - Sub-platforms (watchOS vs iOS vs macOS — all "Apple") can't be told apart
+ * - Sub-platforms (tvOS vs iOS vs macOS — all "Apple") can't be told apart
  *   in GA4's built-in field
  *
  * Apps can override per-helper:
