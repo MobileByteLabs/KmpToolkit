@@ -9,6 +9,8 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase
 
+import co.touchlab.kermit.Logger
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.kmpPlatform
 import io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics.CrashReporter
 import io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics.provideCrashReporter
 
@@ -24,7 +26,7 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics.provideCrashRepo
  *   `google-services.json`. Zero app code.
  * - **iOS / macOS / tvOS** — call [initialize] once from your entry point. Native
  *   Firebase Crashlytics then auto-captures uncaught crashes.
- * - **JVM / JS / watchOS / Linux / Windows / wasmJs** — [initialize] activates the
+ * - **JVM / JS / Linux / Windows / wasmJs** — [initialize] activates the
  *   structured logging [crashReporter]; route your exception handler to it.
  *
  * ### The only residual app-side steps (Firebase constraints, not library gaps)
@@ -60,6 +62,24 @@ object FirebaseKit {
     val isInitialized: Boolean get() = initialized
 
     /**
+     * OPT-IN: install a process-global uncaught-exception handler that mirrors every
+     * FATAL crash to the [crashReporter] (→ native Crashlytics where available AND the
+     * single all-platform GA4 `app_crash` view with `fatal=true`), then delegates to any
+     * previously-installed handler. Call once, after [initialize], from your entry point:
+     * ```kotlin
+     * FirebaseKit.initialize(config); FirebaseKit.installUncaughtHandler()
+     * ```
+     * Returns `true` iff a handler was installed — JVM/Android only. Elsewhere it is a
+     * no-op (`false`): Apple targets let native Crashlytics own the crash path, and
+     * JS/wasm/desktop-native have no safe library-claimable global fatal hook — route
+     * your own handler to `crashReporter.recordException(t, fatal = true)` there.
+     * Non-fatal + caught errors are captured via `recordException` / `recording { }` /
+     * `asCoroutineExceptionHandler(fatal = …)` regardless of platform.
+     */
+    fun installUncaughtHandler(): Boolean =
+        installPlatformUncaughtHandler { t -> crashReporter.recordException(t, fatal = true) }
+
+    /**
      * Enable crash reporting and install what the platform allows. Idempotent —
      * safe to call from the Android auto-init provider and from app code both.
      */
@@ -68,4 +88,32 @@ object FirebaseKit {
         crashReporter.install()
         initialized = true
     }
+
+    /**
+     * Fully-commonMain programmatic init from one per-platform [config].
+     *
+     * Idempotent. Stashes [config] (so the Measurement-Protocol analytics factory
+     * can auto-wire from it), initializes native Firebase for the running platform
+     * where GitLive supports it, then installs the crash reporter. When this
+     * platform has no options (and is not on the MP tier), analytics degrades to
+     * NoOp with a WARN — it never throws (analytics must not break the app).
+     */
+    fun initialize(config: FirebaseConfig) {
+        if (initialized) return
+        FirebaseRuntime.config = config
+        // Config changed → drop any memoized helper so provideAnalyticsHelper() rebuilds
+        // from THIS config (else a helper built before init would be stale/NoOp forever).
+        FirebaseRuntime.analyticsHelper = null
+        val options = config.optionsForCurrentPlatform()
+        if (options == null && config.measurementProtocol == null) {
+            Logger.w(TAG) {
+                "No Firebase options for platform '$kmpPlatform' and no MpConfig — analytics will NoOp."
+            }
+        }
+        platformInitializeFirebase(options)
+        crashReporter.install()
+        initialized = true
+    }
+
+    private const val TAG = "FirebaseKit"
 }

@@ -21,17 +21,35 @@ import kotlinx.coroutines.CoroutineExceptionHandler
  * val scope = CoroutineScope(SupervisorJob() + FirebaseKit.crashReporter.asCoroutineExceptionHandler())
  * ```
  */
-fun CrashReporter.asCoroutineExceptionHandler(): CoroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-    recordException(throwable, fatal = false)
-}
+fun CrashReporter.asCoroutineExceptionHandler(): CoroutineExceptionHandler = asCoroutineExceptionHandler(fatal = false)
+
+/**
+ * As [asCoroutineExceptionHandler] but records with the given [fatal] flag — pass
+ * `true` for a top-level/app scope so the GA4 `app_crash` `fatal` dimension reflects
+ * reality (the bridge otherwise only ever sees `fatal=false`).
+ *
+ * (Separate overload rather than a defaulted param so the original zero-arg
+ * signature stays binary-compatible for already-published consumers.)
+ */
+fun CrashReporter.asCoroutineExceptionHandler(fatal: Boolean): CoroutineExceptionHandler =
+    CoroutineExceptionHandler { _, throwable -> recordException(throwable, fatal = fatal) }
 
 /**
  * Run [block], recording any thrown exception to this reporter, then rethrow.
  * Handy for wrapping a risky call site without changing its control flow.
  */
-inline fun <T> CrashReporter.recording(block: () -> T): T = try {
+inline fun <T> CrashReporter.recording(block: () -> T): T = recording(fatal = false, block = block)
+
+/**
+ * As [recording] but records with the given [fatal] flag. Pass `true` at a
+ * top-level/app scope so the GA4 `app_crash` `fatal` dimension reflects reality.
+ *
+ * (Separate overload rather than a defaulted param so the original single-lambda
+ * signature stays binary-compatible for already-published consumers.)
+ */
+inline fun <T> CrashReporter.recording(fatal: Boolean, block: () -> T): T = try {
     block()
 } catch (t: Throwable) {
-    recordException(t, fatal = false)
+    recordException(t, fatal = fatal)
     throw t
 }

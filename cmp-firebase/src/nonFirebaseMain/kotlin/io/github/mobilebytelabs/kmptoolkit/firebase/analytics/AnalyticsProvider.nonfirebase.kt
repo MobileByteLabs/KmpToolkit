@@ -9,10 +9,13 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
 
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseRuntime
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MeasurementProtocolAnalyticsHelper
+
 /**
- * Non-Firebase tier actual: watchOS (×4) · Linux (×2) · mingwX64 · wasmJs · wasmWasi.
+ * Non-Firebase tier actual: JVM · Linux (×2) · mingwX64 · wasmJs.
  *
- * GitLive Firebase Analytics does not ship on these 10 targets, so the default
+ * GitLive Firebase Analytics does not ship on these 5 targets, so the default
  * helper is [NoOpAnalyticsHelper]. Apps that want event capture on these
  * platforms (recommended) construct [io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MeasurementProtocolAnalyticsHelper]
  * directly in their DI module — events land in the same Firebase Analytics
@@ -42,4 +45,6 @@ package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
  * }
  * ```
  */
-actual fun provideAnalyticsHelper(): AnalyticsHelper = NoOpAnalyticsHelper
+internal actual fun createPlatformAnalyticsHelper(): AnalyticsHelper = FirebaseRuntime.config?.measurementProtocol
+    ?.let { MeasurementProtocolAnalyticsHelper(config = it, settings = InMemorySettings()) }
+    ?: NoOpAnalyticsHelper

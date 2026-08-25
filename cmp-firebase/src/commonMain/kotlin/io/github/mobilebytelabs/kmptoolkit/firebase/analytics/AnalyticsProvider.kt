@@ -10,32 +10,34 @@
 package io.github.mobilebytelabs.kmptoolkit.firebase.analytics
 
 /**
- * Cross-platform default-helper factory.
+ * Per-platform default-helper factory (the raw, un-memoized construction). Internal —
+ * consumers call [provideAnalyticsHelper], which memoizes the result process-wide.
  *
- * Returns a platform-appropriate [AnalyticsHelper]:
+ * Returns a platform-appropriate [AnalyticsHelper], matching the build.gradle.kts
+ * source-set wiring (firebaseMain vs nonFirebaseMain) exactly:
  *
  * | Tier | Targets | Returns |
  * |---|---|---|
- * | **GitLive supports** (11) | Android, JVM, iOS (×3), macOS (×2), tvOS (×3), JS | `FirebaseAnalyticsHelper(Firebase.analytics)` |
- * | **GitLive unavailable** (10) | watchOS (×4), Linux (×2), mingwX64, wasmJs, wasmWasi | [NoOpAnalyticsHelper] |
+ * | **firebaseMain** (GitLive) | Android, iOS (×3), macOS (×2), tvOS (×3), JS | `FirebaseAnalyticsHelper(Firebase.analytics)` |
+ * | **nonFirebaseMain** | JVM, Linux (×2), mingwX64, wasmJs | [MeasurementProtocolAnalyticsHelper] when an [io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MpConfig] is configured, else [NoOpAnalyticsHelper] |
  *
- * Apps targeting only Firebase-supported platforms get full analytics. Apps
- * spanning unsupported platforms (e.g. an iOS+watchOS combo) get Firebase
- * on iOS and a no-op on watchOS automatically — no expect/actual setup
- * required at the app level.
+ * Note: JVM/desktop is on the **nonFirebaseMain** tier — GitLive Firebase Analytics
+ * does NOT ship for JVM. Desktop analytics (and the desktop crash→GA4 mirror) requires
+ * `FirebaseKit.initialize(config)` with an `MpConfig`; otherwise it NoOps.
+ */
+internal expect fun createPlatformAnalyticsHelper(): AnalyticsHelper
+
+/**
+ * The process-wide default [AnalyticsHelper] — memoized so the app's DI and the
+ * crash→GA4 bridge share ONE instance (authoritative consent + stable MP `client_id`).
  *
- * For finer control (debug → Stub, release → Firebase), construct your own
- * helper in your DI module:
- *
+ * For finer control (debug → Stub, release → Firebase), construct your own helper in DI:
  * ```kotlin
- * val analyticsModule = module {
- *     single<AnalyticsHelper> {
- *         when {
- *             BuildConfig.DEBUG -> StubAnalyticsHelper()
- *             else              -> provideAnalyticsHelper()
- *         }
- *     }
- * }
+ * single<AnalyticsHelper> { if (BuildConfig.DEBUG) StubAnalyticsHelper() else provideAnalyticsHelper() }
  * ```
  */
-expect fun provideAnalyticsHelper(): AnalyticsHelper
+fun provideAnalyticsHelper(): AnalyticsHelper =
+    io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseRuntime.analyticsHelper
+        ?: createPlatformAnalyticsHelper().also {
+            io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseRuntime.analyticsHelper = it
+        }

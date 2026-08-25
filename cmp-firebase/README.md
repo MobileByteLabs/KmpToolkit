@@ -1,9 +1,9 @@
 # cmp-firebase
 
-Firebase for **Kotlin Multiplatform** — **Analytics + Crashlytics** in one module with a single in-library setup surface ([`FirebaseKit`](#setup-stays-in-the-library)). Interface + Stub/NoOp/Test variants across all 20 supported KMP targets, backed by [GitLive Firebase](https://github.com/GitLiveApp/firebase-kotlin-sdk):
+Firebase for **Kotlin Multiplatform** — **Analytics + Crashlytics** in one module with a single in-library setup surface ([`FirebaseKit`](#setup-stays-in-the-library)). Interface + Stub/NoOp/Test variants across all 15 supported KMP targets, backed by [GitLive Firebase](https://github.com/GitLiveApp/firebase-kotlin-sdk):
 
-- **Analytics** — GitLive on **11 targets**, Measurement-Protocol HTTP fallback on the rest.
-- **Crashlytics** — GitLive on **6 targets** (Android + iOS×3 + macOS×2); a structured, **AI-feedable `CrashReport`** (logged via Kermit) on the other 13. Every tier produces the same `CrashReport` JSON you can hand straight to an AI to diagnose and fix a crash.
+- **Analytics** — GitLive on **10 targets** (firebaseMain: Android, iOS×3, macOS×2, tvOS×3, JS), Measurement-Protocol HTTP fallback on the remaining 5 (JVM, Linux×2, mingwX64, wasmJs).
+- **Crashlytics** — GitLive on **6 targets** (Android + iOS×3 + macOS×2); a structured, **AI-feedable `CrashReport`** (logged via Kermit) on the other 9. Every tier produces the same `CrashReport` JSON you can hand straight to an AI to diagnose and fix a crash.
 
 > Renamed from `cmp-firebase-analytics` (the module now covers Crashlytics too). Package root: `io.github.mobilebytelabs.kmptoolkit.firebase`.
 
@@ -38,18 +38,18 @@ io.github.mobilebytelabs.kmptoolkit.firebase
     └── CrashReporter extensions — asCoroutineExceptionHandler(), recording { }
 ```
 
-## Targets — true 21/21 KMP coverage via two transport tiers
+## Targets — true 15/15 KMP coverage via two transport tiers
 
 | Tier | Targets | Count | Recommended helper | Default `provideAnalyticsHelper()` |
 |---|---|:-:|---|---|
-| **firebaseMain** | Android, JVM, iOS (iosX64/iosArm64/iosSimulatorArm64), macOS (macosX64/macosArm64), tvOS (tvosX64/tvosArm64/tvosSimulatorArm64), JS | **11** | `FirebaseAnalyticsHelper` (GitLive — full native: DebugView, automatic events, A/B Testing, demographics) | `FirebaseAnalyticsHelper(Firebase.analytics)` |
-| **nonFirebaseMain** | watchOS (×4), Linux (×2), mingwX64, wasmJs, wasmWasi | **10** | `MeasurementProtocolAnalyticsHelper` (HTTP POST to Firebase MP — events land in the SAME Firebase Analytics property + same BigQuery export) | `NoOpAnalyticsHelper` (until app wires MP — see below) |
+| **firebaseMain** | Android, iOS (iosX64/iosArm64/iosSimulatorArm64), macOS (macosX64/macosArm64), tvOS (tvosX64/tvosArm64/tvosSimulatorArm64), JS | **10** | `FirebaseAnalyticsHelper` (GitLive — full native: DebugView, automatic events, A/B Testing, demographics) | `FirebaseAnalyticsHelper(Firebase.analytics)` |
+| **nonFirebaseMain** | JVM, Linux (linuxX64/linuxArm64), mingwX64, wasmJs | **5** | `MeasurementProtocolAnalyticsHelper` (HTTP POST to Firebase MP — events land in the SAME Firebase Analytics property + same BigQuery export) | `NoOpAnalyticsHelper` (until app wires MP — see below) |
 
-GitLive Firebase Analytics 2.x ships on macOS and tvOS — they're real Apple targets that Firebase iOS SDK supports natively. Only watchOS sits outside on the Apple side (Firebase iOS SDK has no watchOS variant).
+GitLive Firebase Analytics ships on Android, iOS, macOS, tvOS, and JS — the platforms the native Firebase SDK supports. JVM/desktop is intentionally on the nonFirebase tier: GitLive does not publish a JVM artifact.
 
-For the 10 non-Firebase platforms, `MeasurementProtocolAnalyticsHelper` provides event capture parity (custom events, user properties, persistent client_id). It uses Firebase's Measurement Protocol REST API — events land in the SAME property and BigQuery dataset as GitLive-emitted events. Trade-offs vs native SDK: no DebugView, no automatic events, no A/B tie-in, ~1h latency to BigQuery (same as GitLive).
+For the 5 non-Firebase platforms (JVM, Linux×2, mingwX64, wasmJs), `MeasurementProtocolAnalyticsHelper` provides event capture parity (custom events, user properties, persistent client_id). It uses Firebase's Measurement Protocol REST API — events land in the SAME property and BigQuery dataset as GitLive-emitted events. Trade-offs vs native SDK: no DebugView, no automatic events, no A/B tie-in, ~1h latency to BigQuery (same as GitLive).
 
-`provideAnalyticsHelper()` defaults to NoOp on nonFirebase platforms because MP requires app-supplied config (`measurement_id` + `api_secret`). Apps that want analytics on watchOS / Linux / etc. wire `MeasurementProtocolAnalyticsHelper` directly in their Koin module — see "Setup → Non-Firebase platforms" below.
+`provideAnalyticsHelper()` defaults to NoOp on nonFirebase platforms because MP requires app-supplied config (`measurement_id` + `api_secret`). Apps that want analytics on JVM / Linux / etc. wire `MeasurementProtocolAnalyticsHelper` directly in their Koin module — see "Setup → Non-Firebase platforms" below. `provideAnalyticsHelper()` is memoized process-wide, so the app's DI and the internal crash→GA4 bridge share ONE stable helper instance.
 
 ## Crashlytics — with AI-feedable crash reports
 
@@ -58,9 +58,9 @@ Crash reporting mirrors the analytics two-tier design, but with a **different, s
 | Tier | Targets | Count | Reporter |
 |---|---|:-:|---|
 | **crashlyticsFirebaseMain** | Android, iOS (×3), macOS (×2) | **6** | `FirebaseCrashReporter` — native Firebase Crashlytics (auto-captures uncaught crashes) **and** builds a structured `CrashReport` |
-| **crashlyticsFallbackMain** | JVM, JS, tvOS (×3), watchOS (×4), Linux (×2), mingwX64, wasmJs | **13** | `LoggingCrashReporter` — no Crashlytics ingestion REST API exists, so it builds the same `CrashReport` and logs it as JSON via Kermit |
+| **crashlyticsFallbackMain** | JVM, JS, tvOS (×3), Linux (×2), mingwX64, wasmJs | **9** | `LoggingCrashReporter` — no Crashlytics ingestion REST API exists, so it builds the same `CrashReport` and logs it as JSON via Kermit |
 
-> GitLive Crashlytics 3.0.0 ships on Android + iOS + macOS only — **not** tvOS/watchOS/JVM/JS/native (verified against its published artifacts). Analytics reaches more targets than Crashlytics, hence the separate split.
+> GitLive Crashlytics 3.0.0 ships on Android + iOS + macOS only — **not** tvOS/JVM/JS/Linux/mingw/wasm (verified against its published artifacts). Analytics reaches more targets than Crashlytics, hence the separate split.
 
 The whole point of `CrashReport` is **AI-feedability** — on *every* platform you get the exception class, the human message, the **full cause chain**, and stack frames broken out to **`file:line`**, serializable to JSON:
 
@@ -70,14 +70,35 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseKit
 try {
     riskyWork()
 } catch (t: Throwable) {
-    FirebaseKit.crashReporter.recordException(t)
+    // fatal=false (default) = non-fatal; fatal=true = counts as crash in GA4/Crashlytics
+    FirebaseKit.crashReporter.recordException(t, fatal = false)
     // Hand this straight to Claude: "explain and fix this crash"
     val json = FirebaseKit.crashReporter.lastReport?.toJson(pretty = true)
 }
 
-// Automatic-ish capture on the fallback tier — wire the coroutine handler:
-val scope = CoroutineScope(SupervisorJob() + FirebaseKit.crashReporter.asCoroutineExceptionHandler())
+// Block-scoped capture with auto-record:
+FirebaseKit.crashReporter.recording(fatal = true) { riskyWork() }
+
+// Wire at app/top-level scope — pass fatal=true so GA4 `fatal` dimension is accurate:
+val scope = CoroutineScope(SupervisorJob() + FirebaseKit.crashReporter.asCoroutineExceptionHandler(fatal = true))
+
+// Opt-in global uncaught handler — returns true on JVM/Android, false (no-op) on native/js/wasm:
+val installed: Boolean = FirebaseKit.installUncaughtHandler()
 ```
+
+## Crash→GA4 single all-platform view
+
+Every `recordException(...)` call also emits an `app_crash` GA4 event with three params:
+
+| Param | Values |
+|---|---|
+| `kmp_platform` | auto-injected (android / ios / macos / tvos / js / jvm / linux / mingw / wasmjs) |
+| `exception_type` | fully-qualified exception class name |
+| `fatal` | `true` / `false` |
+
+This means ALL platforms land in one GA4 / BigQuery table and can be segmented by `kmp_platform` and severity — whether the crash was captured by native Firebase Crashlytics or the `LoggingCrashReporter` fallback.
+
+> **nonFirebase tier caveat**: on JVM, Linux, mingwX64, and wasmJs the `app_crash` event reaches GA4 only when an `MpConfig` is configured. Without it the analytics sink is `NoOpAnalyticsHelper` and the event is silently dropped. Configure `MpConfig` (see "Non-Firebase platforms" below) to get full cross-platform crash visibility.
 
 ## Setup stays in the library
 
@@ -85,7 +106,9 @@ val scope = CoroutineScope(SupervisorJob() + FirebaseKit.crashReporter.asCorouti
 
 - **Android** — nothing to call. A `ContentProvider` runs `initialize()` at process start (Firebase auto-reads `google-services.json`). Zero app code.
 - **iOS / macOS / tvOS** — call `FirebaseKit.initialize()` once from your entry point.
-- **JVM / JS / watchOS / Linux / Windows / wasmJs** — `initialize()` activates the structured logging reporter.
+- **JVM / JS / Linux / Windows / wasmJs** — `initialize()` activates the structured logging reporter.
+
+`FirebaseKit.installUncaughtHandler()` is an opt-in global uncaught-exception capture. Returns `true` on JVM/Android (chains into any existing `Thread.UncaughtExceptionHandler` and records the crash as `fatal = true`); returns `false` and is a no-op on all other targets — Apple native Crashlytics owns the global handler on iOS/macOS; no safe global hook exists on JS/wasm/Linux. Call after `initialize()`.
 
 The only residual app-side steps are the ones Firebase itself requires (they identify *your* project): the config file (`google-services.json` / `GoogleService-Info.plist`), the Android `com.google.gms.google-services` plugin line, and — on Apple, per GitLive's documented path — the one Swift line `FirebaseApp.configure()` in your `@main init`.
 
@@ -110,6 +133,50 @@ commonMain.dependencies {
 GitLive Firebase Analytics is brought in transitively as `api` on supported platforms. On non-supported platforms the dependency simply doesn't apply (Gradle source-set hierarchy handles it).
 
 ## Setup
+
+### One commonMain init (no native config files)
+
+The entire Firebase setup for **every platform** can be a single `commonMain`
+call — no `google-services.json`, no `GoogleService-Info.plist`, no Swift
+`FirebaseApp.configure()` line. Pass one `FirebaseConfig` holding each platform's
+keys; the library selects the running platform, initializes Firebase
+programmatically on the GitLive-native tier (Android/iOS/macOS/tvOS/JS) and wires
+the Measurement-Protocol transport on the fallback tier (JVM/Linux/Windows/wasm):
+
+```kotlin
+// commonMain — runs on every target
+FirebaseKit.initialize(
+    FirebaseConfig.builder()
+        .android(FirebaseOptions(applicationId = "1:123:android:abc", apiKey = "AIza…", projectId = "my-proj"))
+        .apple(FirebaseOptions(applicationId = "1:123:ios:def", apiKey = "AIza…", gcmSenderId = "123")) // ios/macos/tvos
+        .web(FirebaseOptions(applicationId = "1:123:web:ghi", apiKey = "AIza…", authDomain = "my-proj.firebaseapp.com"))
+        .measurementProtocol(MpConfig("G-XXXX", apiSecret = secureStore.read("MP_API_SECRET")))
+        .build(),
+)
+```
+
+Per-platform notes: Apple's native `FIROptions` requires `gcmSenderId`; a platform
+with no options degrades to a NoOp analytics helper with a WARN (it never throws).
+Firebase `apiKey`/`applicationId`/`projectId` are client identifiers (safe in
+source); the Measurement-Protocol `apiSecret` is the only secret — load it from
+your secrets store, never hard-code it. On Android the required `Context` is
+captured internally by `FirebaseInitProvider`, so the call stays 100% commonMain.
+
+The native-config-file paths below still work (the no-arg `FirebaseKit.initialize()`
+keeps the legacy Android auto-init behavior) — use whichever fits your app.
+
+### Keys & Secrets
+
+Each consuming app supplies **its own** Firebase identity — these are not shared. Full walkthrough in `docs/firebase/SETUP.md`.
+
+| Platform | What to supply |
+|---|---|
+| Android | `google-services.json` (app directory) + `com.google.gms.google-services` Gradle plugin |
+| Apple (iOS/macOS/tvOS) | `GoogleService-Info.plist` (app target) + `FirebaseApp.configure()` in `@main init` |
+| JS / Web | `FirebaseOptions(apiKey=…, authDomain=…, …)` passed to `FirebaseConfig.builder().web(…)` |
+| JVM/Linux/mingwX64/wasmJs | `MpConfig(measurementId = "G-XXXX", apiSecret = <MP API secret>)` |
+
+The **Measurement Protocol `apiSecret`** is the only value that is a real secret. Generate it at: Firebase Console → Project settings → Integrations → GA4 → Data Streams → {your stream} → Measurement Protocol API secrets → Create. **Never hard-code it** — load from a secrets store (`/secrets pull` in the framework, or your platform's secure store). All other Firebase values (`apiKey`, `applicationId`, `projectId`) are client identifiers and safe in source.
 
 ### Android
 
@@ -138,13 +205,15 @@ GitLive 3.0.0 links the native Firebase iOS SDK via **SwiftPM** (not CocoaPods).
    FirebaseApp.configure()
    ```
 
-### JS / JVM
+### JS
 
 Follow GitLive's docs: https://github.com/GitLiveApp/firebase-kotlin-sdk
 
-### watchOS / Linux / Windows / wasm — Non-Firebase platforms
+> **JVM note**: JVM is on the **nonFirebase** tier — GitLive does not publish a JVM artifact. JVM consumers receive `MeasurementProtocolAnalyticsHelper` when `MpConfig` is supplied, else `NoOpAnalyticsHelper`. See "Non-Firebase platforms" below.
 
-GitLive doesn't ship on these 10 targets, so use **Firebase Measurement Protocol over HTTP** for event capture parity.
+### JVM / Linux / Windows / wasm — Non-Firebase platforms
+
+GitLive doesn't ship on these 5 targets (JVM, linuxX64, linuxArm64, mingwX64, wasmJs), so use **Firebase Measurement Protocol over HTTP** for event capture parity.
 
 1. **Generate an MP API secret** at Firebase Console → Project settings → Integrations → GA4 → Data Streams → {your stream} → **Measurement Protocol API secrets** → Create.
 
@@ -171,7 +240,7 @@ GitLive doesn't ship on these 10 targets, so use **Firebase Measurement Protocol
    }
    ```
 
-4. Events from MP land in the SAME `analytics_*.events_*` BigQuery table as GitLive-emitted events. `/idea analytics --fetch` works identically across all 21 platforms.
+4. Events from MP land in the SAME `analytics_*.events_*` BigQuery table as GitLive-emitted events. `/idea analytics --fetch` works identically across all 15 targets.
 
 **What you give up vs native SDK on these platforms:**
 - No automatic events (`first_open`, `session_start`, `in_app_purchase`) — emit manually if needed
@@ -183,7 +252,7 @@ GitLive doesn't ship on these 10 targets, so use **Firebase Measurement Protocol
 **What still works:**
 - Custom event capture with up to 25 params per event
 - User properties + user ID
-- Persistent client_id on platforms with KV storage (Apple, JS) — in-memory on Linux native / mingwX64 / wasmWasi
+- Persistent client_id on platforms with KV storage (JS) — in-memory on JVM / Linux native / mingwX64 / wasmJs
 - Async batching (5s debounce or 25 events, whichever first)
 - Silent failure on network errors (analytics never breaks the app)
 
@@ -279,7 +348,7 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.FirebaseAnalyticsH
 val helper = FirebaseAnalyticsHelper(Firebase.analytics)
 ```
 
-`FirebaseAnalyticsHelper` is only available on firebaseMain (Android/iOS/JS/JVM). Cross-platform code should call `provideAnalyticsHelper()` instead — it returns the same helper on supported platforms and `NoOpAnalyticsHelper` elsewhere.
+`FirebaseAnalyticsHelper` is only available on firebaseMain (Android/iOS/macOS/tvOS/JS). JVM is on the nonFirebase tier — cross-platform code should call `provideAnalyticsHelper()` instead, which returns the appropriate helper per platform and `NoOpAnalyticsHelper` on unconfigured nonFirebase targets.
 
 ## Auto-injected `kmp_platform` param
 
@@ -291,18 +360,16 @@ Every event gets a `kmp_platform` param injected by the helper — disambiguates
 | `iosMain` (×3) | `"ios"` |
 | `macosMain` (×2) | `"macos"` |
 | `tvosMain` (×3) | `"tvos"` |
-| `watchosMain` (×4) | `"watchos"` |
 | `jvmMain` | `"jvm"` |
 | `jsMain` | `"js"` |
 | `linuxMain` (×2) | `"linux"` |
 | `mingwMain` | `"mingw"` |
 | `wasmJsMain` | `"wasmjs"` |
-| `wasmWasiMain` | `"wasmwasi"` |
 
 Why a custom key, not GA4's built-in `platform`:
 - GA4's auto-`platform` is coarse: only `"android" | "ios" | "web"`
 - MP HTTP events don't get auto-`platform` unless we set it
-- Sub-platforms (watchOS vs iOS, tvOS vs macOS — all "Apple") collapse to `"ios"` in GA4's field
+- Sub-platforms (tvOS vs iOS, macOS vs iOS — all "Apple") collapse to `"ios"` in GA4's field
 - We need single signal that's reliable across native and MP transports
 
 **Override per-helper** for finer-grained signal:

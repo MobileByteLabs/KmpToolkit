@@ -13,6 +13,7 @@ import co.touchlab.kermit.Logger
 import com.russhwolf.settings.Settings
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsEvent
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.EventTypes
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.kmpPlatform
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.withPlatform
 import io.ktor.client.HttpClient
@@ -32,6 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -46,7 +48,7 @@ private const val DEBOUNCE_MILLIS = 5_000L
  * [AnalyticsHelper] backed by Firebase Measurement Protocol over HTTP.
  *
  * Used on KMP targets where GitLive's Firebase Analytics SDK does not ship
- * (watchOS ×4, Linux ×2, mingwX64, wasmJs, wasmWasi). Events sent via this
+ * (the nonFirebaseMain tier: JVM, Linux ×2, mingwX64, wasmJs). Events sent via this
  * helper land in the **same Firebase Analytics property + same BigQuery
  * export** as events sent via GitLive's [FirebaseAnalyticsHelper] — the
  * `/idea analytics --fetch` flow is transport-agnostic.
@@ -86,7 +88,7 @@ class MeasurementProtocolAnalyticsHelper(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     /**
      * Override the auto-injected `kmp_platform` value. Defaults to [kmpPlatform]
-     * (`"watchos" | "linux" | "mingw" | "wasmjs" | "wasmwasi"` on this tier).
+     * (`"jvm" | "linux" | "mingw" | "wasmjs"` on this tier).
      */
     platformOverride: String? = null,
 ) : AnalyticsHelper {
@@ -114,7 +116,10 @@ class MeasurementProtocolAnalyticsHelper(
         scope.launch {
             bufferMutex.withLock {
                 buffer.add(enriched)
-                if (buffer.size >= MAX_EVENTS_PER_REQUEST) {
+                // A crash mirror must not wait out the 5s debounce — a fatal crash exits
+                // the process first and the event would be lost. Flush immediately (still
+                // async; a truly instant exit can't be beaten without blocking the POST).
+                if (buffer.size >= MAX_EVENTS_PER_REQUEST || event.type == EventTypes.APP_CRASH) {
                     flushNowLocked()
                 } else {
                     scheduleFlush()
@@ -226,16 +231,22 @@ class MeasurementProtocolAnalyticsHelper(
 // ── MP request payload (kotlinx.serialization) ──────────────────────────────
 // Schema: https://developers.google.com/analytics/devguides/collection/protocol/ga4
 
+// `internal` (not `private`) purely so MpSerializationTest can lock the snake_case
+// contract in-module; NOT part of the public API (absent from the BCV .api dump).
 @Serializable
-private data class MpRequest(
-    val clientId: String,
-    val userId: String? = null,
-    val userProperties: Map<String, UserPropertyValue>? = null,
+internal data class MpRequest(
+    // GA4 Measurement Protocol requires snake_case keys; without these @SerialName
+    // overrides the payload ships `clientId`/`userId`/`userProperties`, GA4 returns
+    // 2xx but SILENTLY DROPS the event (no valid `client_id`). This defeats the entire
+    // MP tier (all non-GitLive analytics + the fallback-tier crash→GA4 mirror).
+    @SerialName("client_id") val clientId: String,
+    @SerialName("user_id") val userId: String? = null,
+    @SerialName("user_properties") val userProperties: Map<String, UserPropertyValue>? = null,
     val events: List<MpEvent>,
 )
 
 @Serializable
-private data class UserPropertyValue(val value: String)
+internal data class UserPropertyValue(val value: String)
 
 @Serializable
-private data class MpEvent(val name: String, val params: Map<String, kotlinx.serialization.json.JsonElement>? = null)
+internal data class MpEvent(val name: String, val params: Map<String, kotlinx.serialization.json.JsonElement>? = null)

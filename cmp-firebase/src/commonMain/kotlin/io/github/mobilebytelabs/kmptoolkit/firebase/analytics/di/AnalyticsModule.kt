@@ -33,9 +33,10 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.provideAnalyticsHe
  * }
  * ```
  *
- * `Mode.Firebase` calls [provideAnalyticsHelper], which returns:
- * - On Android/iOS/JS/JVM: `FirebaseAnalyticsHelper(Firebase.analytics)`
- * - On macOS/tvOS/watchOS/Linux/Windows/wasm: [NoOpAnalyticsHelper] (GitLive unavailable)
+ * `Mode.Firebase` calls [provideAnalyticsHelper], which returns (matching build.gradle.kts):
+ * - On Android/iOS/macOS/tvOS/JS (firebaseMain): `FirebaseAnalyticsHelper(Firebase.analytics)`
+ * - On JVM/Linux/Windows/wasm (nonFirebaseMain): Measurement-Protocol helper when an
+ *   `MpConfig` is configured via `FirebaseKit.initialize(config)`, else [NoOpAnalyticsHelper]
  *
  * Note: this module intentionally does NOT define a Koin `Module` to avoid forcing a
  * Koin dependency on every consumer.

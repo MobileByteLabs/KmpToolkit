@@ -56,8 +56,8 @@
                              v
 +------------------------------------------------------------+
 |  GATE 5: MP API Secret (conditional)                       |
-|  Trigger: app targets watchOS×4 / Linux×2 / mingwX64 /    |
-|           wasmJs / wasmWasi (any of the 10 nonFirebase)    |
+|  Trigger: app targets JVM / linuxX64 / linuxArm64 /        |
+|           mingwX64 / wasmJs (any of the 5 nonFirebaseMain) |
 |  Check: release-layer/.env contains MP_API_SECRET          |
 |  Check: PROJECT_CONFIG.analytics.measurement_protocol.     |
 |         api_secret_secret_ref is set                       |
@@ -82,9 +82,9 @@
 |  GATE 4   PROJECT_CONFIG   [OK]  analytics block present             |
 |  GATE 5   MP secret        N/A   no nonFirebase platforms targeted   |
 +----------------------------------------------------------------------+
-|  Targets covered: 21/21                                              |
-|    firebaseMain (11): Android, JVM, iOS x3, macOS x2, tvOS x3, JS    |
-|    nonFirebaseMain (10): N/A — not targeted by this app              |
+|  Targets covered: 15/15                                              |
+|    firebaseMain (10): Android, iOS×3, macOS×2, tvOS×3, JS            |
+|    nonFirebaseMain  (5): N/A — not targeted by this app              |
 +----------------------------------------------------------------------+
 |  Docs: docs/firebase/SETUP.md                              |
 |  Next: /idea analytics --setup  (framework: enable BigQuery readback)|
@@ -113,19 +113,20 @@
 # Other gates pass through (already wired).
 ```
 
-### Adding watchOS to an existing iOS app
+### Adding JVM (desktop) or Linux targets to an existing app
 
 ```bash
 /sync-firebase-analytics
 # Gates 1-4 already pass.
-# Gate 5 detects new watchOS targets in build.gradle.kts → triggers MP setup.
+# Gate 5 detects new jvm / linuxX64 / linuxArm64 / mingwX64 targets → triggers MP setup.
 # Surfaces the full step-by-step (see "How to generate an MP API secret" below).
-# User pastes the secret; Gate 5 writes to release-layer/.env and updates PROJECT_CONFIG.
+# Recommended: run /secrets pull — vault aliases mbs-ga4-property-id + <proj>-mp-api-secret.
+# Fallback: paste the MP API secret; Gate 5 writes to release-layer/.env and updates PROJECT_CONFIG.
 ```
 
 ## How to generate an MP API secret
 
-Required when Gate 5 fires (any of watchOS / Linux / Windows / wasm targets in your `build.gradle.kts`). Skip this entirely if your app only targets Android/iOS/macOS/tvOS/JVM/JS — those use native GitLive SDK auth.
+Required when Gate 5 fires (any of `jvm` / `linuxX64` / `linuxArm64` / `mingwX64` / `wasmJs` in your `build.gradle.kts`). Skip this entirely if your app only targets Android/iOS/macOS/tvOS/JS — those use native GitLive SDK auth.
 
 ### What it is
 
@@ -140,16 +141,22 @@ A short string token (typically 22 chars, looks like `abc1d2e3f4-XYZ_a8B7c6D5e4F
 5. In the GA4 admin pane, navigate: **Admin → Data Streams**
 6. Click your data stream — pick the one matching the platform tier you're enabling MP for:
    - **Web stream** → for `wasmJs` / browser deploys
-   - **iOS stream** → for `watchOS` (uses the iOS app's stream)
-   - For Linux/Windows native, use whichever stream represents your "desktop" presence (often Web)
+   - For `jvm` / `linuxX64` / `linuxArm64` / `mingwX64`, use whichever stream represents your "desktop" presence (often Web)
 7. Scroll to **Measurement Protocol API secrets** (bottom of the stream details page)
 8. Click **Create**
-9. Give it a descriptive name (e.g., `watchos-prod`, `linux-staging`)
+9. Give it a descriptive name (e.g., `jvm-prod`, `linux-staging`)
 10. **Copy the secret value immediately — it is shown ONCE.** If you lose it, create a new one.
 
 ### Where the secret goes
 
-Paste it when `/sync-firebase-analytics` Gate 5 prompts you, OR add manually:
+**Recommended (vault-first):** Gate 5 will prompt you to run `/secrets pull`. Analytics is
+org-global — two org-level secrets + per-app stream identity (see SETUP.md §2 mapping table):
+- `mbs-firebase-sa` — Firebase/GCP service-account JSON (**ORG** / workspace)
+- `mbs-ga4-property-id` — shared GA4 **property id**, numeric e.g. `473327398` (**ORG** / workspace)
+- `<proj>-ga4-measurement-id` — this app's GA4 stream **measurement id** `G-XXXXXXXX` (**PROJECT**)
+- `<proj>-mp-api-secret` — this app's Measurement-Protocol API secret (**PROJECT**, RULE-SECRETS-VAULT-001)
+
+Fallback — paste when Gate 5 prompts you, OR add manually:
 
 ```bash
 # release-layer/.env (gitignored — verify it's in your .gitignore)
@@ -170,12 +177,13 @@ analytics:
 
 | Rule | Why |
 |---|---|
+| **Use the vault** (`/secrets pull`) | Aliases `mbs-firebase-sa` / `mbs-ga4-property-id` / `<proj>-mp-api-secret`; no `.env`, no `gh secret set` (RULE-SECRETS-VAULT-001) |
 | Never commit the value | A leaked secret lets anyone write fake events to your GA4 stream (skews your funnel/retention metrics) |
 | Never log the value | App logs leak to crash reporters, third-party SDKs, dev consoles |
-| Rotate on suspected leak | Firebase Console → revoke old → create new → redeploy app |
+| Rotate on suspected leak | Firebase Console → revoke old → create new → `/secrets pull` → redeploy app |
 | One per environment | Separate secrets for prod / staging / dev; don't share across |
 | One per project | Each Firebase project has its own; the `mood-movies` secret won't work for `reels-downloader` |
-| Load from CI vault | GitHub Actions secrets, etc. Never hard-code in `build.gradle.kts` |
+| Load from CI vault | `/secrets pull` in CI. Never hard-code in `build.gradle.kts` |
 
 ### How MP secret differs from other Firebase credentials
 
@@ -198,13 +206,14 @@ analytics:
 
 The library bakes in **zero defaults** for project-specific config. Every project supplies its own:
 
-| Item | Where it lives | Committed? |
-|---|---|:-:|
-| `google-services.json` | `androidApp/google-services.json` | ❌ gitignored |
-| `GoogleService-Info.plist` | `cmp-ios/{app}/GoogleService-Info.plist` | ❌ gitignored |
-| Firebase JS config | `jsMain` init code (loaded from env at build time) | ❌ keys via env |
-| MP API secret | `release-layer/.env` → `MP_API_SECRET=...` | ❌ gitignored |
-| GA4 `property_id` (G-XXXXXXXX) | `idea-layer/PROJECT_CONFIG.yaml` `analytics.envs.{env}.property_id` | ✅ (not a secret) |
+| Item | Where it lives | Committed? | Vault alias |
+|---|---|:-:|---|
+| `google-services.json` | `androidApp/google-services.json` | ❌ gitignored | — (per-app identity, not an org secret) |
+| `GoogleService-Info.plist` | `cmp-ios/{app}/GoogleService-Info.plist` | ❌ gitignored | — |
+| Firebase JS config | `jsMain` init (keys loaded from env at build time) | ❌ keys via env | — |
+| Firebase SA JSON | Vault → `/secrets pull` materializes to `secrets/live/` | ❌ vault only | `mbs-firebase-sa` |
+| GA4 `property_id` (G-XXXXXXXX) | `idea-layer/PROJECT_CONFIG.yaml` `analytics.envs.{env}.property_id` | ✅ (not a secret) | `mbs-ga4-property-id` (read via vault) |
+| MP API secret | Vault → `/secrets pull`; fallback: `release-layer/.env` | ❌ vault only | `<proj>-mp-api-secret` |
 
 `/sync-firebase-analytics` Gate 2 + Gate 5 verify presence and surface manual steps when missing — they NEVER auto-generate keys (they don't exist to generate).
 

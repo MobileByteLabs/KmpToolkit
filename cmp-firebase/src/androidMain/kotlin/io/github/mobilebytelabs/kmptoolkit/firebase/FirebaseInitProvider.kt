@@ -29,7 +29,11 @@ import android.net.Uri
 internal class FirebaseInitProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
-        runCatching { FirebaseKit.initialize() }
+        // Capture the application Context (runs before Application.onCreate) so the
+        // consumer's commonMain FirebaseKit.initialize(config) can pass it to GitLive's
+        // Firebase.initialize on Android. Does NOT initialize Firebase itself — that is
+        // the consumer's single commonMain init call.
+        runCatching { context?.applicationContext?.let { AndroidFirebaseContext.setApplicationContext(it) } }
         return true
     }
 

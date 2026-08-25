@@ -13,6 +13,8 @@ import co.touchlab.kermit.Logger
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.crashlytics.FirebaseCrashlytics
 import dev.gitlive.firebase.crashlytics.crashlytics
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.ParamKeys
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.kmpPlatform
 
 private const val TAG = "CmpCrash"
@@ -33,9 +35,11 @@ private const val MAX_BREADCRUMBS = 64
 class FirebaseCrashReporter(
     crashlyticsProvider: () -> FirebaseCrashlytics = { Firebase.crashlytics },
     private val platform: String = kmpPlatform,
+    analyticsSink: () -> AnalyticsHelper? = { null },
 ) : CrashReporter {
 
     private val crashlytics: FirebaseCrashlytics by lazy(crashlyticsProvider)
+    private val analyticsSink: AnalyticsHelper? by lazy(analyticsSink)
 
     private val stickyKeys = mutableMapOf<String, String>()
     private val breadcrumbs = ArrayDeque<String>()
@@ -60,6 +64,12 @@ class FirebaseCrashReporter(
             customKeys = keys,
             breadcrumbs = breadcrumbs.toList(),
         )
+        // Mirror to the single all-platform GA4 crash view alongside native Crashlytics.
+        analyticsSink?.logCrash(
+            platform = platform,
+            exceptionType = throwable::class.simpleName ?: "Throwable",
+            fatal = fatal,
+        )
     }
 
     override fun log(message: String) {
@@ -79,6 +89,12 @@ class FirebaseCrashReporter(
     }
 
     override fun install() {
+        // Sticky platform tag so EVERY crash — including uncaught native crashes the
+        // SDK auto-captures — is segmentable by fine-grained kmp_platform in the single
+        // Crashlytics console (GA4's built-in platform is coarse android|ios|web only).
+        stickyKeys[ParamKeys.PLATFORM] = platform
+        runCatching { crashlytics.setCustomKey(ParamKeys.PLATFORM, platform) }
+            .onFailure { Logger.w(TAG) { "could not set platform custom key: ${it.message}" } }
         runCatching { crashlytics.setCrashlyticsCollectionEnabled(true) }
             .onFailure { Logger.w(TAG) { "could not enable Crashlytics collection: ${it.message}" } }
     }

@@ -16,7 +16,7 @@ package io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics
  * - **[io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics] FirebaseCrashReporter**
  *   (Android, iOS ×3, macOS ×2 — the 6 targets GitLive Crashlytics supports):
  *   forwards to native Firebase Crashlytics AND builds a structured [CrashReport].
- * - **[LoggingCrashReporter]** (JVM, JS, tvOS ×3, watchOS ×4, Linux ×2, mingw, wasmJs
+ * - **[LoggingCrashReporter]** (JVM, JS, tvOS ×3, Linux ×2, mingw, wasmJs
  *   — the 13 targets Crashlytics does not reach): builds the same [CrashReport] and
  *   logs it as JSON via Kermit.
  *

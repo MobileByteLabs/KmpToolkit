@@ -30,6 +30,79 @@ That's the only Gradle dependency. The library auto-bundles Ktor + GitLive Fireb
 
 Every consuming project provides its own Firebase credentials. The library bakes in **none**.
 
+### Analytics is org-global — which secrets live where (→ vault)
+
+All apps in the workspace stream into **ONE** Firebase project (`prod-applications-c7f87`)
+linked to **ONE** GA4 property. So the analytics/crash *engine* is configured with just two
+**org-level** secrets — the single global analytics point — and each app only supplies its own
+**project-level** stream identity. Every secret maps to a vault alias (canonical naming SoT:
+`core/registries/SECRETS_ORG_ALIAS_CANONICAL.yaml`; resolve with `/secrets pull`,
+RULE-SECRETS-VAULT-001 — never `.env`, never `gh secret set`):
+
+| Scope | Secret | Vault alias | Category | Used by |
+|-------|--------|-------------|----------|---------|
+| **ORG** (workspace) | Firebase / GCP service-account JSON | `<ws>-firebase-sa` (e.g. `mbs-firebase-sa`) | `google_services_sa` | growth GA4 Data API read · Firebase Management API · app discovery |
+| **ORG** (workspace) | Shared GA4 **property id** (numeric, e.g. `473327398`) | `<ws>-ga4-property-id` (e.g. `mbs-ga4-property-id`) | `env_var` | growth fetch (slices per-app by `streamId`) |
+| **PROJECT** (per app) | Android `google-services.json` | `<proj>-firebase-google-services` | `firebase_config_android` | native Android SDK init |
+| **PROJECT** (per app) | iOS/macOS `GoogleService-Info.plist` | `<proj>-firebase-ios-plist` | `firebase_config_ios` | native Apple SDK init |
+| **PROJECT** (per app) | Firebase app id (android / ios) | `<proj>-firebase-android-app-id` · `<proj>-firebase-ios-app-id` | `env_var` | per-app identity in the shared project |
+| **PROJECT** (per app) | GA4 **measurement id** (`G-XXXXXXXX`, per data stream) | `<proj>-ga4-measurement-id` | `env_var` | MP tier (jvm/linux/mingw/wasmJs) |
+| **PROJECT** (per app) | Measurement-Protocol API secret (per stream) | `<proj>-mp-api-secret` | `env_var` | MP tier |
+
+> **Property id vs measurement id** — the *property id* is the org-shared numeric GA4 property
+> (`<ws>-ga4-property-id`); the *measurement id* is the per-app data-stream key `G-XXXX`
+> (`<proj>-ga4-measurement-id`). They are different values at different scopes — don't conflate.
+> The native SDK reads its stream from the per-app config file (google-services.json / plist);
+> only the MP tier passes the measurement id + api secret explicitly via `MpConfig`.
+
+**Automatic resolution — the tooling knows where to look.** Each alias carries a machine-readable
+`scope` (`workspace` | `project`) in `SECRETS_ALIAS_REGISTRY.yaml`, and the resolver reports it:
+
+```bash
+core/scripts/secrets-resolve-path.sh mbs-firebase-sa            --emit tier   # → workspace
+core/scripts/secrets-resolve-path.sh mbs-ga4-property-id        --emit tier   # → workspace
+core/scripts/secrets-resolve-path.sh <proj>-firebase-google-services --emit tier  # → project
+```
+
+So `/secrets pull` and every consumer route automatically — **workspace**-tier secrets are ONE
+shared value (direct-wired from the vault, never duplicated per project); **project**-tier secrets
+materialize into the bound project's `source/<repo>/secrets/live/…`. Nothing hard-codes a path or a
+project name — the alias's scope decides. (Single GA4: all apps push project-wise via their own data
+stream, then platform-wise via `kmp_platform`, into the one org property.)
+
+### Library initialization
+
+Call `FirebaseKit.initialize()` once at app startup, before any event logging. Android auto-initializes via a `ContentProvider` — no explicit call needed there. All other platforms:
+
+```kotlin
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseKit
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseConfig
+import dev.gitlive.firebase.FirebaseOptions
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MpConfig
+
+// No-arg: each platform reads its own config file (plist / google-services.json)
+FirebaseKit.initialize()
+
+// OR — builder form: required for JS/web; also used to pass MpConfig for non-Firebase targets
+FirebaseKit.initialize(
+    FirebaseConfig.builder()
+        .android(FirebaseOptions(/* optional override */))
+        .apple(FirebaseOptions(/* optional override */))
+        .web(FirebaseOptions(
+            apiKey        = "YOUR_WEB_API_KEY",
+            applicationId = "YOUR_APP_ID",
+            projectId     = "your-firebase-project",
+        ))
+        .measurementProtocol(MpConfig(measurementId = "G-XXXX", apiSecret = "..."))
+        .build()
+)
+
+// Optional: global fatal-exception capture (real on JVM/Android; no-op on native/JS/wasm)
+FirebaseKit.installUncaughtHandler()
+```
+
+> **Crash → GA4**: every captured crash emits an `app_crash` GA4 event with `kmp_platform`, `exception_type`, and `fatal` params — visible in the same GA4 property and BigQuery export across all platforms. On the non-Firebase tier this requires `MpConfig` to be set (otherwise no-op).
+
 ### Android — `google-services.json`
 
 1. Firebase Console → Project Settings → General → Your apps → Android → Download `google-services.json`
@@ -73,29 +146,29 @@ Every consuming project provides its own Firebase credentials. The library bakes
 
 ### JS — Firebase config object
 
+Pass a web `FirebaseOptions` via `FirebaseKit.initialize(config)` (the cleaner library-level path); `Firebase.initialize(options=...)` from GitLive also works as a lower-level alternative.
+
 ```kotlin
 // jsMain — typically in your app entry point
-import dev.gitlive.firebase.Firebase
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseKit
+import io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseConfig
 import dev.gitlive.firebase.FirebaseOptions
-import dev.gitlive.firebase.initialize
 
-Firebase.initialize(
-    options = FirebaseOptions(
-        apiKey = "YOUR_API_KEY",
-        applicationId = "YOUR_APP_ID",
-        projectId = "your-firebase-project",
-        // ... see Firebase Console for full config
-    )
+FirebaseKit.initialize(
+    FirebaseConfig.builder()
+        .web(FirebaseOptions(
+            apiKey        = "YOUR_API_KEY",
+            applicationId = "YOUR_APP_ID",
+            projectId     = "your-firebase-project",
+            // ... see Firebase Console → Project settings → Your web app
+        ))
+        .build()
 )
 ```
 
-### JVM — limited support
+### JVM / Linux / mingw / wasmJs — MP tier
 
-GitLive's JVM Firebase Analytics is best-effort; without configuration it falls back to no-op gracefully. Most JVM apps target `jvm()` for desktop Compose — those pull `androidMain` Firebase via JetBrains Compose Desktop.
-
-### Non-Firebase platforms — watchOS / Linux / Windows / wasm
-
-GitLive doesn't ship Firebase Analytics on these targets. For event capture, use **Firebase Measurement Protocol** — see [§7 below](#7-non-firebase-platforms-watchos--linux--windows--wasm).
+GitLive doesn't ship native Firebase Analytics for `jvm`, `linuxX64`, `linuxArm64`, `mingwX64`, or `wasmJs`. For event capture on these 5 targets, use **Firebase Measurement Protocol** — see [§7 below](#7-non-firebase-platforms-jvm--linux--mingw--wasmjs).
 
 ---
 
@@ -105,24 +178,32 @@ GitLive doesn't ship Firebase Analytics on these targets. For event capture, use
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.PerformanceTracker
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.di.AnalyticsModule
+import io.github.mobilebytelabs.kmptoolkit.firebase.crash.di.CrashReporterModule
 
-val analyticsModule = module {
+val firebaseModule = module {
     single<AnalyticsHelper> {
         AnalyticsModule.analyticsHelper(
-            if (BuildConfig.DEBUG) AnalyticsModule.Mode.Stub
-            else                   AnalyticsModule.Mode.Firebase
+            mode   = if (BuildConfig.DEBUG) AnalyticsModule.Mode.Stub
+                     else                   AnalyticsModule.Mode.Firebase,
+            config = null,  // pass MpConfig here for non-Firebase targets (see §7)
         )
     }
     single { AnalyticsModule.performanceTracker(get()) }
+    single {
+        CrashReporterModule.crashReporter(
+            mode = if (BuildConfig.DEBUG) CrashReporterModule.Mode.Stub
+                   else                   CrashReporterModule.Mode.Firebase
+        )
+    }
 }
 
 // Add to startKoin
 startKoin {
-    modules(analyticsModule, /* ... */)
+    modules(firebaseModule, /* ... */)
 }
 ```
 
-`AnalyticsModule.Mode.Firebase` resolves via `provideAnalyticsHelper()` — returns `FirebaseAnalyticsHelper` on firebaseMain platforms, `NoOpAnalyticsHelper` on the others (until you wire MP — see §7).
+`AnalyticsModule.analyticsHelper()` is a shared process singleton via `provideAnalyticsHelper()` — returns `FirebaseAnalyticsHelper` on firebaseMain platforms (Android, iOS, macOS, tvOS, JS), `NoOpAnalyticsHelper` on the non-Firebase tier (until you wire `MpConfig` — see §7).
 
 ---
 
@@ -222,9 +303,9 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.TestAnalyticsHelpe
 
 ---
 
-## 7. Non-Firebase platforms (watchOS / Linux / Windows / wasm)
+## 7. Non-Firebase platforms (JVM / Linux / mingw / wasmJs)
 
-GitLive doesn't ship Firebase Analytics on these 10 targets. Use **Firebase Measurement Protocol over HTTP** to land events in the same Firebase property + same BigQuery export.
+GitLive doesn't ship native Firebase Analytics on these 5 targets: `jvm`, `linuxX64`, `linuxArm64`, `mingwX64`, `wasmJs`. Use **Firebase Measurement Protocol over HTTP** to land events in the same Firebase property + same BigQuery export.
 
 ### What an MP API secret is
 
@@ -243,20 +324,33 @@ Step-by-step (Firebase Console UI):
 5. In the GA4 admin pane, navigate: **Admin → Data Streams**
 6. Click your stream — pick the one that matches the platform:
    - **Web stream** → for `wasmJs` / browser deploys
-   - **iOS stream** → for `watchOS` (uses the iOS app's stream)
    - **Android stream** → not relevant here (Android uses native SDK)
-   - For Linux/Windows native targets, use whichever stream represents your "desktop" presence (often Web)
+   - For `jvm` / `linuxX64` / `linuxArm64` / `mingwX64`, use whichever stream represents your "desktop" presence (often Web)
 7. Scroll to **Measurement Protocol API secrets** (near the bottom of the page)
 8. Click **Create**
-9. Give it a descriptive name (e.g., `watchos-prod`, `linux-staging`)
+9. Give it a descriptive name (e.g., `jvm-prod`, `linux-staging`)
 10. **Copy the secret value immediately — it is shown ONCE.** If you lose it, you create a new one.
 
 ### Where the secret goes
 
-Drop the value into your app's secrets store:
+**Recommended (vault-first):** load from the org vault via `/secrets pull` — never commit raw values.
 
 ```bash
-# release-layer/.env (gitignored)
+# Materialize org-scoped secrets locally (per RULE-SECRETS-VAULT-001 — no .env, no gh secret set)
+/secrets pull
+# Vault aliases used by cmp-firebase (org-global analytics, see §2 table):
+#   mbs-firebase-sa           → Firebase / GCP service-account JSON        (ORG / workspace)
+#   mbs-ga4-property-id        → shared GA4 PROPERTY id, numeric e.g. 473327398  (ORG / workspace)
+#   <proj>-ga4-measurement-id → this app's GA4 stream MEASUREMENT id, G-XXXXXXXX (PROJECT)
+#   <proj>-mp-api-secret      → this app's Measurement-Protocol API secret       (PROJECT)
+```
+
+> The SAME GA4 property the library writes to (via native SDK or MP) is what the framework's growth dashboard reads via the GA4 Data API — so `app_crash` events, retention, and per-platform engagement all appear in one BigQuery export once the stream is enabled.
+
+Fallback (e.g., initial local dev before vault onboarding):
+
+```bash
+# release-layer/.env  (gitignored — verify it is in .gitignore)
 MP_API_SECRET=abc123...
 ```
 
@@ -265,9 +359,9 @@ MP_API_SECRET=abc123...
 analytics:
   envs:
     prod:
-      property_id: G-XXXXXXXX                       # GA4 measurement ID
+      property_id: G-XXXXXXXX                       # GA4 measurement ID (not a secret)
       measurement_protocol:
-        api_secret_secret_ref: MP_API_SECRET        # env var name
+        api_secret_secret_ref: MP_API_SECRET        # env var name; resolved at runtime
 ```
 
 ### Wire `MeasurementProtocolAnalyticsHelper` in Koin
@@ -282,7 +376,7 @@ val analyticsModule = module {
     single<AnalyticsHelper> {
         // Pick per-platform helper:
         //  - firebaseMain platforms: provideAnalyticsHelper() returns FirebaseAnalyticsHelper
-        //  - nonFirebaseMain platforms (watchOS/Linux/etc.): wire MP explicitly
+        //  - nonFirebaseMain platforms (jvm/linux/mingw/wasmJs): wire MP explicitly
         if (BuildConfig.DEBUG) {
             StubAnalyticsHelper()
         } else {
@@ -302,12 +396,13 @@ val analyticsModule = module {
 
 ### Secret hygiene
 
-- **Never commit** the secret. `release-layer/.env` should be in `.gitignore`.
+- **Use the vault**: load via `/secrets pull` (aliases `mbs-firebase-sa`, `mbs-ga4-property-id`, `<proj>-mp-api-secret`). Never `.env` as primary, never `gh secret set` (RULE-SECRETS-VAULT-001).
+- **Never commit** the secret value. `release-layer/.env` must be in `.gitignore` (fallback only).
 - **Never log it.** The library never prints it; you shouldn't either.
-- **Rotate** if it leaks: Firebase Console → revoke the old secret → create a new one → redeploy.
+- **Rotate** if it leaks: Firebase Console → revoke the old secret → create a new one → `/secrets pull` → redeploy.
 - **Per environment**: create separate secrets for prod/staging/dev. Don't share across environments.
 - **Per project**: each Firebase project has its own MP secrets. `mood-movies`'s secret won't work for `reels-downloader`.
-- **CI**: load via your CI's secrets vault (GitHub Actions secrets, etc.). Never hard-code in `build.gradle.kts` or YAML.
+- **CI**: `/secrets pull` in CI via the vault. Never hard-code in `build.gradle.kts` or YAML.
 
 ### How MP secret differs from other Firebase credentials
 
@@ -327,7 +422,7 @@ The MP secret is the **least powerful** credential in this list. That's intentio
 |---|:-:|:-:|
 | Custom event capture | ✅ | ✅ |
 | User properties + user ID | ✅ | ✅ |
-| Persistent client_id | ✅ from GitLive | ✅ via multiplatform-settings (Apple/JS); in-memory on Linux/mingw/wasmWasi |
+| Persistent client_id | ✅ from GitLive | ✅ via multiplatform-settings (Apple/JS); in-memory on Linux/mingw/wasmJs |
 | Async batching | ✅ native | ✅ 5s/25-event debounce |
 | BigQuery export | ✅ | ✅ same dataset |
 | DebugView | ✅ | ❌ |

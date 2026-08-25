@@ -95,6 +95,15 @@ object EventTypes {
 
     // Errors
     const val ERROR_OCCURRED = "error_occurred"
+
+    /**
+     * A crash / recorded exception, bridged to analytics so EVERY KMP target —
+     * including the desktop/web/linux/wasm targets Firebase Crashlytics cannot
+     * ingest — lands in ONE GA4/BigQuery view, segmentable by [ParamKeys.PLATFORM].
+     * Emitted by the crash reporters via their analytics sink alongside (native)
+     * Crashlytics. Custom name (not GA4's reserved auto `app_exception`).
+     */
+    const val APP_CRASH = "app_crash"
     const val API_ERROR = "api_error"
     const val NETWORK_ERROR = "network_error"
 
@@ -156,6 +165,11 @@ object ParamKeys {
     // Performance
     const val LOADING_TIME_MS = "loading_time_ms"
     const val ERROR_CODE = "error_code"
+
+    // Crash bridge (see EventTypes.APP_CRASH) — no raw message/stack (PII-safe for GA4);
+    // full detail stays in Crashlytics (native) / the local JSON log (fallback).
+    const val EXCEPTION_TYPE = "exception_type"
+    const val FATAL = "fatal"
     const val API_ENDPOINT = "api_endpoint"
     const val NETWORK_TYPE = "network_type"
     const val FROM_STATE = "from_state"
