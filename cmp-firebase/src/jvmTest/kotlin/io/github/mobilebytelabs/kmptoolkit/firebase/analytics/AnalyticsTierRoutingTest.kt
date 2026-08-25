@@ -28,6 +28,15 @@ class AnalyticsTierRoutingTest {
     @AfterTest
     fun reset() {
         FirebaseRuntime.config = null
+        // provideAnalyticsHelper() memoizes a process-wide singleton (so the app's DI
+        // and the crash→GA4 bridge share consent + client_id) — clear it between cases
+        // so each test sees the tier for ITS config, not a neighbour's cached helper.
+        FirebaseRuntime.analyticsHelper = null
+    }
+
+    @kotlin.test.BeforeTest
+    fun clearCache() {
+        FirebaseRuntime.analyticsHelper = null
     }
 
     @Test
@@ -48,5 +57,21 @@ class AnalyticsTierRoutingTest {
     fun noop_when_no_config_at_all() {
         FirebaseRuntime.config = null
         assertSame(NoOpAnalyticsHelper, provideAnalyticsHelper())
+    }
+
+    /**
+     * #3 consent-sharing: provideAnalyticsHelper() must return the SAME memoized
+     * instance across calls, so the app's DI and the crash→GA4 bridge share one
+     * helper (authoritative consent + stable MP client_id). Two MP helpers would
+     * mean a user opt-out on the DI helper never reaches crash mirroring.
+     */
+    @Test
+    fun provide_returns_shared_singleton() {
+        FirebaseRuntime.config = FirebaseConfig(
+            measurementProtocol = MpConfig(measurementId = "G-TEST", apiSecret = "secret"),
+        )
+        val a = provideAnalyticsHelper()
+        val b = provideAnalyticsHelper()
+        assertSame(a, b)
     }
 }

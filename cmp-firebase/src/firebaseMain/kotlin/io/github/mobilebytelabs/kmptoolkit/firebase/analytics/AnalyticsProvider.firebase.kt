@@ -25,4 +25,4 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.FirebaseAnalyticsH
  * - **JS**: Firebase config object passed during app init
  * - **JVM**: limited support; falls back to GitLive's stub if not configured
  */
-actual fun provideAnalyticsHelper(): AnalyticsHelper = FirebaseAnalyticsHelper(Firebase.analytics)
+internal actual fun createPlatformAnalyticsHelper(): AnalyticsHelper = FirebaseAnalyticsHelper(Firebase.analytics)

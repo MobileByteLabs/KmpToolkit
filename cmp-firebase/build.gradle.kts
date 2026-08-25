@@ -103,14 +103,14 @@ kotlin {
     //       │     ├── tvosMain    (tvosX64 / tvosArm64 / tvosSimulatorArm64)
     //       │     └── jsMain      (browser + node)
     //       │
-    //       └── nonFirebaseMain   — Measurement Protocol HTTP (9 targets)
-    //             ├── watchosMain (watchosX64 / watchosArm64 / watchosSimulatorArm64 / watchosDeviceArm64)
+    //       └── nonFirebaseMain   — Measurement Protocol HTTP (5 targets)
+    //             ├── jvmMain
     //             ├── linuxMain   (linuxX64 / linuxArm64)
     //             ├── mingwMain   (mingwX64)
     //             └── wasmJsMain
     //
-    // wasmWasi target intentionally omitted — Ktor / Kermit / multiplatform-settings
-    // do not publish wasmWasi variants. 20/21 targets supported.
+    // wasmWasi + watchOS intentionally omitted — cmp-network-monitor (a dependency) and
+    // Ktor/Kermit/multiplatform-settings do not publish those variants. 15 targets supported.
     //
     // GitLive Firebase Analytics 3.0.x target matrix verified at:
     //   https://github.com/GitLiveApp/firebase-kotlin-sdk/blob/master/firebase-analytics/build.gradle.kts
@@ -174,7 +174,7 @@ kotlin {
         // dependsOn exactly one crashlytics tier + one analytics tier.
         //
         //   crashlyticsFirebaseMain (6)  — GitLive Crashlytics: android, ios×3, macos×2
-        //   crashlyticsFallbackMain (13) — LoggingCrashReporter: jvm, js, tvos×3, watchos×4, linux×2, mingw, wasmJs
+        //   crashlyticsFallbackMain (9)  — LoggingCrashReporter: jvm, js, tvos×3, linux×2, mingw, wasmJs
         //
         // GitLive firebase-crashlytics 3.0.0-alpha01 publishes ONLY android + iOS + macOS
         // (NO tvOS/watchOS/JVM/JS/native) — verified against its published artifacts.
@@ -247,9 +247,9 @@ mavenPublishing {
         description =
             "Firebase for Kotlin Multiplatform — Analytics + Crashlytics with a single in-library " +
             "setup surface (FirebaseKit.initialize + Android auto-init). GitLive Firebase Analytics " +
-            "on 11 targets (Measurement-Protocol HTTP fallback on the rest) and GitLive Crashlytics " +
+            "on 10 targets (Measurement-Protocol HTTP fallback on the rest) and GitLive Crashlytics " +
             "on 6 targets, with an AI-feedable structured CrashReport fallback (Kermit) everywhere else. " +
-            "Interface + Stub/NoOp/Test variants across all 20 supported KMP targets."
+            "Interface + Stub/NoOp/Test variants across all 15 supported KMP targets."
         inceptionYear = "2026"
         url = "https://github.com/MobileByteLabs/KmpToolkit/"
 

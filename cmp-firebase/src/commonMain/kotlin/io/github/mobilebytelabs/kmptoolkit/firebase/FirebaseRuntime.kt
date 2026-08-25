@@ -9,6 +9,7 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase
 
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
 import kotlin.concurrent.Volatile
 
 /**
@@ -21,6 +22,16 @@ import kotlin.concurrent.Volatile
 internal object FirebaseRuntime {
     @Volatile
     var config: FirebaseConfig? = null
+
+    /**
+     * Process-wide memoized [AnalyticsHelper] returned by `provideAnalyticsHelper()`.
+     * A SINGLE instance is shared by the app's DI and the crash→GA4 bridge so consent
+     * ([AnalyticsHelper.setCollectionEnabled]) and the MP `client_id` are authoritative
+     * across both — without this the bridge built its own helper and a user opt-out on
+     * the DI helper never reached crash mirroring (consent leak on the MP tier).
+     */
+    @Volatile
+    var analyticsHelper: AnalyticsHelper? = null
 }
 
 /**

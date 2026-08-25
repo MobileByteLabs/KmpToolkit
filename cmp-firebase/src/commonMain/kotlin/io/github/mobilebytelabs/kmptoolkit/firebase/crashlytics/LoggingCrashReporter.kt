@@ -10,14 +10,15 @@
 package io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics
 
 import co.touchlab.kermit.Logger
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.AnalyticsHelper
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.kmpPlatform
 
 private const val TAG = "CmpCrash"
 private const val MAX_BREADCRUMBS = 64
 
 /**
- * The fallback [CrashReporter] for the 13 targets GitLive Crashlytics doesn't
- * ship on (JVM, JS, tvOS, watchOS, Linux, mingw, wasmJs).
+ * The fallback [CrashReporter] for the 9 targets GitLive Crashlytics doesn't
+ * ship on (JVM, JS, tvOS, Linux, mingw, wasmJs).
  *
  * There is no Crashlytics ingestion REST API, so instead of silently dropping
  * the signal this builds the same rich [CrashReport] and **logs it as pretty
@@ -28,8 +29,30 @@ private const val MAX_BREADCRUMBS = 64
  * Automatic uncaught-exception capture is platform-specific and not wired here;
  * route your global handler (or a [asCoroutineExceptionHandler]) to
  * [recordException] to capture crashes on these targets.
+ *
+ * @param analyticsSink lazily resolved [AnalyticsHelper] each crash is mirrored to as
+ *   an [io.github.mobilebytelabs.kmptoolkit.firebase.analytics.EventTypes] `APP_CRASH`
+ *   event — so these Crashlytics-unreachable targets still land in the single
+ *   all-platform GA4 crash view. Resolved lazily (not at construction) so it never
+ *   touches Firebase before init. Defaults to none.
  */
 class LoggingCrashReporter(private val platform: String = kmpPlatform) : CrashReporter {
+
+    // Kept as a settable provider + a SECONDARY constructor (rather than adding a
+    // primary-ctor param) so the original `(String)` constructor ABI is preserved
+    // exactly — binary-compatible for already-published consumers.
+    private var sinkProvider: () -> AnalyticsHelper? = { null }
+    private val analyticsSink: AnalyticsHelper? by lazy { sinkProvider() }
+
+    /**
+     * @param analyticsSink lazily-resolved [AnalyticsHelper] each crash is mirrored to as
+     *   an `app_crash` event — so these Crashlytics-unreachable targets still land in the
+     *   single all-platform GA4 crash view. Resolved lazily (not at construction) so it
+     *   never touches Firebase before init.
+     */
+    constructor(platform: String = kmpPlatform, analyticsSink: () -> AnalyticsHelper?) : this(platform) {
+        this.sinkProvider = analyticsSink
+    }
 
     private val stickyKeys = mutableMapOf<String, String>()
     private val breadcrumbs = ArrayDeque<String>()
@@ -52,6 +75,7 @@ class LoggingCrashReporter(private val platform: String = kmpPlatform) : CrashRe
         )
         _lastReport = report
         Logger.e(TAG) { "🔥 crash captured (fatal=$fatal)\n${report.toJson(pretty = true)}" }
+        analyticsSink?.logCrash(platform = platform, exceptionType = report.throwableClass, fatal = fatal)
     }
 
     override fun log(message: String) {

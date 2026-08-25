@@ -37,6 +37,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/FirebaseKit {
 	public final fun getCrashReporter ()Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;
 	public final fun initialize ()V
 	public final fun initialize (Lio/github/mobilebytelabs/kmptoolkit/firebase/FirebaseConfig;)V
+	public final fun installUncaughtHandler ()Z
 	public final fun isInitialized ()Z
 }
 
@@ -176,7 +177,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Analyt
 	public static fun setUserProperty (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;Ljava/lang/String;Ljava/lang/String;)V
 }
 
-public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsProvider_nonfirebaseKt {
+public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsProviderKt {
 	public static final fun provideAnalyticsHelper ()Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;
 }
 
@@ -222,6 +223,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/EventR
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/EventTypes {
 	public static final field API_ERROR Ljava/lang/String;
 	public static final field APP_BACKGROUND Ljava/lang/String;
+	public static final field APP_CRASH Ljava/lang/String;
 	public static final field APP_FOREGROUND Ljava/lang/String;
 	public static final field APP_LAUNCH Ljava/lang/String;
 	public static final field BUTTON_CLICK Ljava/lang/String;
@@ -380,6 +382,8 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/ParamK
 	public static final field ELEMENT_TYPE Ljava/lang/String;
 	public static final field ERROR_CODE Ljava/lang/String;
 	public static final field ERROR_MESSAGE Ljava/lang/String;
+	public static final field EXCEPTION_TYPE Ljava/lang/String;
+	public static final field FATAL Ljava/lang/String;
 	public static final field FEATURE_NAME Ljava/lang/String;
 	public static final field FIELD_NAME Ljava/lang/String;
 	public static final field FILTER_TYPE Ljava/lang/String;
@@ -707,7 +711,9 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/Cras
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporterExtensionsKt {
 	public static final fun asCoroutineExceptionHandler (Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;)Lkotlinx/coroutines/CoroutineExceptionHandler;
+	public static final fun asCoroutineExceptionHandler (Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;Z)Lkotlinx/coroutines/CoroutineExceptionHandler;
 	public static final fun recording (Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static final fun recording (Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;ZLkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporterProvider_fallbackKt {
@@ -718,6 +724,8 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/Logg
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun getLastReport ()Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReport;
 	public fun install ()V
 	public fun log (Ljava/lang/String;)V
