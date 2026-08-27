@@ -126,14 +126,10 @@ Share.file(
   Android 11+ package-visibility, it **falls back to the normal chooser** (never fails).
 - `targetPackage` is **Android-only** — ignored on iOS / desktop / web (those platforms have no
   per-app targeting).
-- **Android 11+ package visibility:** to reliably launch a specific app directly, the *consumer*
-  app should declare a `<queries>` element for the SEND action (or the specific packages) in its
-  manifest — otherwise the OS hides the target and cmp-share uses the chooser fallback:
-  ```xml
-  <queries>
-      <intent><action android:name="android.intent.action.SEND" /><data android:mimeType="*/*" /></intent>
-  </queries>
-  ```
+- **Android 11+ package visibility is handled for you.** cmp-share's own manifest declares the
+  `<queries>` SEND intent, merged into every consumer via manifest-merger — so a target app is
+  visible without any consumer-side `<queries>` boilerplate. (Same zero-config contract as the
+  bundled `ShareInitProvider` + `FileProvider`.)
 
 ### iOS — present via key-window
 

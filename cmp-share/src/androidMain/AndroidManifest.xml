@@ -4,10 +4,21 @@
 
   - ShareInitProvider: zero-config Application context auto-init.
   - FileProvider: needed for sharing image bytes written to cache dir.
+  - <queries>: Android 11+ package visibility for direct-to-app share
+    (ShareOptions.targetPackage) — lets the ACTION_SEND intent resolve a specific
+    target app (WhatsApp, Instagram, …). Without it the OS hides the target and the
+    share falls back to the system chooser.
 
-  Consumer apps inherit these via manifest-merger. No consumer-side declaration needed.
+  Consumer apps inherit all of these via manifest-merger. No consumer-side declaration needed.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="*/*" />
+        </intent>
+    </queries>
+
     <application>
         <provider
             android:name="com.mobilebytelabs.kmptoolkit.share.ShareInitProvider"
