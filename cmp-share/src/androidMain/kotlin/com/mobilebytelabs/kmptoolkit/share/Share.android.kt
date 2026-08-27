@@ -11,6 +11,7 @@
 
 package com.mobilebytelabs.kmptoolkit.share
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
@@ -43,11 +44,27 @@ public actual object Share {
         val ctx = ShareContext.context
 
         return try {
-            val intent = buildIntent(payload, options)
-            val chooser = Intent.createChooser(intent, options.chooserTitle)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            fun Intent.withShareFlags() = addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            ctx.startActivity(chooser)
+
+            val chooser = Intent.createChooser(buildIntent(payload, options), options.chooserTitle)
+                .withShareFlags()
+
+            val target = options.targetPackage?.takeIf { it.isNotBlank() }
+            if (target != null) {
+                // Direct-to-app: route the payload straight to the target package (e.g. WhatsApp,
+                // Instagram) with no chooser. If that package isn't installed / can't handle the
+                // payload — or isn't visible under Android 11+ package-visibility — fall back to the
+                // normal chooser instead of failing.
+                val direct = buildIntent(payload, options).apply { `package` = target }.withShareFlags()
+                try {
+                    ctx.startActivity(direct)
+                } catch (e: ActivityNotFoundException) {
+                    ctx.startActivity(chooser)
+                }
+            } else {
+                ctx.startActivity(chooser)
+            }
             ShareResult.Completed
         } catch (e: Exception) {
             ShareResult.Failed(ShareError.Unknown(e.message ?: "Unknown Android share error"))

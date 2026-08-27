@@ -67,12 +67,25 @@ public sealed class SharePayload {
 
 /**
  * Options for [Share.share]. See SPEC for per-platform field semantics.
+ *
+ * @property chooserTitle Title for the system chooser. Android: `Intent.createChooser` title;
+ *   iOS: unused. Ignored when [targetPackage] resolves to a direct-to-app share.
+ * @property excludedActivities Activity/type identifiers to exclude. iOS: `UIActivityViewController.excludedActivityTypes`;
+ *   Android: currently advisory (not yet applied to the chooser).
+ * @property presentingController iOS-only: the `UIViewController` to present the share sheet from
+ *   (cast internally). Ignored on other platforms.
+ * @property targetPackage **Android-only**: when non-null, the share Intent is directed straight to this
+ *   application package (`Intent.setPackage`) — e.g. `"com.whatsapp"`, `"com.instagram.android"` — so the
+ *   payload opens in that app WITHOUT the system chooser. If the package is not installed / cannot handle
+ *   the payload, the implementation falls back to the normal chooser rather than failing. Ignored on iOS /
+ *   desktop / web (no per-app targeting on those platforms).
  */
 @ExperimentalShareApi
 public data class ShareOptions(
     val chooserTitle: String? = null,
     val excludedActivities: List<String> = emptyList(),
     val presentingController: Any? = null,
+    val targetPackage: String? = null,
 )
 
 /**
