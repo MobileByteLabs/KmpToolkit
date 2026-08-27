@@ -73,6 +73,18 @@ class ShareContractTest {
     }
 
     @Test
+    fun `targetPackage flows through ShareOptions for direct-to-app share`() = runTest {
+        val fake = FakeShareLauncher().apply { scriptResult(ShareResult.Completed) }
+        fake.share(
+            SharePayload.File(uri = "content://media/1", mimeType = "video/mp4"),
+            ShareOptions(targetPackage = "com.whatsapp"),
+        )
+        assertEquals("com.whatsapp", fake.shareHistory[0].options.targetPackage)
+        // default is null (system chooser) when not requested
+        assertEquals(null, ShareOptions().targetPackage)
+    }
+
+    @Test
     fun `shareHistory captures Image payload bytes and mimeType`() = runTest {
         val fake = FakeShareLauncher().apply { scriptResult(ShareResult.Completed) }
         val bytes = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47) // PNG magic prefix

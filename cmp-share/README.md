@@ -109,6 +109,32 @@ The library declares its `ShareInitProvider` + `FileProvider` (authority
 `${applicationId}.cmp-share.fileprovider`) via manifest-merger. Consumer apps don't
 need to declare anything.
 
+### Android — direct-to-app share (skip the chooser)
+
+Set `ShareOptions.targetPackage` to route the payload straight to a specific app (WhatsApp,
+Instagram, …) instead of the system chooser:
+
+```kotlin
+Share.file(
+    uri = "content://…/status.mp4",
+    mimeType = "video/mp4",
+    options = ShareOptions(targetPackage = "com.whatsapp"),
+)
+```
+
+- If the target package isn't installed, can't handle the payload, or isn't visible under
+  Android 11+ package-visibility, it **falls back to the normal chooser** (never fails).
+- `targetPackage` is **Android-only** — ignored on iOS / desktop / web (those platforms have no
+  per-app targeting).
+- **Android 11+ package visibility:** to reliably launch a specific app directly, the *consumer*
+  app should declare a `<queries>` element for the SEND action (or the specific packages) in its
+  manifest — otherwise the OS hides the target and cmp-share uses the chooser fallback:
+  ```xml
+  <queries>
+      <intent><action android:name="android.intent.action.SEND" /><data android:mimeType="*/*" /></intent>
+  </queries>
+  ```
+
 ### iOS — present via key-window
 
 Default: cmp-share traverses `UIApplication.keyWindow.rootViewController.topMostController`
