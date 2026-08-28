@@ -30,7 +30,13 @@ class RemoteConfigViewModel(
 
     private val deviceId: String by lazy { deviceIdProvider.getDeviceId() }
 
-    fun fetchAndEvaluate() {
+    /**
+     * @param appVersion the host app's current version name (e.g. "2026.8.4"). When supplied it is
+     *   passed to the evaluator so a config's `min_app_version` / `max_app_version` window is honored.
+     *   Null (the default) falls back to the DI-provided version supplier (`remoteConfig { appVersion
+     *   = … }`); if neither is set, version-bounded configs are excluded (fail-closed).
+     */
+    fun fetchAndEvaluate(appVersion: String? = null) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
@@ -39,10 +45,11 @@ class RemoteConfigViewModel(
             if (configs == null) {
                 // Slow/blocked network — fall back to the last-good cached config, but
                 // ONLY if it still passes the SAME eligibility rules (impression cap /
-                // cooldown / dismissed). This never re-shows a cooldown-gated dialog
-                // (e.g. a once-per-day "Rate Us"); the cache is a network fallback, not
+                // cooldown / dismissed / version window). This never re-shows a cooldown-gated
+                // dialog (e.g. a once-per-day "Rate Us"); the cache is a network fallback, not
                 // a bypass of the server rules.
-                val cachedEligible = localStore.getCachedConfig()?.let { evaluator.evaluate(listOf(it)) }
+                val cachedEligible = localStore.getCachedConfig()
+                    ?.let { evaluator.evaluate(listOf(it), appVersion = appVersion) }
                 _state.update { it.copy(activeConfig = cachedEligible ?: it.activeConfig, isLoading = false) }
                 return@launch
             }
@@ -58,7 +65,7 @@ class RemoteConfigViewModel(
 
             // The evaluator is authoritative — it applies the impression/cooldown/dismiss
             // rules. Cache the eligible result only as a network fallback for next time.
-            val active = evaluator.evaluate(configs, serverImpressions)
+            val active = evaluator.evaluate(configs, serverImpressions, appVersion = appVersion)
             active?.let { localStore.cacheConfig(it) }
             _state.update { it.copy(activeConfig = active, isLoading = false) }
         }

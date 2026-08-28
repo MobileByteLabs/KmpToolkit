@@ -5,19 +5,61 @@ import com.mobilebytelabs.remoteconfig.model.DeviceImpression
 import com.mobilebytelabs.remoteconfig.model.RemoteConfig
 import io.ktor.util.date.GMTDate
 
-class RemoteConfigEvaluator(private val localStore: RemoteConfigLocalStore) {
+class RemoteConfigEvaluator(
+    private val localStore: RemoteConfigLocalStore,
+    /**
+     * Lazy fallback source for the host app version, wired from `remoteConfig { appVersion = … }`.
+     * Used when a caller of [evaluate] doesn't pass an explicit `appVersion`. Invoked here (not at
+     * DI-build time) so a platform version source that inits after Koin is ready by evaluate time.
+     */
+    private val appVersionProvider: (() -> String?)? = null,
+) {
     fun evaluate(
         configs: List<RemoteConfig>,
         serverImpressions: Map<String, DeviceImpression> = emptyMap(),
         currentTimeMs: Long = GMTDate().timestamp,
-    ): RemoteConfig? = configs
-        .filter { it.isEnabled }
-        .filter { passesDateRange(it, currentTimeMs) }
-        .filter { passesImpressionLimit(it, serverImpressions) }
-        .filter { !isDismissed(it, serverImpressions) }
-        .filter { passesCooldown(it, currentTimeMs) }
-        .sortedByDescending { it.priority }
-        .firstOrNull()
+        appVersion: String? = null,
+    ): RemoteConfig? {
+        val effectiveVersion = appVersion ?: appVersionProvider?.invoke()
+        return configs
+            .filter { it.isEnabled }
+            .filter { passesDateRange(it, currentTimeMs) }
+            .filter { passesVersionRange(it, effectiveVersion) }
+            .filter { passesImpressionLimit(it, serverImpressions) }
+            .filter { !isDismissed(it, serverImpressions) }
+            .filter { passesCooldown(it, currentTimeMs) }
+            .sortedByDescending { it.priority }
+            .firstOrNull()
+    }
+
+    /**
+     * min_app_version / max_app_version gate — both INCLUSIVE, both optional. Activates the
+     * (previously dormant) [RemoteConfig.minAppVersion] / [RemoteConfig.maxAppVersion] columns as a
+     * real audience filter so a server row can target ONLY a version window:
+     *
+     * - `min_app_version = "2.0.0"` → shown only to builds >= 2.0.0.
+     * - `max_app_version = "2026.7.99"` → shown only to builds <= 2026.7.99 (the canonical
+     *   "please update" shape: nag everything BELOW 2026.8.0, and stop the moment the user is on a
+     *   supported build).
+     *
+     * Behavior by case:
+     * - Config has NO version bounds → always passes (every existing version-unaware config keeps
+     *   today's behavior; a blank bound is treated as absent).
+     * - Config HAS a bound but [appVersion] is unknown (null/blank — e.g. a platform that doesn't
+     *   report a Play-Store version) → FAIL-CLOSED (excluded). A version-TARGETED row must never
+     *   show where we can't confirm the device is inside the window, so a Play-Store update gate
+     *   never leaks onto desktop/web/iOS.
+     * - Config has a bound and [appVersion] is known → windowed compare (see [VersionCompare]).
+     */
+    private fun passesVersionRange(config: RemoteConfig, appVersion: String?): Boolean {
+        val min = config.minAppVersion?.takeIf { it.isNotBlank() }
+        val max = config.maxAppVersion?.takeIf { it.isNotBlank() }
+        if (min == null && max == null) return true
+        if (appVersion.isNullOrBlank()) return false
+        min?.let { if (VersionCompare.compare(appVersion, it) < 0) return false }
+        max?.let { if (VersionCompare.compare(appVersion, it) > 0) return false }
+        return true
+    }
 
     private fun passesDateRange(config: RemoteConfig, currentTimeMs: Long): Boolean {
         val startMs = config.startAt?.parseIsoToMs() ?: 0L
