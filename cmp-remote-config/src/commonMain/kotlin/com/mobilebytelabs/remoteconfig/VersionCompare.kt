@@ -24,10 +24,9 @@ internal object VersionCompare {
         return 0
     }
 
-    private fun parts(v: String): List<Int> =
-        v.trim()
-            .substringBefore('-') // drop pre-release suffix (…-beta.1)
-            .substringBefore('+') // drop build metadata (…+meta)
-            .split('.')
-            .map { seg -> seg.takeWhile { it.isDigit() }.toIntOrNull() ?: 0 }
+    private fun parts(v: String): List<Int> = v.trim()
+        .substringBefore('-') // drop pre-release suffix (…-beta.1)
+        .substringBefore('+') // drop build metadata (…+meta)
+        .split('.')
+        .map { seg -> seg.takeWhile { it.isDigit() }.toIntOrNull() ?: 0 }
 }
