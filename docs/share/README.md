@@ -141,6 +141,22 @@ sealed class ShareError {
 
 ## Notes
 
+- **Android file shares — `file://` is resolved for you (since v3.5.20).** `ACTION_SEND` rejects a
+  `file://` URI on Android 7+ (`FileUriExposedException`). `SharePayload.File` previously passed the
+  caller's URI to `EXTRA_STREAM` verbatim, so every `file://` share failed; and because `share()`
+  wraps everything in `try/catch → ShareResult.Failed`, any caller that ignored the returned
+  `ShareResult` saw the share button silently do nothing. Now:
+  - a `content://` (or `http(s)://`) URI is passed through **unchanged** — no behaviour change for
+    payloads that already worked;
+  - a `file://` URI (or a bare path) is wrapped through this module's own FileProvider into a
+    `content://` URI, which — with the `FLAG_GRANT_READ_URI_PERMISSION` already set — gives the
+    receiving app scoped, per-URI read access and no storage permission;
+  - a file outside the paths in `cmp_share_paths.xml` is staged into the module's cache dir first
+    (one copy) and shared from there, so consumers don't have to widen their own FileProvider paths;
+  - if all of that fails the original URI is used, so behaviour is never worse than before.
+
+  **Still prefer passing a `content://` URI** when you already have one (e.g. a MediaStore insert) —
+  it skips the wrap and any staging copy entirely.
 - **JS / wasmJs**: `navigator.share()` requires HTTPS and a user gesture — call from a click
   handler, not a coroutine launched in `LaunchedEffect` without user interaction.
 - **JVM**: best-effort — opens the default handler registered by the OS; file-type support

@@ -23,7 +23,9 @@ import java.io.File as JavaFile
  *
  * - Text / Url → `EXTRA_TEXT` (URL shares as text on Android)
  * - Image → write bytes to module cache dir + `FileProvider` URI + `EXTRA_STREAM`
- * - File → caller-provided URI → grant `FLAG_GRANT_READ_URI_PERMISSION` + `EXTRA_STREAM`
+ * - File → caller URI resolved to a shareable one (see [Share.shareableUri]: `content://` passes
+ *   through; `file://` is FileProvider-wrapped, staged via the module cache dir when it sits
+ *   outside the declared provider paths) → grant `FLAG_GRANT_READ_URI_PERMISSION` + `EXTRA_STREAM`
  * - Multi → `ACTION_SEND_MULTIPLE` + array of URIs (text-only items get flattened to a join)
  *
  * Wrapped in `Intent.createChooser`. Note that `startActivity` is fire-and-forget;
@@ -90,7 +92,7 @@ public actual object Share {
 
         is SharePayload.File -> Intent(Intent.ACTION_SEND).apply {
             type = payload.mimeType
-            putExtra(Intent.EXTRA_STREAM, Uri.parse(payload.uri))
+            putExtra(Intent.EXTRA_STREAM, shareableUri(payload.uri))
         }
 
         is SharePayload.Multi -> Intent(Intent.ACTION_SEND_MULTIPLE).apply {
@@ -101,7 +103,7 @@ public actual object Share {
                     is SharePayload.Text -> texts.add(item.content)
                     is SharePayload.Url -> texts.add(item.href)
                     is SharePayload.Image -> uris.add(writeBytesToCache(item.bytes, item.mimeType, item.filename))
-                    is SharePayload.File -> uris.add(Uri.parse(item.uri))
+                    is SharePayload.File -> uris.add(shareableUri(item.uri))
                     is SharePayload.Multi -> { /* skip nested Multi — flatten was done by caller */ }
                 }
             }
@@ -109,6 +111,49 @@ public actual object Share {
             if (uris.isNotEmpty()) putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
             if (texts.isNotEmpty()) putExtra(Intent.EXTRA_TEXT, texts.joinToString("\n"))
         }
+    }
+
+    /**
+     * Resolve a caller-supplied file URI into one another app can actually read.
+     *
+     * `ACTION_SEND` rejects a `file://` URI on Android 7+ (`FileUriExposedException`), so passing
+     * the caller's string through verbatim made every `file://` share fail. Because [share] wraps
+     * everything in `try/catch → ShareResult.Failed`, a caller that ignores the returned
+     * [ShareResult] saw the share button simply do nothing — a silent, hard-to-diagnose failure.
+     *
+     * Resolution order:
+     *  1. Anything already non-`file` (`content://`, `http(s)://`, …) is returned untouched — the
+     *     previous behaviour for the payloads that already worked.
+     *  2. A `file://` URI (or a bare filesystem path) is wrapped through this module's own
+     *     FileProvider, which yields a `content://` URI. Combined with the
+     *     `FLAG_GRANT_READ_URI_PERMISSION` already set in [share], the receiving app gets scoped,
+     *     per-URI read access — no storage permission is granted to it.
+     *  3. If the file lives outside the paths declared in `cmp_share_paths.xml`,
+     *     `getUriForFile` throws `IllegalArgumentException`; we then COPY it into this module's own
+     *     cache dir (already declared, and the same place image shares use) and wrap that. Costs a
+     *     copy, but shares a file the consumer app can read from anywhere without every consumer
+     *     having to widen its own FileProvider paths.
+     *  4. Only if all of that fails do we fall back to the original URI, so behaviour is never
+     *     worse than before.
+     */
+    private fun shareableUri(uriString: String): Uri {
+        val original = Uri.parse(uriString)
+        // content:// / http(s):// / anything already shareable — leave exactly as-is.
+        if (original.scheme != null && original.scheme != "file") return original
+
+        val ctx = ShareContext.context
+        val file = original.path?.let { JavaFile(it) } ?: return original
+        if (!file.exists()) return original
+
+        val authority = "${ctx.packageName}.cmp-share.fileprovider"
+        runCatching { return FileProvider.getUriForFile(ctx, authority, file) }
+
+        // Outside the declared provider paths — stage a copy in our own cache dir and share that.
+        return runCatching {
+            val staged = JavaFile(ctx.cacheDir, "cmp-share/${file.name}").apply { parentFile?.mkdirs() }
+            file.inputStream().use { input -> FileOutputStream(staged).use { input.copyTo(it) } }
+            FileProvider.getUriForFile(ctx, authority, staged)
+        }.getOrDefault(original)
     }
 
     private fun writeBytesToCache(bytes: ByteArray, mimeType: String, filename: String?): Uri {
