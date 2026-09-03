@@ -86,6 +86,7 @@ public data class FirebaseConfig(
 
         public fun android(options: FirebaseOptions): Builder = apply { this.android = options }
         public fun apple(options: FirebaseOptions): Builder = apply { this.apple = options }
+
         /** Web options — applies to `js` AND `wasmJs` (GitLive 3.0.0-alpha02+). */
         public fun web(options: FirebaseOptions): Builder = apply { this.web = options }
         public fun measurementProtocol(config: MpConfig): Builder = apply { this.mp = config }
