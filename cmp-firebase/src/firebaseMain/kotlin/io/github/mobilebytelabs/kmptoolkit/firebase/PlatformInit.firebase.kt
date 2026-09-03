@@ -32,7 +32,7 @@ internal fun FirebaseOptions.toGitLive(): GitLiveFirebaseOptions = GitLiveFireba
 )
 
 /**
- * GitLive-native tier (android / ios / macos / tvos / js): configure the default
+ * GitLive-native tier (android / ios / macos / tvos / js / wasmjs): configure the default
  * FirebaseApp programmatically. On Android the required `Context` is read from
  * [FirebaseNativeContext] (captured by `FirebaseInitProvider`); elsewhere it is
  * `null` and GitLive ignores it.

@@ -21,10 +21,10 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.mp.MpConfig
  * `GoogleService-Info.plist`, or Swift `FirebaseApp.configure()` line required.
  *
  * ### Tier routing
- * - **Native (GitLive)** — `android`, `apple` (ios/macos/tvos), `web` (js) →
+ * - **Native (GitLive)** — `android`, `apple` (ios/macos/tvos), `web` (js + wasmjs) →
  *   `Firebase.initialize(options)`.
- * - **Measurement-Protocol** — jvm / linux / windows / wasmjs have no
- *   native Firebase (or a stub); analytics flows through [measurementProtocol].
+ * - **Measurement-Protocol** — jvm / linux / windows have no native Firebase
+ *   (or a stub); analytics flows through [measurementProtocol].
  *   Leave [measurementProtocol] null to no-op analytics on those targets.
  *
  * Apple is ONE grouped entry: iOS, macOS and tvOS share [apple]. A platform with
@@ -46,7 +46,18 @@ public data class FirebaseConfig(
     val android: FirebaseOptions? = null,
     /** iOS + macOS + tvOS (one grouped entry). */
     val apple: FirebaseOptions? = null,
-    /** Web (js). */
+    /**
+     * Web — used by BOTH the `js` and `wasmJs` targets.
+     *
+     * GitLive 3.0.0-alpha02+ backs `wasmJs` with the same Firebase **JS** SDK as `js`
+     * (upstream PR #832, "full parity with the JS target"), so wasmJs consumes this
+     * exact entry — `applicationId`, `apiKey`, `projectId`, `authDomain` (+ optional
+     * `storageBucket` / `gcmSenderId` / `databaseUrl`).
+     *
+     * Before alpha02, wasmJs sat on the Measurement-Protocol tier and needed only
+     * [measurementProtocol]. A wasmJs app that supplies only [measurementProtocol]
+     * and no [web] will now skip native init and NoOp its analytics.
+     */
     val web: FirebaseOptions? = null,
     /** Measurement-Protocol transport for the non-GitLive tier. */
     val measurementProtocol: MpConfig? = null,
@@ -59,8 +70,8 @@ public data class FirebaseConfig(
     internal fun optionsForPlatform(platform: String): FirebaseOptions? = when (platform) {
         "android" -> android
         "ios", "macos", "tvos" -> apple
-        "js" -> web
-        else -> null // jvm / linux / mingw / wasmjs → MP tier, no native options
+        "js", "wasmjs" -> web
+        else -> null // jvm / linux / mingw → MP tier, no native options
     }
 
     /** The [FirebaseOptions] for the platform this code is running on. */
@@ -75,6 +86,8 @@ public data class FirebaseConfig(
 
         public fun android(options: FirebaseOptions): Builder = apply { this.android = options }
         public fun apple(options: FirebaseOptions): Builder = apply { this.apple = options }
+
+        /** Web options — applies to `js` AND `wasmJs` (GitLive 3.0.0-alpha02+). */
         public fun web(options: FirebaseOptions): Builder = apply { this.web = options }
         public fun measurementProtocol(config: MpConfig): Builder = apply { this.mp = config }
 

@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — cmp-firebase: GitLive `3.0.0-alpha02` + wasmJs on the native tier
+
+- **GitLive bumped `3.0.0-alpha01` → `3.0.0-alpha02`**, Firebase BoM `34.17.0` → `34.18.0`.
+  Kotlin (`2.4.0`), Compose MP (`1.11.1`), serialization and BCV are unchanged, so the
+  SwiftPM iOS-linking model introduced in alpha01 is untouched.
+- **⚠️ `wasmJs` moved from the Measurement-Protocol tier to the native Firebase tier.**
+  Upstream [PR #832](https://github.com/GitLiveApp/firebase-kotlin-sdk/pull/832) gives wasmJs
+  full parity with the JS target, so `wasmJsMain` now depends on `firebaseMain` and runs the
+  real Firebase JS SDK. Tier counts are now firebaseMain **11** / nonFirebaseMain **4**.
+  - **Action required for wasmJs apps:** a wasmJs app that previously supplied only
+    `measurementProtocol` must now also supply **`FirebaseConfig.web`** (`applicationId`,
+    `apiKey`, `projectId`, `authDomain`) — wasmJs reads the *same* `web` entry as `js`.
+    Skipping it means native init is silently skipped and analytics NoOps; there is no
+    exception at config time.
+  - **Crashlytics is unchanged** — upstream did not add `wasmjs` to `firebase-crashlytics`,
+    so wasmJs keeps the `LoggingCrashReporter` fallback for crash reporting.
+- **Fixed** `FirebaseConfig.optionsForPlatform()` never routed `"wasmjs"`, so the tier move
+  would have compiled cleanly and then failed at runtime on an uninitialized default app.
+  Now `"js", "wasmjs" -> web`, with a regression test.
+- Regenerated `kotlin-js-store/wasm/yarn.lock` (+680 lines of `@firebase/*` npm packages
+  pulled in by the wasmJs binding).
+- Documentation corrected across `cmp-firebase/{README,DEVELOPMENT}.md` and
+  `docs/firebase/*`, including three pre-existing errors: iOS setup instructed consumers to
+  use a `Podfile` that GitLive 3.x no longer honors; a claim that alpha01 "dropped
+  `iosX64`/`macosX64`" (it did not); and a tier table that placed **JVM** under
+  `firebaseMain` and counted watchOS/wasmWasi as shipping targets (total is 15, not 21).
+
+### Fixed — cmp-share: binary-compatibility baseline was 5 releases stale
+
+- Regenerated `cmp-share/api/jvm/cmp-share.api`. `ShareOptions.targetPackage`
+  ([#161](https://github.com/MobileByteLabs/KmpToolkit/pull/161), 2026-08-27) added a fourth
+  constructor parameter and **shipped in v3.5.15 → v3.5.20 without the BCV dump being
+  regenerated**, leaving `apiCheck` red on `development` the whole time.
+- The signature change is a genuine binary break (the 3-arg constructor is replaced, not
+  overloaded), but `ShareOptions` is annotated `@ExperimentalShareApi`, so the break is
+  sanctioned by that API tier. No source change was made — only the baseline now records
+  what already shipped.
+
 ### Added — Documentation infrastructure (`kmp-toolkit-docs-mkdocs-cookbook`)
 
 - **Documentation site** at https://mobilebytelabs.github.io/KmpToolkit/ —

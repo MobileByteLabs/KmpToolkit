@@ -22,7 +22,7 @@ adr_refs: []
 |----------|---------|-----------------|-------|-------|----------|
 | `io.github.mobilebytelabs:cmp-firebase` | `io.github.mobilebytelabs.kmptoolkit.firebase` | `UNKNOWN` | [Central](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-firebase) | 2026-05-30 | experimental |
 
-**Module purpose (one paragraph):** Unified Firebase for Kotlin Multiplatform — **Analytics + Crashlytics** behind one in-library setup surface (`FirebaseKit`). The library spans **15 targets** (jvm · android · iosX64/Arm64/SimulatorArm64 · macosX64/Arm64 · tvosX64/Arm64/SimulatorArm64 · linuxX64/Arm64 · mingwX64 · js · wasmJs). Analytics uses GitLive on **10 targets** (android, ios×3, macos×2, tvos×3, js) with a Measurement-Protocol HTTP fallback on the remaining **5** (jvm, linux×2, mingw, wasmJs). Crashlytics uses GitLive on its **6 supported targets** (android, ios×3, macos×2) with a structured `LoggingCrashReporter` fallback on the other **9** (jvm, js, tvos×3, linux×2, mingw, wasmJs). Every crash tier produces the same `CrashReport` — exception class, message, full cause chain, and `file:line` stack frames — and mirrors a parallel `app_crash` GA4 event so both tiers share a single crash view in Analytics. Android needs zero setup code (auto-init `ContentProvider`); other platforms call `FirebaseKit.initialize()` once. Renamed from `cmp-firebase-analytics` on 2026-08-10. watchOS is explicitly **not** supported: the upstream `cmp-network-monitor` dependency publishes no watchOS artifact.
+**Module purpose (one paragraph):** Unified Firebase for Kotlin Multiplatform — **Analytics + Crashlytics** behind one in-library setup surface (`FirebaseKit`). The library spans **15 targets** (jvm · android · iosX64/Arm64/SimulatorArm64 · macosX64/Arm64 · tvosX64/Arm64/SimulatorArm64 · linuxX64/Arm64 · mingwX64 · js · wasmJs). Analytics uses GitLive on **11 targets** (android, ios×3, macos×2, tvos×3, js, wasmJs) with a Measurement-Protocol HTTP fallback on the remaining **4** (jvm, linux×2, mingw) — wasmJs joined the GitLive tier in `3.0.0-alpha02`. Crashlytics uses GitLive on its **6 supported targets** (android, ios×3, macos×2) with a structured `LoggingCrashReporter` fallback on the other **9** (jvm, js, tvos×3, linux×2, mingw, wasmJs). Every crash tier produces the same `CrashReport` — exception class, message, full cause chain, and `file:line` stack frames — and mirrors a parallel `app_crash` GA4 event so both tiers share a single crash view in Analytics. Android needs zero setup code (auto-init `ContentProvider`); other platforms call `FirebaseKit.initialize()` once. Renamed from `cmp-firebase-analytics` on 2026-08-10. watchOS is explicitly **not** supported: the upstream `cmp-network-monitor` dependency publishes no watchOS artifact.
 
 ---
 
@@ -35,7 +35,7 @@ adr_refs: []
 | macosMain | ✅ | ✅ real | 0 | 1 | 2026-08-25 | (legacy:full) | firebaseMain analytics + crashlyticsFirebaseMain |
 | jvmMain | ✅ | 🟡 partial | 0 | 1 | 2026-08-25 | partial | nonFirebaseMain analytics (MP) + crashlyticsFallbackMain |
 | jsMain | ✅ | 🟡 partial | 0 | 1 | 2026-08-25 | partial | firebaseMain analytics + crashlyticsFallbackMain |
-| wasmJsMain | ✅ | 🟡 partial | 0 | 1 | 2026-08-25 | partial | nonFirebaseMain analytics (MP) + crashlyticsFallbackMain |
+| wasmJsMain | ✅ | 🟡 partial | 0 | 1 | 2026-09-03 | partial | firebaseMain analytics (GitLive 3.0.0-alpha02+) + crashlyticsFallbackMain |
 | mingwMain | ✅ | 🟡 partial | 0 | 1 | 2026-08-25 | partial | nonFirebaseMain analytics (MP) + crashlyticsFallbackMain |
 | linuxMain | ✅ | 🟡 partial | 0 | 1 | 2026-08-25 | partial | nonFirebaseMain analytics (MP) + crashlyticsFallbackMain |
 | tvosMain | ✅ | 🟡 partial | 0 | 1 | 2026-08-25 | partial | firebaseMain analytics + crashlyticsFallbackMain |
@@ -235,10 +235,10 @@ The source-set graph for analytics has two orthogonal intermediate nodes, each `
 
 ```
 commonMain
-├── firebaseMain          ← android, ios×3, macos×2, tvos×3, js
+├── firebaseMain          ← android, ios×3, macos×2, tvos×3, js, wasmJs
 │     actual fun platformInitializeFirebase(...)  // GitLive Firebase.initialize()
 │     internal actual fun createPlatformAnalyticsHelper() = FirebaseAnalyticsHelper(...)
-└── nonFirebaseMain       ← jvm, linux×2, mingw, wasmJs
+└── nonFirebaseMain       ← jvm, linux×2, mingw
       actual fun platformInitializeFirebase(...)  // no-op (no SDK)
       internal actual fun createPlatformAnalyticsHelper() = MeasurementProtocolAnalyticsHelper(...)
 ```

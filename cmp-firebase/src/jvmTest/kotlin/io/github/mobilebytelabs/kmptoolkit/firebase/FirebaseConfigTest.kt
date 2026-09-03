@@ -33,6 +33,8 @@ class FirebaseConfigTest {
     fun android_web_and_apple_group_select_correctly() {
         assertSame(cfg.android, cfg.optionsForPlatform("android"))
         assertSame(cfg.web, cfg.optionsForPlatform("js"))
+        // wasmJs is JS-parity from GitLive 3.0.0-alpha02 — it reads the SAME web options.
+        assertSame(cfg.web, cfg.optionsForPlatform("wasmjs"))
         // Apple is ONE grouped entry for ios/macos/tvos.
         assertSame(cfg.apple, cfg.optionsForPlatform("ios"))
         assertSame(cfg.apple, cfg.optionsForPlatform("macos"))
@@ -41,7 +43,7 @@ class FirebaseConfigTest {
 
     @Test
     fun fallback_tier_platforms_have_no_native_options() {
-        listOf("jvm", "linux", "mingw", "wasmjs", "watchos").forEach {
+        listOf("jvm", "linux", "mingw", "watchos").forEach {
             assertNull(cfg.optionsForPlatform(it), "expected null native options for $it")
         }
     }
