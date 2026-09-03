@@ -36,10 +36,10 @@ markdown = "0.7.3"
 androidx-core = "1.13.1"
 navigation = "2.9.2"
 
-# GitLive Firebase Kotlin SDK — Android, iOS, JS, JVM only (3.0.0-alpha01: iOS linking via SwiftPM, needs Kotlin 2.4.0)
-gitliveFirebase = "3.0.0-alpha01"
+# GitLive Firebase Kotlin SDK (3.0.0-alpha02: iOS linking via SwiftPM, needs Kotlin 2.4.0; adds wasmJs at JS parity)
+gitliveFirebase = "3.0.0-alpha02"
 # Firebase Android BOM — GitLive's android sourceset omits versions; the BOM resolves them
-firebaseBom = "34.17.0"
+firebaseBom = "34.18.0"
 
 # AndroidX
 androidx-activityCompose = "1.12.2"

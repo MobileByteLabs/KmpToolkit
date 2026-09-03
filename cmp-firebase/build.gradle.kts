@@ -97,17 +97,16 @@ kotlin {
     //       │
     //       ├── firebaseMain      — GitLive Firebase Analytics ships here (11 targets)
     //       │     ├── androidMain
-    //       │     ├── jvmMain
     //       │     ├── iosMain     (iosX64 / iosArm64 / iosSimulatorArm64)
     //       │     ├── macosMain   (macosX64 / macosArm64)
     //       │     ├── tvosMain    (tvosX64 / tvosArm64 / tvosSimulatorArm64)
-    //       │     └── jsMain      (browser + node)
+    //       │     ├── jsMain      (browser + node)
+    //       │     └── wasmJsMain  (GitLive 3.0.0-alpha02+ — JS-parity wasmJs target)
     //       │
-    //       └── nonFirebaseMain   — Measurement Protocol HTTP (5 targets)
+    //       └── nonFirebaseMain   — Measurement Protocol HTTP (4 targets)
     //             ├── jvmMain
     //             ├── linuxMain   (linuxX64 / linuxArm64)
-    //             ├── mingwMain   (mingwX64)
-    //             └── wasmJsMain
+    //             └── mingwMain   (mingwX64)
     //
     // wasmWasi + watchOS intentionally omitted — cmp-network-monitor (a dependency) and
     // Ktor/Kermit/multiplatform-settings do not publish those variants. 15 targets supported.
@@ -156,6 +155,11 @@ kotlin {
         macosMain.get().dependsOn(firebaseMain)
         tvosMain.get().dependsOn(firebaseMain)
         jsMain.get().dependsOn(firebaseMain)
+        // wasmJs joined the GitLive-supported set in 3.0.0-alpha02 (upstream PR #832,
+        // full parity with the JS target). Promoted off the Measurement-Protocol tier.
+        // NOTE: firebase-crashlytics did NOT gain wasmjs — the crashlytics tier below
+        // deliberately keeps wasmJs on crashlyticsFallbackMain.
+        wasmJsMain.get().dependsOn(firebaseMain)
 
         // Not supported by GitLive → nonFirebaseMain (Measurement Protocol HTTP).
         // JVM is here too: GitLive's JVM analytics is a no-op stub AND JVM has no
@@ -164,7 +168,6 @@ kotlin {
         jvmMain.get().dependsOn(nonFirebaseMain)
         linuxMain.get().dependsOn(nonFirebaseMain)
         mingwMain.get().dependsOn(nonFirebaseMain)
-        wasmJsMain.get().dependsOn(nonFirebaseMain)
 
         // ── Crashlytics tier ────────────────────────────────────────────────
         //
@@ -176,8 +179,18 @@ kotlin {
         //   crashlyticsFirebaseMain (6)  — GitLive Crashlytics: android, ios×3, macos×2
         //   crashlyticsFallbackMain (9)  — LoggingCrashReporter: jvm, js, tvos×3, linux×2, mingw, wasmJs
         //
-        // GitLive firebase-crashlytics 3.0.0-alpha01 publishes ONLY android + iOS + macOS
-        // (NO tvOS/watchOS/JVM/JS/native) — verified against its published artifacts.
+        // GitLive firebase-crashlytics 3.0.0-alpha02 declares
+        //   firebase-crashlytics.supportedTargets = ios, macos, jvm, android
+        // (verified in gradle.properties at the v3.0.0-alpha02 tag) — NO tvOS / JS /
+        // wasmJs / watchOS / linux / mingw.
+        //
+        // NOTE alpha02 added `wasmjs` to EVERY other GitLive module but deliberately NOT
+        // to crashlytics, which is why wasmJs is promoted to firebaseMain for ANALYTICS
+        // above yet stays on crashlyticsFallbackMain here.
+        //
+        // JVM is listed upstream but kept on the fallback tier anyway: GitLive's JVM
+        // crashlytics is a stub — the same reason jvm sits on nonFirebaseMain for
+        // analytics.
         // Crashlytics also has no ingestion REST API, so the fallback is a structured
         // Kermit-logged CrashReport (AI-feedable), not a Measurement-Protocol HTTP.
         val crashlyticsFirebaseMain by creating {

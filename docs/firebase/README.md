@@ -53,14 +53,25 @@ class SettingsViewModel(private val analytics: AnalyticsHelper) {
 |---|---|:-:|
 | `cmp-firebase` | Single module — interface + Stub/NoOp/Test + GitLive Firebase impl + MP HTTP impl | **21** (full KMP) |
 
-## Platform Support — 21/21
+## Platform Support — 15/15
 
 | Tier | Targets | Count | Backend |
 |---|---|:-:|---|
-| **firebaseMain** | Android · JVM · iOS (×3) · macOS (×2) · tvOS (×3) · JS | 11 | GitLive Firebase Kotlin SDK (full native: DebugView, automatic events, A/B Testing, demographics, ATT) |
-| **nonFirebaseMain** | watchOS (×4) · Linux (×2) · mingwX64 · wasmJs · wasmWasi | 10 | Firebase Measurement Protocol via HTTP (events land in same Firebase property + same BigQuery dataset) |
+| **firebaseMain** | Android · iOS (×3) · macOS (×2) · tvOS (×3) · JS · **wasmJs** | 11 | GitLive Firebase Kotlin SDK (full native: DebugView, automatic events, A/B Testing, demographics, ATT) |
+| **nonFirebaseMain** | JVM · Linux (×2) · mingwX64 | 4 | Firebase Measurement Protocol via HTTP (events land in same Firebase property + same BigQuery dataset) |
 
-Trade-offs vs native SDK on the 10 MP-only platforms documented in [SETUP.md §Non-Firebase platforms](SETUP.md#non-firebase-platforms-watchos--linux--windows--wasm).
+> **Changed in GitLive 3.0.0-alpha02 (2026-09-03):** `wasmJs` moved from the MP tier to the native
+> Firebase tier and now reads `FirebaseConfig.web` — see [SETUP.md](SETUP.md) for the migration note.
+> The same revision corrects two long-standing errors in this table: **JVM** was listed under
+> `firebaseMain` although the build file puts it on the MP tier (GitLive's JVM analytics is a stub),
+> and **watchOS / wasmWasi** were listed as shipping targets although `cmp-firebase` does not
+> declare them at all — which is also why the total is **15**, not the 21 this heading claimed.
+>
+> Target math: firebaseMain 11 (android · ios×3 · macos×2 · tvos×3 · js · wasmJs) +
+> nonFirebaseMain 4 (jvm · linux×2 · mingw) = **15**, matching
+> [`cmp-firebase/DEVELOPMENT.md`](../../cmp-firebase/DEVELOPMENT.md).
+
+Trade-offs vs the native SDK on the 4 MP-only platforms are documented in [SETUP.md §7 Non-Firebase platforms](SETUP.md#7-non-firebase-platforms-jvm--linux--mingw).
 
 ## Project-specific keys (zero library defaults)
 

@@ -14,7 +14,7 @@ import dev.gitlive.firebase.analytics.analytics
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.FirebaseAnalyticsHelper
 
 /**
- * Firebase-tier actual: Android · JVM · iOS (×3) · macOS (×2) · tvOS (×3) · JS.
+ * Firebase-tier actual: Android · iOS (×3) · macOS (×2) · tvOS (×3) · JS · wasmJs.
  *
  * Returns a [FirebaseAnalyticsHelper] backed by GitLive's `Firebase.analytics`.
  *
@@ -22,7 +22,8 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.FirebaseAnalyticsH
  * - **Android**: `google-services.json` + `com.google.gms.google-services` plugin applied
  * - **iOS / macOS / tvOS**: `GoogleService-Info.plist` + `FirebaseApp.configure()` in AppDelegate
  *   (or `@main App.init`). Pod dependencies bundled by GitLive.
- * - **JS**: Firebase config object passed during app init
+ * - **JS / wasmJs**: Firebase config object passed during app init (both read
+ *   `FirebaseConfig.web`; wasmJs is JS-parity via GitLive 3.0.0-alpha02+)
  * - **JVM**: limited support; falls back to GitLive's stub if not configured
  */
 internal actual fun createPlatformAnalyticsHelper(): AnalyticsHelper = FirebaseAnalyticsHelper(Firebase.analytics)

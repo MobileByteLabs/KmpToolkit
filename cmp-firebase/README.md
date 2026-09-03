@@ -2,7 +2,7 @@
 
 Firebase for **Kotlin Multiplatform** — **Analytics + Crashlytics** in one module with a single in-library setup surface ([`FirebaseKit`](#setup-stays-in-the-library)). Interface + Stub/NoOp/Test variants across all 15 supported KMP targets, backed by [GitLive Firebase](https://github.com/GitLiveApp/firebase-kotlin-sdk):
 
-- **Analytics** — GitLive on **10 targets** (firebaseMain: Android, iOS×3, macOS×2, tvOS×3, JS), Measurement-Protocol HTTP fallback on the remaining 5 (JVM, Linux×2, mingwX64, wasmJs).
+- **Analytics** — GitLive on **11 targets** (firebaseMain: Android, iOS×3, macOS×2, tvOS×3, JS, wasmJs), Measurement-Protocol HTTP fallback on the remaining 4 (JVM, Linux×2, mingwX64).
 - **Crashlytics** — GitLive on **6 targets** (Android + iOS×3 + macOS×2); a structured, **AI-feedable `CrashReport`** (logged via Kermit) on the other 9. Every tier produces the same `CrashReport` JSON you can hand straight to an AI to diagnose and fix a crash.
 
 > Renamed from `cmp-firebase-analytics` (the module now covers Crashlytics too). Package root: `io.github.mobilebytelabs.kmptoolkit.firebase`.
@@ -42,12 +42,15 @@ io.github.mobilebytelabs.kmptoolkit.firebase
 
 | Tier | Targets | Count | Recommended helper | Default `provideAnalyticsHelper()` |
 |---|---|:-:|---|---|
-| **firebaseMain** | Android, iOS (iosX64/iosArm64/iosSimulatorArm64), macOS (macosX64/macosArm64), tvOS (tvosX64/tvosArm64/tvosSimulatorArm64), JS | **10** | `FirebaseAnalyticsHelper` (GitLive — full native: DebugView, automatic events, A/B Testing, demographics) | `FirebaseAnalyticsHelper(Firebase.analytics)` |
-| **nonFirebaseMain** | JVM, Linux (linuxX64/linuxArm64), mingwX64, wasmJs | **5** | `MeasurementProtocolAnalyticsHelper` (HTTP POST to Firebase MP — events land in the SAME Firebase Analytics property + same BigQuery export) | `NoOpAnalyticsHelper` (until app wires MP — see below) |
+| **firebaseMain** | Android, iOS (iosX64/iosArm64/iosSimulatorArm64), macOS (macosX64/macosArm64), tvOS (tvosX64/tvosArm64/tvosSimulatorArm64), JS, wasmJs | **11** | `FirebaseAnalyticsHelper` (GitLive — full native: DebugView, automatic events, A/B Testing, demographics) | `FirebaseAnalyticsHelper(Firebase.analytics)` |
+| **nonFirebaseMain** | JVM, Linux (linuxX64/linuxArm64), mingwX64 | **4** | `MeasurementProtocolAnalyticsHelper` (HTTP POST to Firebase MP — events land in the SAME Firebase Analytics property + same BigQuery export) | `NoOpAnalyticsHelper` (until app wires MP — see below) |
 
-GitLive Firebase Analytics ships on Android, iOS, macOS, tvOS, and JS — the platforms the native Firebase SDK supports. JVM/desktop is intentionally on the nonFirebase tier: GitLive does not publish a JVM artifact.
+GitLive Firebase Analytics ships on Android, iOS, macOS, tvOS, JS and wasmJs — the platforms the native Firebase SDK supports. JVM/desktop is intentionally on the nonFirebase tier: GitLive's JVM analytics is a stub.
 
-For the 5 non-Firebase platforms (JVM, Linux×2, mingwX64, wasmJs), `MeasurementProtocolAnalyticsHelper` provides event capture parity (custom events, user properties, persistent client_id). It uses Firebase's Measurement Protocol REST API — events land in the SAME property and BigQuery dataset as GitLive-emitted events. Trade-offs vs native SDK: no DebugView, no automatic events, no A/B tie-in, ~1h latency to BigQuery (same as GitLive).
+> **Changed in GitLive `3.0.0-alpha02` (KmpToolkit 3.5.21+):** `wasmJs` moved from the Measurement-Protocol tier to the native Firebase tier and now reads `FirebaseConfig.web` (the same entry `js` uses). Crashlytics is the exception — upstream did not add `wasmjs` to `firebase-crashlytics`, so wasmJs keeps the logging fallback for crash reporting.
+
+
+For the 4 non-Firebase platforms (JVM, Linux×2, mingwX64), `MeasurementProtocolAnalyticsHelper` provides event capture parity (custom events, user properties, persistent client_id). It uses Firebase's Measurement Protocol REST API — events land in the SAME property and BigQuery dataset as GitLive-emitted events. Trade-offs vs native SDK: no DebugView, no automatic events, no A/B tie-in, ~1h latency to BigQuery (same as GitLive).
 
 `provideAnalyticsHelper()` defaults to NoOp on nonFirebase platforms because MP requires app-supplied config (`measurement_id` + `api_secret`). Apps that want analytics on JVM / Linux / etc. wire `MeasurementProtocolAnalyticsHelper` directly in their Koin module — see "Setup → Non-Firebase platforms" below. `provideAnalyticsHelper()` is memoized process-wide, so the app's DI and the internal crash→GA4 bridge share ONE stable helper instance.
 
@@ -98,7 +101,7 @@ Every `recordException(...)` call also emits an `app_crash` GA4 event with three
 
 This means ALL platforms land in one GA4 / BigQuery table and can be segmented by `kmp_platform` and severity — whether the crash was captured by native Firebase Crashlytics or the `LoggingCrashReporter` fallback.
 
-> **nonFirebase tier caveat**: on JVM, Linux, mingwX64, and wasmJs the `app_crash` event reaches GA4 only when an `MpConfig` is configured. Without it the analytics sink is `NoOpAnalyticsHelper` and the event is silently dropped. Configure `MpConfig` (see "Non-Firebase platforms" below) to get full cross-platform crash visibility.
+> **nonFirebase tier caveat**: on JVM, Linux and mingwX64 the `app_crash` event reaches GA4 only when an `MpConfig` is configured. Without it the analytics sink is `NoOpAnalyticsHelper` and the event is silently dropped. Configure `MpConfig` (see "Non-Firebase platforms" below) to get full cross-platform crash visibility.
 
 ## Setup stays in the library
 
@@ -211,9 +214,9 @@ Follow GitLive's docs: https://github.com/GitLiveApp/firebase-kotlin-sdk
 
 > **JVM note**: JVM is on the **nonFirebase** tier — GitLive does not publish a JVM artifact. JVM consumers receive `MeasurementProtocolAnalyticsHelper` when `MpConfig` is supplied, else `NoOpAnalyticsHelper`. See "Non-Firebase platforms" below.
 
-### JVM / Linux / Windows / wasm — Non-Firebase platforms
+### JVM / Linux / Windows — Non-Firebase platforms
 
-GitLive doesn't ship on these 5 targets (JVM, linuxX64, linuxArm64, mingwX64, wasmJs), so use **Firebase Measurement Protocol over HTTP** for event capture parity.
+GitLive doesn't ship usable analytics on these 4 targets (JVM, linuxX64, linuxArm64, mingwX64), so use **Firebase Measurement Protocol over HTTP** for event capture parity. *(`wasmJs` was on this list before GitLive `3.0.0-alpha02` — it is now a native Firebase target.)*
 
 1. **Generate an MP API secret** at Firebase Console → Project settings → Integrations → GA4 → Data Streams → {your stream} → **Measurement Protocol API secrets** → Create.
 

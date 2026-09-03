@@ -57,7 +57,7 @@
 +------------------------------------------------------------+
 |  GATE 5: MP API Secret (conditional)                       |
 |  Trigger: app targets JVM / linuxX64 / linuxArm64 /        |
-|           mingwX64 / wasmJs (any of the 5 nonFirebaseMain) |
+|           mingwX64 (any of the 4 nonFirebaseMain)          |
 |  Check: release-layer/.env contains MP_API_SECRET          |
 |  Check: PROJECT_CONFIG.analytics.measurement_protocol.     |
 |         api_secret_secret_ref is set                       |

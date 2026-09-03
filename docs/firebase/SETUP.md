@@ -46,7 +46,7 @@ RULE-SECRETS-VAULT-001 — never `.env`, never `gh secret set`):
 | **PROJECT** (per app) | Android `google-services.json` | `<proj>-firebase-google-services` | `firebase_config_android` | native Android SDK init |
 | **PROJECT** (per app) | iOS/macOS `GoogleService-Info.plist` | `<proj>-firebase-ios-plist` | `firebase_config_ios` | native Apple SDK init |
 | **PROJECT** (per app) | Firebase app id (android / ios) | `<proj>-firebase-android-app-id` · `<proj>-firebase-ios-app-id` | `env_var` | per-app identity in the shared project |
-| **PROJECT** (per app) | GA4 **measurement id** (`G-XXXXXXXX`, per data stream) | `<proj>-ga4-measurement-id` | `env_var` | MP tier (jvm/linux/mingw/wasmJs) |
+| **PROJECT** (per app) | GA4 **measurement id** (`G-XXXXXXXX`, per data stream) | `<proj>-ga4-measurement-id` | `env_var` | MP tier (jvm/linux/mingw) |
 | **PROJECT** (per app) | Measurement-Protocol API secret (per stream) | `<proj>-mp-api-secret` | `env_var` | MP tier |
 
 > **Property id vs measurement id** — the *property id* is the org-shared numeric GA4 property
@@ -88,10 +88,12 @@ FirebaseKit.initialize(
     FirebaseConfig.builder()
         .android(FirebaseOptions(/* optional override */))
         .apple(FirebaseOptions(/* optional override */))
+        // `web` serves BOTH the `js` AND `wasmJs` targets — see the wasmJs note below.
         .web(FirebaseOptions(
             apiKey        = "YOUR_WEB_API_KEY",
             applicationId = "YOUR_APP_ID",
             projectId     = "your-firebase-project",
+            authDomain    = "your-firebase-project.firebaseapp.com",
         ))
         .measurementProtocol(MpConfig(measurementId = "G-XXXX", apiSecret = "..."))
         .build()
@@ -124,7 +126,36 @@ FirebaseKit.installUncaughtHandler()
    }
    ```
 
-### iOS / macOS / tvOS — `GoogleService-Info.plist`
+### iOS / macOS / tvOS — two supported paths
+
+Pick **one**. Path A is the library's own commonMain surface and needs no plist and no Swift
+code; Path B is the classic native-config route. Do not do both.
+
+#### Path A (recommended) — programmatic, no plist, no Swift
+
+Pass `apple` options to `FirebaseKit.initialize(config)` from commonMain. Firebase is configured
+programmatically, so there is **no `GoogleService-Info.plist` and no `FirebaseApp.configure()`
+line at all**:
+
+```kotlin
+FirebaseKit.initialize(
+    FirebaseConfig.builder()
+        .apple(FirebaseOptions(
+            applicationId = "1:123:ios:abc",   // required
+            apiKey        = "YOUR_API_KEY",     // required
+            projectId     = "your-firebase-project",
+            gcmSenderId   = "123",              // required by Apple's native FIROptions
+        ))
+        .build()
+)
+```
+
+> `gcmSenderId` is **not optional on Apple** — the native `FIROptions` constructor requires it.
+> Values come from the same Firebase Console screen that would have produced the plist.
+
+#### Path B — `GoogleService-Info.plist` (classic)
+
+Use the no-arg `FirebaseKit.initialize()` and let the platform read its own config file:
 
 1. Firebase Console → Project Settings → Your apps → iOS → Download `GoogleService-Info.plist`
 2. Drop into the corresponding app target (drag into Xcode project)
@@ -142,7 +173,18 @@ FirebaseKit.installUncaughtHandler()
    }
    ```
 
-4. Pod dependencies are auto-bundled by GitLive — see your project's `cmp-ios/Podfile`.
+#### Linking (applies to BOTH paths)
+
+**No Podfile.** From GitLive `3.0.0` the native `firebase-ios-sdk` is linked via **SwiftPM**, not
+CocoaPods, and it flows across the Maven boundary automatically — do **not** re-declare it.
+
+- Build your shared framework **static**: `iosArm64().binaries.framework { isStatic = true }`
+  (Firebase's SwiftPM products are static libraries; a dynamic framework crashes at runtime).
+- In Xcode use **direct integration** — add the `embedAndSignAppleFrameworkForXcode` run-script
+  build phase. This replaces `pod install`.
+- Set the deployment target to **iOS 15.0** / macOS 10.15 / tvOS 15.0 (`firebase-ios-sdk` 12.x minimum).
+
+Full steps: [`cmp-firebase/README.md`](../../cmp-firebase/README.md#ios--macos--tvos-swiftpm--gitlive-3x).
 
 ### JS — Firebase config object
 
@@ -166,9 +208,32 @@ FirebaseKit.initialize(
 )
 ```
 
-### JVM / Linux / mingw / wasmJs — MP tier
+> ### ⚠️ BREAKING for wasmJs — `wasmJs` moved to the native Firebase tier
+>
+> **From GitLive `3.0.0-alpha02` (KmpToolkit 3.5.21+), `wasmJs` is no longer a Measurement-Protocol
+> target.** Upstream [PR #832](https://github.com/GitLiveApp/firebase-kotlin-sdk/pull/832) gives wasmJs
+> full parity with the JS target, backed by the same Firebase **JS** SDK, so `cmp-firebase` promotes
+> `wasmJsMain` onto `firebaseMain`.
+>
+> **What you must change:** a wasmJs app that previously supplied only `measurementProtocol` must now
+> also supply **`web`** (`apiKey`, `applicationId`, `projectId`, `authDomain`). `wasmJs` reads the
+> *same* `FirebaseConfig.web` entry as `js` — there is no separate `wasmJs` entry.
+>
+> **If you skip it:** native init is silently skipped and analytics NoOps — you will not get an
+> exception at config time, so this fails quietly. Supply `web` (or keep the target off the tier by
+> pinning `gitliveFirebase` below `3.0.0-alpha02`).
+>
+> **Unchanged:** Crashlytics. `firebase-crashlytics` did *not* gain `wasmjs` upstream, so wasmJs stays
+> on `crashlyticsFallbackMain` (`LoggingCrashReporter`). `measurementProtocol` is still required for
+> jvm / linux / mingw.
+>
+> Every section of this guide has been updated for this change (2026-09-03).
 
-GitLive doesn't ship native Firebase Analytics for `jvm`, `linuxX64`, `linuxArm64`, `mingwX64`, or `wasmJs`. For event capture on these 5 targets, use **Firebase Measurement Protocol** — see [§7 below](#7-non-firebase-platforms-jvm--linux--mingw--wasmjs).
+### JVM / Linux / mingw — MP tier
+
+GitLive doesn't ship usable native Firebase Analytics for `jvm`, `linuxX64`, `linuxArm64`, or `mingwX64`. For event capture on these 4 targets, use **Firebase Measurement Protocol** — see [§7 below](#7-non-firebase-platforms-jvm--linux--mingw).
+
+> `wasmJs` was on this tier before GitLive `3.0.0-alpha02`; it is now a native Firebase target and reads `FirebaseConfig.web` instead.
 
 ---
 
@@ -303,9 +368,11 @@ import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.TestAnalyticsHelpe
 
 ---
 
-## 7. Non-Firebase platforms (JVM / Linux / mingw / wasmJs)
+## 7. Non-Firebase platforms (JVM / Linux / mingw)
 
-GitLive doesn't ship native Firebase Analytics on these 5 targets: `jvm`, `linuxX64`, `linuxArm64`, `mingwX64`, `wasmJs`. Use **Firebase Measurement Protocol over HTTP** to land events in the same Firebase property + same BigQuery export.
+GitLive doesn't ship usable native Firebase Analytics on these 4 targets: `jvm`, `linuxX64`, `linuxArm64`, `mingwX64`. Use **Firebase Measurement Protocol over HTTP** to land events in the same Firebase property + same BigQuery export.
+
+> **`wasmJs` is no longer in this list.** GitLive `3.0.0-alpha02` gave it full JS parity, so it runs the native Firebase JS SDK and needs `FirebaseConfig.web`. Crashlytics is the exception — upstream did not add `wasmjs` there, so wasmJs still uses the logging fallback for crash reporting.
 
 ### What an MP API secret is
 
@@ -323,7 +390,7 @@ Step-by-step (Firebase Console UI):
 4. Find the **Google Analytics** card → click **Manage** (or **Open in GA4**)
 5. In the GA4 admin pane, navigate: **Admin → Data Streams**
 6. Click your stream — pick the one that matches the platform:
-   - **Web stream** → for `wasmJs` / browser deploys
+   - **Web stream** → for browser deploys (`js`; and `wasmJs` pre-alpha02)
    - **Android stream** → not relevant here (Android uses native SDK)
    - For `jvm` / `linuxX64` / `linuxArm64` / `mingwX64`, use whichever stream represents your "desktop" presence (often Web)
 7. Scroll to **Measurement Protocol API secrets** (near the bottom of the page)
@@ -376,7 +443,7 @@ val analyticsModule = module {
     single<AnalyticsHelper> {
         // Pick per-platform helper:
         //  - firebaseMain platforms: provideAnalyticsHelper() returns FirebaseAnalyticsHelper
-        //  - nonFirebaseMain platforms (jvm/linux/mingw/wasmJs): wire MP explicitly
+        //  - nonFirebaseMain platforms (jvm/linux/mingw): wire MP explicitly
         if (BuildConfig.DEBUG) {
             StubAnalyticsHelper()
         } else {
@@ -422,7 +489,7 @@ The MP secret is the **least powerful** credential in this list. That's intentio
 |---|:-:|:-:|
 | Custom event capture | ✅ | ✅ |
 | User properties + user ID | ✅ | ✅ |
-| Persistent client_id | ✅ from GitLive | ✅ via multiplatform-settings (Apple/JS); in-memory on Linux/mingw/wasmJs |
+| Persistent client_id | ✅ from GitLive | ✅ via multiplatform-settings (Apple/JS); in-memory on Linux/mingw |
 | Async batching | ✅ native | ✅ 5s/25-event debounce |
 | BigQuery export | ✅ | ✅ same dataset |
 | DebugView | ✅ | ❌ |

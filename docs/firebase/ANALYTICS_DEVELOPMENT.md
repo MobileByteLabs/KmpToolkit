@@ -115,10 +115,17 @@ Both modules are under Binary Compatibility Validator. **Any public API change r
 
 Baselines: `cmp-firebase/api/jvm/*.api`, `cmp-firebase-compose/api/jvm/*.api`.
 
-## Build gotchas (from the GitLive 3.0.0-alpha01 adoption)
+## Build gotchas (from the GitLive 3.0.0-alpha02 adoption)
 
-- Kotlin `2.4.0` / Compose `1.11.1`; GitLive alpha01 dropped `iosX64`/`macosX64` and has **no
-  watchOS**. Keep target sets aligned with `cmp-network-monitor*` siblings.
+- Kotlin `2.4.0` / Compose `1.11.1`. GitLive has **no watchOS**, and this module also omits
+  `wasmWasi` on purpose (see the comment in `cmp-firebase/build.gradle.kts`). Keep target sets
+  aligned with the `cmp-network-monitor*` siblings.
+  <br>*(Corrected 2026-09-03: an earlier revision claimed alpha01 "dropped `iosX64`/`macosX64`".
+  That was wrong — the module declares `iosX64()`, `iosArm64()`, `iosSimulatorArm64()`,
+  `macosX64()` and `macosArm64()`, and `:cmp-firebase:linkDebugTestMacosX64` builds green.)*
+- **wasmJs moved to the native Firebase tier in alpha02** — it is no longer a
+  Measurement-Protocol target and now reads `FirebaseConfig.web`. Crashlytics is the one
+  exception: upstream did not add `wasmjs` there, so wasmJs keeps the logging fallback.
 - After changing dependencies, JS/Wasm yarn locks need **both**
   `./gradlew kotlinUpgradeYarnLock` **and** `kotlinWasmUpgradeYarnLock` (the JS one alone is
   insufficient).
