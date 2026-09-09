@@ -38,7 +38,11 @@ internal class AndroidClipboardObserver :
     override val isObserving: Boolean get() = _isObserving
 
     private var clipboardListener: ClipboardManager.OnPrimaryClipChangedListener? = null
-    private val handler = Handler(Looper.getMainLooper())
+
+    // Lazy for the same reason as AndroidClipboardMonitor.handler: touching
+    // Looper.getMainLooper() at construction makes the object un-instantiable in a JVM host
+    // test, and every real use happens after construction.
+    private val handler by lazy { Handler(Looper.getMainLooper()) }
 
     private val clipboardManager: ClipboardManager?
         get() = appContext?.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager

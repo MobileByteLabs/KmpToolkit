@@ -65,7 +65,13 @@ internal class AndroidClipboardMonitor :
     // In-process clipboard monitoring
     private var clipboardListener: ClipboardManager.OnPrimaryClipChangedListener? = null
     private var lastContent: String? = null
-    private val handler = Handler(Looper.getMainLooper())
+
+    // Lazy, not eager: Handler(Looper.getMainLooper()) touches the Android framework at
+    // CONSTRUCTION, so merely instantiating the monitor threw in any JVM host test
+    // ("Method getMainLooper in android.os.Looper not mocked"). Both real uses — stop()'s
+    // removeCallbacksAndMessages and the post-change re-reads — happen well after construction,
+    // so deferring costs nothing and keeps the constructor free of framework calls.
+    private val handler by lazy { Handler(Looper.getMainLooper()) }
     private var serviceStarted = false
 
     private val clipboardManager: ClipboardManager?
