@@ -10,7 +10,7 @@ import org.gradle.api.Project
  *   delegates to `configureDokka()`.
  *
  * - **Any leaf module**: applies kover AND self-registers into root's aggregation via
- *   `rootProject.dependencies.add("kover", project)`. Each module opts itself in; there is no
+ *   `rootProject.dependencies.add("kover", project(path))`. Each module opts itself in; no
  *   central `subprojects` filter to keep in sync, so adding a new `cmp-*` module needs no change
  *   here — it just applies this plugin.
  *
@@ -26,7 +26,12 @@ class KoverConventionPlugin : Plugin<Project> {
             } else {
                 // Root's `kover` configuration exists by now: this plugin applies to root
                 // during root build.gradle.kts evaluation, before any subproject configures.
-                rootProject.dependencies.add("kover", project)
+                // project-PATH notation, not the Project object: passing a Project as a
+                // dependency notation is deprecated and fails in Gradle 10.
+                rootProject.dependencies.add(
+                    "kover",
+                    rootProject.dependencies.project(mapOf("path" to project.path)),
+                )
             }
         }
     }

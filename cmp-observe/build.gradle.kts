@@ -126,14 +126,15 @@ kotlin {
         // linux/mingw) skip it and get an interface-only commonMain compilation.
         //
         // Hook files physically live in src/firebaseHooksMain/kotlin/.../hooks/.
-        val firebaseHooksMain by creating {
-            dependsOn(commonMain.get())
-            dependencies {
-                implementation(libs.gitlive.firebase.crashlytics)
-                implementation(libs.gitlive.firebase.analytics)
-                implementation(libs.gitlive.firebase.performance)
+        val firebaseHooksMain =
+            create("firebaseHooksMain") {
+                dependsOn(commonMain.get())
+                dependencies {
+                    implementation(libs.gitlive.firebase.crashlytics)
+                    implementation(libs.gitlive.firebase.analytics)
+                    implementation(libs.gitlive.firebase.performance)
+                }
             }
-        }
 
         // Wire ONLY android + ios to depend on firebaseHooksMain — the platform
         // intersection of all 3 GitLive Firebase deps at v2.4.0:
