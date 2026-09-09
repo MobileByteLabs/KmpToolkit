@@ -166,20 +166,26 @@ mavenPublishing {
 // Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
 apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
 
-// ── Android host test: disabled, not filtered ──────────────────────────────────────────────
-// This module's ONLY commonTest class (ComposeExtensionsTest) exercises the Android actual's
-// use of real framework services, which a JVM host test cannot provide — android.jar is a stub
-// and no init ContentProvider runs. Filtering it out left `testAndroidHostTest` executing ZERO
-// tests while still reporting BUILD SUCCESSFUL, which is worse than not running: a task that
-// verifies nothing must not look like a pass.
+// ── Android host-test exclusions (method-level) ─────────────────────────────────────────────
+// Each entry below reaches a real Android framework service that a JVM host test cannot
+// provide — ConnectivityManager, ProcessLifecycleOwner, Context.startActivity, or the init
+// ContentProvider. android.jar is a stub here and no provider ever runs, so these cannot pass;
+// injecting a Context does not help, because the services themselves must actually work.
 //
-// Disabled explicitly instead. Coverage is unchanged — being commonTest, ComposeExtensionsTest
-// still runs on jvmTest (6 tests) and the other target tiers, and the Android actual is covered
-// on-device via `withDeviceTestBuilder`. Re-enable the moment a host-runnable test lands here.
-// configureEach, not tasks.named: the Android host-test task is registered by AGP after this
-// script is evaluated, so named() fails with "Task with name 'testAndroidHostTest' not found".
+// Excluded per METHOD, not per class: the same classes contain tests that pass on the host, and
+// excluding whole classes silently dropped them from this tier. Listed literally rather than by
+// wildcard so a newly-broken test fails loudly instead of being swallowed.
+//
+// Nothing is skipped overall — these are commonTest, so they still run on jvmTest, the native
+// targets, jsTest and wasmJsTest, and the Android actual is covered on-device via
+// `withDeviceTestBuilder`.
 tasks.withType<Test>().configureEach {
     if (name == "testAndroidHostTest") {
-        enabled = false
+        filter {
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.ComposeExtensionsTest.networkMonitorProviderInstallReturnsSameInstance",
+            )
+            isFailOnNoMatchingTests = false
+        }
     }
 }

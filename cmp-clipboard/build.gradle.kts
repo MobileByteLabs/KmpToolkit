@@ -202,25 +202,80 @@ mavenPublishing {
 // Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
 apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
 
-// ── Android host-test exclusions ────────────────────────────────────────────────────────────
-// These commonTest classes exercise the ANDROID actual's use of real framework services —
-// ConnectivityManager, ProcessLifecycleOwner, Context.startActivity, the init ContentProvider.
-// A JVM host test has none of them: android.jar is a stub, and no ContentProvider ever runs.
-// Injecting a Context does not help, because the services themselves must actually work.
+// ── Android host-test exclusions (method-level) ─────────────────────────────────────────────
+// Each entry below reaches a real Android framework service that a JVM host test cannot
+// provide — ConnectivityManager, ProcessLifecycleOwner, Context.startActivity, or the init
+// ContentProvider. android.jar is a stub here and no provider ever runs, so these cannot pass;
+// injecting a Context does not help, because the services themselves must actually work.
 //
-// They are NOT skipped overall. Being commonTest, they still execute on jvmTest, the native
-// targets, jsTest and wasmJsTest, and the Android actual is covered on-device through
-// `withDeviceTestBuilder`. Only the Android *host* run is excluded, where it could never pass.
+// Excluded per METHOD, not per class: the same classes contain tests that pass on the host, and
+// excluding whole classes silently dropped them from this tier. Listed literally rather than by
+// wildcard so a newly-broken test fails loudly instead of being swallowed.
 //
-// Exclusions are listed explicitly rather than pattern-matched so a newly-broken test surfaces
-// instead of being silently swallowed by a wildcard.
+// Nothing is skipped overall — these are commonTest, so they still run on jvmTest, the native
+// targets, jsTest and wasmJsTest, and the Android actual is covered on-device via
+// `withDeviceTestBuilder`.
 tasks.withType<Test>().configureEach {
     if (name == "testAndroidHostTest") {
         filter {
-            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardHistoryTest")
-            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardManagerTest")
-            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorIntegrationTest")
-            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest")
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardHistoryTest.history_doubleStartIsIdempotent",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardHistoryTest.history_doubleStopIsIdempotent",
+            )
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardHistoryTest.history_startCapturing")
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardHistoryTest.history_stopCapturing")
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardManagerTest.doubleStart_isIdempotent",
+            )
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardManagerTest.doubleStop_isIdempotent")
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardManagerTest.fullLifecycle")
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardManagerTest.pauseResume_doesNotThrow",
+            )
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardManagerTest.start_setsActive")
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardManagerTest.stop_setsInactive")
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorIntegrationTest.e2e_monitorWithMatchersAndFilters",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorIntegrationTest.monitor_canRestartAfterStop",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorIntegrationTest.multipleMonitors_canCoexist",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_addFilterBeforeStart",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_addUrlMatcherAfterStart",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_addUrlMatcherBeforeStart",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_doubleStartIsIdempotent",
+            )
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_fullLifecycle")
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_pauseTransitionsToPaused",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_resumeTransitionsBackToMonitoring",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_resumeWhileMonitoringDoesNothing",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_startTransitionsToMonitoring",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_startWithCustomConfig",
+            )
+            excludeTestsMatching(
+                "com.mobilebytelabs.kmptoolkit.clipboard.ClipboardMonitorTest.monitor_startWithSocialMediaConfig",
+            )
             isFailOnNoMatchingTests = false
         }
     }

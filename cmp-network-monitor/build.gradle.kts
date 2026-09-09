@@ -216,27 +216,79 @@ mavenPublishing {
 // Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
 apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
 
-// ── Android host-test exclusions ────────────────────────────────────────────────────────────
-// These commonTest classes exercise the ANDROID actual's use of real framework services —
-// ConnectivityManager, ProcessLifecycleOwner, Context.startActivity, the init ContentProvider.
-// A JVM host test has none of them: android.jar is a stub, and no ContentProvider ever runs.
-// Injecting a Context does not help, because the services themselves must actually work.
+// ── Android host-test exclusions (method-level) ─────────────────────────────────────────────
+// Each entry below reaches a real Android framework service that a JVM host test cannot
+// provide — ConnectivityManager, ProcessLifecycleOwner, Context.startActivity, or the init
+// ContentProvider. android.jar is a stub here and no provider ever runs, so these cannot pass;
+// injecting a Context does not help, because the services themselves must actually work.
 //
-// They are NOT skipped overall. Being commonTest, they still execute on jvmTest, the native
-// targets, jsTest and wasmJsTest, and the Android actual is covered on-device through
-// `withDeviceTestBuilder`. Only the Android *host* run is excluded, where it could never pass.
+// Excluded per METHOD, not per class: the same classes contain tests that pass on the host, and
+// excluding whole classes silently dropped them from this tier. Listed literally rather than by
+// wildcard so a newly-broken test fails loudly instead of being swallowed.
 //
-// Exclusions are listed explicitly rather than pattern-matched so a newly-broken test surfaces
-// instead of being silently swallowed by a wildcard.
+// Nothing is skipped overall — these are commonTest, so they still run on jvmTest, the native
+// targets, jsTest and wasmJsTest, and the Android actual is covered on-device via
+// `withDeviceTestBuilder`.
 tasks.withType<Test>().configureEach {
     if (name == "testAndroidHostTest") {
         filter {
-            excludeTestsMatching("io.github.mobilebytelabs.kmptoolkit.networkmonitor.ConcurrencyTest")
-            excludeTestsMatching("io.github.mobilebytelabs.kmptoolkit.networkmonitor.CreateNetworkMonitorSmokeTest")
-            excludeTestsMatching("io.github.mobilebytelabs.kmptoolkit.networkmonitor.ExtensionsAndProviderTest")
-            excludeTestsMatching("io.github.mobilebytelabs.kmptoolkit.networkmonitor.LeakDetectionTest")
-            excludeTestsMatching("io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderTest")
-            excludeTestsMatching("io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderVersionTest")
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.ConcurrencyTest.providerConcurrentAccess",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.CreateNetworkMonitorSmokeTest.createNetworkMonitorReturnsNonNull",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.CreateNetworkMonitorSmokeTest.createNetworkMonitorWithDefaultConfig",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.CreateNetworkMonitorSmokeTest.createdMonitorHasValidInitialState",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.CreateNetworkMonitorSmokeTest.createdMonitorIsOnlineConsistentWithStatus",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.ExtensionsAndProviderTest.provideNetworkMonitorReturnsInstance",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.ExtensionsAndProviderTest.provideNetworkMonitorWithConfigReturnsInstance",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.ExtensionsAndProviderTest.redundantInstallCountTracksMultipleInstalls",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.LeakDetectionTest.providerResetClosesMonitor",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.LeakDetectionTest.scopedMonitorClosesOnCancel",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderTest.getReturnsInstalledMonitor",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderTest.installReturnsMonitor",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderTest.installReturnsSameInstanceOnSecondCall",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderTest.resetAllowsReinstall",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderTest.scopedMonitorClosesOnScopeCancel",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderVersionTest.version_does_not_increment_on_redundant_install",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderVersionTest.version_increments_again_on_install_after_reset",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderVersionTest.version_increments_on_first_install",
+            )
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.NetworkMonitorProviderVersionTest.version_increments_on_reset",
+            )
             isFailOnNoMatchingTests = false
         }
     }
