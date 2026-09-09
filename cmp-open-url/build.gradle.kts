@@ -41,7 +41,12 @@ kotlin {
 
         withJava()
 
-        withHostTestBuilder {}.configure {}
+        withHostTestBuilder {}.configure {
+            // android.jar in a JVM host test is a stub whose methods THROW by default, so a
+            // framework call aborts a test even when the code under test handled the situation
+            // correctly. Returning defaults lets the real behaviour be asserted instead.
+            isReturnDefaultValues = true
+        }
 
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
