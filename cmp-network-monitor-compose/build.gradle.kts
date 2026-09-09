@@ -110,7 +110,28 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            // Real composition testing: renders the composables and asserts what a user sees,
+            // rather than only asserting that the CompositionLocal object is non-null.
+            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            implementation(compose.uiTest)
             implementation(libs.kotlinx.coroutines.test)
+        }
+
+        jvmTest.dependencies {
+            // Skiko's native backend, required for runComposeUiTest on the JVM/desktop target —
+            // without it every composition fails with
+            // "NoClassDefFoundError: Could not initialize class org.jetbrains.skia.Surface".
+            // JVM-only on purpose: the other targets bring their own renderer.
+            implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutines.test)
+        }
+
+        jvmTest.dependencies {
+            // Skiko's native backend, required for runComposeUiTest on the JVM/desktop target —
+            // without it every composition fails with
+            // "NoClassDefFoundError: Could not initialize class org.jetbrains.skia.Surface".
+            // JVM-only on purpose: the other targets bring their own renderer.
+            implementation(compose.desktop.currentOs)
             implementation(libs.app.cash.turbine)
         }
     }
@@ -184,6 +205,16 @@ tasks.withType<Test>().configureEach {
         filter {
             excludeTestsMatching(
                 "io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.ComposeExtensionsTest.networkMonitorProviderInstallReturnsSameInstance",
+            )
+
+            // Compose UI rendering needs a renderer. The JVM/desktop target gets one from
+            // `compose.desktop.currentOs` (see jvmTest deps); the Android HOST target has none —
+            // Skiko probes an OS system property that is null under the android.jar stub and dies
+            // with `NullPointerException: Cannot invoke "String.toLowerCase(...)"`. Excluded as a
+            // whole class because every test in it composes; none fail for any other reason.
+            // They run in full on jvmTest; the Android rendering path belongs to device tests.
+            excludeTestsMatching(
+                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.ConnectivityUiScenarioTest",
             )
             isFailOnNoMatchingTests = false
         }
