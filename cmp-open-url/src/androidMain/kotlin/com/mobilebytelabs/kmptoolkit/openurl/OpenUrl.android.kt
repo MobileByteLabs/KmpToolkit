@@ -28,28 +28,39 @@ actual fun openInBrowser(url: String): Boolean = try {
     false
 }
 
+// Configured with `apply`, not by chaining the builder's return value. Intent.addFlags /
+// addCategory / setPackage return the same Intent, so the return value carries no information
+// — but binding it makes the call a platform-type expression, and Kotlin's null check then
+// throws "addFlags(...) must not be null" wherever the framework returns null. That is exactly
+// what android.jar's host-test stub does, so the chained form turned every openWithApp call
+// into OpenUrlResult.Error in a JVM host test while working fine on device. `apply` returns
+// the receiver, is the idiomatic way to configure an object, and behaves identically on device.
 actual fun openWithApp(url: String, appHint: AppHint): OpenUrlResult = try {
     val uri = Uri.parse(url)
-    val baseIntent = Intent(Intent.ACTION_VIEW, uri)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val baseIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
 
     val intent = when (appHint) {
         AppHint.DEFAULT -> baseIntent
 
-        AppHint.BROWSER -> baseIntent.addCategory(Intent.CATEGORY_BROWSABLE)
+        AppHint.BROWSER -> baseIntent.apply { addCategory(Intent.CATEGORY_BROWSABLE) }
 
-        AppHint.EMAIL -> Intent(Intent.ACTION_SENDTO, uri)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        AppHint.EMAIL -> Intent(Intent.ACTION_SENDTO, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 
         AppHint.MAPS -> baseIntent
 
-        AppHint.PHONE -> Intent(Intent.ACTION_DIAL, uri)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        AppHint.PHONE -> Intent(Intent.ACTION_DIAL, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 
-        AppHint.SMS -> Intent(Intent.ACTION_VIEW, uri)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        AppHint.SMS -> Intent(Intent.ACTION_VIEW, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 
-        is AppHint.Custom -> baseIntent.setPackage(appHint.packageName)
+        is AppHint.Custom -> baseIntent.apply { setPackage(appHint.packageName) }
     }
 
     OpenUrlContext.context.startActivity(intent)
