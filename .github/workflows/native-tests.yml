@@ -1,0 +1,114 @@
+# Native test execution — iOS Simulator + Linux Native.
+#
+# WHY THIS EXISTS
+# `pr-check.yml` sets run-ios-tests/run-linux-tests to false: executing them on every PR costs
+# a macos-14 runner for up to 45 minutes, and compile-all-targets already catches missing
+# actuals and type errors on every platform. That trade is deliberate and stays.
+#
+# The gap it leaves is real, though. `commonTest` runs on native targets too, and a test can be
+# wrong there while passing on JVM/JS — which is exactly what happened: an assertion in
+# AnalyticsProviderContractTest generalized JVM/JS behaviour to Apple (`Firebase.analytics`
+# throws for an uninitialized app on JS/wasmJs, but NOT on Apple) and shipped green in 3.5.23
+# because no Apple test ever ran. This workflow closes that gap without taxing every PR.
+#
+# WHY IT DOES NOT CALL ci-kmp-library.yml
+# That reusable workflow gates its native jobs on `detect-changes`, which for a non-PR event
+# diffs against `origin/${{ github.base_ref || 'development' }}`. This repo's default branch is
+# `dev`, so that ref does not exist, detection falls back to HEAD~1, and any night whose last
+# commit touched no cmp-* module yields `modules=NONE` — the native jobs skip and the run
+# reports green having executed nothing. Calling the gradle tasks directly avoids depending on
+# change detection for a job whose entire purpose is to always run.
+name: Native Tests
+
+on:
+  schedule:
+    # 03:00 UTC daily — after the working day, before the next one.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Which native targets to run'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, ios, linux]
+  pull_request:
+    # Opt-in per PR: add the `native-tests` label to run these before merging something
+    # that touches native behaviour.
+    types: [labeled, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: Test (iOS Simulator)
+    # On PRs, only when explicitly labeled. Schedule/dispatch always run.
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'native-tests')
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run iosSimulatorArm64Test
+        if: inputs.targets != 'linux'
+        run: ./gradlew iosSimulatorArm64Test --continue
+
+      - name: Assert tests actually executed
+        # A test task can report success having run nothing (no test sources wired, a filter
+        # that matches zero cases, a target that silently no-ops). Silence must not read as
+        # success — this is the whole point of the workflow.
+        if: always() && inputs.targets != 'linux'
+        run: bash .github/scripts/assert-tests-ran.sh iosSimulatorArm64Test
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-test-reports-ios
+          path: '**/build/test-results/iosSimulatorArm64Test/**/*.xml'
+          if-no-files-found: warn
+
+  linux:
+    name: Test (Linux Native)
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'native-tests')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run linuxX64Test
+        if: inputs.targets != 'ios'
+        run: ./gradlew linuxX64Test --continue
+
+      - name: Assert tests actually executed
+        if: always() && inputs.targets != 'ios'
+        run: bash .github/scripts/assert-tests-ran.sh linuxX64Test
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-test-reports-linux
+          path: '**/build/test-results/linuxX64Test/**/*.xml'
+          if-no-files-found: warn

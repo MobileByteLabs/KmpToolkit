@@ -70,13 +70,26 @@ class AnalyticsProviderContractTest {
     }
 
     /**
-     * Degradation must be silent-but-safe, never a half-built helper: with nothing
-     * configured on any tier the result is the shared [NoOpAnalyticsHelper].
+     * The factory must always hand back a usable helper — never null, never a partially
+     * constructed one — and calling it twice must return the SAME memoized instance so the
+     * app's DI and the crash→GA4 bridge share one consent state.
+     *
+     * Deliberately NOT `assertSame(NoOpAnalyticsHelper, ...)`: which instance you get when
+     * nothing is configured is tier- and platform-specific, and asserting identity here was
+     * wrong. On JS/wasmJs `Firebase.analytics` throws for an uninitialized app, so the guard
+     * in `AnalyticsProvider.firebase.kt` catches it and yields [NoOpAnalyticsHelper]. On
+     * Apple the same accessor does NOT throw — it returns a live object bound to an
+     * unconfigured Firebase — so a real [FirebaseAnalyticsHelper] comes back and simply
+     * captures nothing. Both satisfy the documented contract ("degrades … it never throws");
+     * only the identity differs. `provideAnalyticsHelper` on the non-Firebase tier is where
+     * NoOp is genuinely contractual, and `AnalyticsTierRoutingTest` pins it there.
      */
     @Test
-    fun unconfigured_platform_degrades_to_noop() {
+    fun unconfigured_platform_yields_a_stable_usable_helper() {
         FirebaseRuntime.config = FirebaseConfig()
-        assertSame(NoOpAnalyticsHelper, provideAnalyticsHelper())
+        val first = provideAnalyticsHelper()
+        assertNotNull(first)
+        assertSame(first, provideAnalyticsHelper(), "helper must be memoized process-wide")
     }
 
     /**
