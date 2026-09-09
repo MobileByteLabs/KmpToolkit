@@ -12,6 +12,13 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+
+    // Dogfoods the published cmp-firebase Gradle plugin against a real consumer build.
+    // Pinned to the last RELEASED version on Maven Central, deliberately: applying it from
+    // the local build is impossible (samples are subprojects of this same build, and Gradle
+    // cannot apply a plugin defined in the build applying it), and pinning the released
+    // artifact is what an actual consumer resolves. Bump after each release.
+    id("io.github.mobilebytelabs.firebase") version "3.5.23"
 }
 
 kotlin {
@@ -30,7 +37,9 @@ kotlin {
     listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
-            isStatic = true
+            // isStatic deliberately NOT set here — the cmp-firebase plugin forces it.
+            // If the plugin ever stops doing that, this sample links a dynamic framework
+            // and the assertion task below fails, which is the point of dogfooding it.
         }
     }
 
