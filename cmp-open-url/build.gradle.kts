@@ -189,3 +189,25 @@ mavenPublishing {
 
 // Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
 apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
+
+// ── Android host-test exclusions ────────────────────────────────────────────────────────────
+// These commonTest classes exercise the ANDROID actual's use of real framework services —
+// ConnectivityManager, ProcessLifecycleOwner, Context.startActivity, the init ContentProvider.
+// A JVM host test has none of them: android.jar is a stub, and no ContentProvider ever runs.
+// Injecting a Context does not help, because the services themselves must actually work.
+//
+// They are NOT skipped overall. Being commonTest, they still execute on jvmTest, the native
+// targets, jsTest and wasmJsTest, and the Android actual is covered on-device through
+// `withDeviceTestBuilder`. Only the Android *host* run is excluded, where it could never pass.
+//
+// Exclusions are listed explicitly rather than pattern-matched so a newly-broken test surfaces
+// instead of being silently swallowed by a wildcard.
+tasks.withType<Test>().configureEach {
+    if (name == "testAndroidHostTest") {
+        filter {
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.openurl.OpenUrlAndroidTest")
+            excludeTestsMatching("com.mobilebytelabs.kmptoolkit.openurl.OpenUrlTest")
+            isFailOnNoMatchingTests = false
+        }
+    }
+}
