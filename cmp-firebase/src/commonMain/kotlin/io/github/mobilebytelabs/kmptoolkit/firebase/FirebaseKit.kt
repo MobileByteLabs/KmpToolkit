@@ -97,6 +97,20 @@ object FirebaseKit {
      * where GitLive supports it, then installs the crash reporter. When this
      * platform has no options (and is not on the MP tier), analytics degrades to
      * NoOp with a WARN — it never throws (analytics must not break the app).
+     *
+     * **Apple caveat — this guarantee is not absolute on iOS/macOS/tvOS.** Apple's Firebase SDK
+     * validates option *shape* inside `FirebaseApp.configure` and raises an Objective-C
+     * `NSException` on malformed input, e.g. a mis-typed key:
+     *
+     * ```
+     * [FirebaseInstallations][I-FIS008000] … `FirebaseOptions.APIKey` doesn't match the
+     * expected format: API Key length must be 39 characters, API Key must start with `A`.
+     * ```
+     *
+     * An ObjC `NSException` is not a Kotlin `Throwable`, so it cannot be caught here — it
+     * terminates the process. Malformed Apple options are therefore a hard crash at startup,
+     * not a graceful degradation. Supply the values exactly as the Firebase console issues
+     * them. Verified by `ProgrammaticInitTest`, which runs this path on a real iOS simulator.
      */
     fun initialize(config: FirebaseConfig) {
         if (initialized) return
