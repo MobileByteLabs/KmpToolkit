@@ -22,6 +22,7 @@ plugins {
     // Re-enable when Kover ships KMP-Android-Library plugin support.)
     alias(libs.plugins.binaryCompatibilityValidator)
     id("io.github.mobilebytelabs.kmptoolkit.dokka")
+    id("io.github.mobilebytelabs.kmptoolkit.kover")
 }
 
 // ============================================================================

@@ -19,6 +19,7 @@ kotlin {
 
 dependencies {
     compileOnly(libs.dokka.gradle)
+    compileOnly(libs.kover.gradlePlugin)
 }
 
 tasks {
@@ -30,6 +31,12 @@ tasks {
 
 gradlePlugin {
     plugins {
+        register("kover") {
+            id = "io.github.mobilebytelabs.kmptoolkit.kover"
+            implementationClass = "KoverConventionPlugin"
+            description =
+                "Applies kover for multi-module coverage aggregation. On root it configures the report filters + verify rule; on a leaf module it self-registers into root's aggregation."
+        }
         register("dokka") {
             id = "io.github.mobilebytelabs.kmptoolkit.dokka"
             implementationClass = "DokkaConventionPlugin"

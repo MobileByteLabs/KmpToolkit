@@ -8,6 +8,8 @@ plugins {
     // Gradle's DEFAULT pluginManagement repositories — which include gradlePluginPortal()
     // but not mavenCentral() — can apply this plugin with zero repository setup.
     alias(libs.plugins.gradle.plugin.publish)
+    // Opts this module into root's kover aggregation (see KoverConventionPlugin).
+    id("io.github.mobilebytelabs.kmptoolkit.kover")
 }
 
 // ============================================================================

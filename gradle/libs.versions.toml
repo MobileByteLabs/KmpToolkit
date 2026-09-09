@@ -68,6 +68,10 @@ detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", 
 dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 # Consumed compileOnly by :cmp-firebase-gradle-plugin (the consumer build already supplies KGP)
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+# Consumed compileOnly by build-logic for KoverConventionPlugin. NOT `implementation`:
+# kover-gradle-plugin on build-logic's runtime classpath transitively conflicts with
+# AGP's kotlin-gradle-plugin (kover issue #135).
+kover-gradlePlugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
 
 # AndroidX
 androidx-activity = { module = "androidx.activity:activity", version.ref = "androidx-activityKtx" }

@@ -8,6 +8,19 @@ plugins {
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.spotless)
+
+    // Kover — ROOT-LEVEL AGGREGATION, not per-module reports.
+    //
+    // `apply false` is the classpath hook that makes `org.jetbrains.kotlinx.kover` resolvable
+    // from KoverConventionPlugin's `pluginManager.apply(id)` call (same pattern as dokka above).
+    // The convention plugin below then applies to root, configures the filters + verify rule,
+    // and each cmp-* module self-registers into the aggregation by applying the same plugin.
+    //
+    // A per-module report across 23 modules says nothing about the toolkit's overall coverage;
+    // Kover's own multi-module KMP guide recommends root aggregation.
+    // Tasks: ./gradlew koverHtmlReport | koverXmlReport | koverVerify
+    alias(libs.plugins.kover) apply false
+    id("io.github.mobilebytelabs.kmptoolkit.kover")
 }
 
 // Dokka is applied per-module via the `io.github.mobilebytelabs.kmptoolkit.dokka`

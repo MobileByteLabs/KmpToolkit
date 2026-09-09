@@ -20,9 +20,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.vanniktech.mavenPublish)
     alias(libs.plugins.binaryCompatibilityValidator)
-    // v0.4 Phase 9 — coverage verification (kover deferred — incompatible with
-    // androidLibrary {} block in Kover 0.9.1; re-enable when Kover lands plugin support.)
     id("io.github.mobilebytelabs.kmptoolkit.dokka")
+    id("io.github.mobilebytelabs.kmptoolkit.kover")
 }
 
 // ============================================================================

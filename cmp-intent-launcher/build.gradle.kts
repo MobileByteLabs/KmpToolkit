@@ -16,11 +16,9 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
-    // v0.4 Phase 9 — ABI stability (kover deferred — incompatible with
-    // the new `com.android.kotlin.multiplatform.library` plugin's
-    // `androidLibrary {}` extension in Kover 0.9.1; re-enable when Kover ships support.)
     alias(libs.plugins.binaryCompatibilityValidator)
     id("io.github.mobilebytelabs.kmptoolkit.dokka")
+    id("io.github.mobilebytelabs.kmptoolkit.kover")
 }
 
 // ============================================================================
