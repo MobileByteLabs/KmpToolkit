@@ -2,7 +2,12 @@ package com.mobilebytelabs.kmptoolkit.clipboard
 
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorConfig
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -35,6 +40,25 @@ class ClipboardAndroidScenarioTest {
     @Before
     fun installApplicationContext() {
         setApplicationContext(RuntimeEnvironment.getApplication())
+    }
+
+    /**
+     * Robolectric runs each test ON its main thread, and `runTest` blocks the thread it is on. The
+     * async clipboard actuals dispatch with `withContext(Dispatchers.Main)`, so without swapping
+     * the Main dispatcher the suspending scenario deadlocks: the test holds the very thread the
+     * coroutine needs, and the run hangs indefinitely rather than failing.
+     *
+     * `AndroidClipboardMonitor` builds its scope from `Dispatchers.Main.immediate` too, so this
+     * also makes the monitor scenarios deterministic instead of looper-timing dependent.
+     */
+    @Before
+    fun installTestMainDispatcher() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @After
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
     }
 
     // ── Copy / paste round trip ─────────────────────────────────────────────────────────────

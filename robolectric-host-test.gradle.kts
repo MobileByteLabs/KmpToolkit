@@ -42,7 +42,8 @@
  * and duplicating the value here would defeat the whole point of this file.
  */
 fun catalogVersion(key: String): String =
-    rootProject.file("gradle/libs.versions.toml")
+    rootProject
+        .file("gradle/libs.versions.toml")
         .readLines()
         .firstOrNull { it.trimStart().startsWith("$key ") || it.trimStart().startsWith("$key=") }
         ?.substringAfter('=')
