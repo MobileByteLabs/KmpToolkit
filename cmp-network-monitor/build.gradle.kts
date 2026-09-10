@@ -50,6 +50,9 @@ kotlin {
             // framework call aborts a test even when the code under test handled the situation
             // correctly. Returning defaults lets the real behaviour be asserted instead.
             isReturnDefaultValues = true
+
+            // Robolectric reads the merged manifest/resources.
+            isIncludeAndroidResources = true
         }
 
         withDeviceTestBuilder {
@@ -158,6 +161,12 @@ kotlin {
             implementation(project(":cmp-observe"))
         }
 
+        // getByName: the KMP android library plugin generates no typed androidHostTest accessor.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.robolectric)
+            implementation(libs.junit)
+        }
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
@@ -217,18 +226,19 @@ mavenPublishing {
 apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
 
 // ── Android host-test exclusions (method-level) ─────────────────────────────────────────────
-// Each entry below reaches a real Android framework service that a JVM host test cannot
-// provide — ConnectivityManager, ProcessLifecycleOwner, Context.startActivity, or the init
-// ContentProvider. android.jar is a stub here and no provider ever runs, so these cannot pass;
-// injecting a Context does not help, because the services themselves must actually work.
+// These commonTest methods reach ConnectivityManager through an application Context that a bare
+// JVM host test cannot provide: createNetworkMonitor() throws
+// IllegalStateException("Application context not available…") by design, which is better API
+// than silently returning a broken monitor.
 //
-// Excluded per METHOD, not per class: the same classes contain tests that pass on the host, and
-// excluding whole classes silently dropped them from this tier. Listed literally rather than by
-// wildcard so a newly-broken test fails loudly instead of being swallowed.
+// They are NOT untested on Android. `NetworkMonitorAndroidScenarioTest` (androidHostTest) covers
+// the same surfaces — factory, provider singleton, initial status, teardown, leak cycles —
+// against a REAL Android runtime under Robolectric, injecting the context through the library's
+// own setApplicationContext seam. That is stronger coverage than the common variant could give
+// here, because it exercises the actual ConnectivityManager path rather than a stub.
 //
-// Nothing is skipped overall — these are commonTest, so they still run on jvmTest, the native
-// targets, jsTest and wasmJsTest, and the Android actual is covered on-device via
-// `withDeviceTestBuilder`.
+// The methods below still run in full on jvmTest, the native targets, jsTest and wasmJsTest.
+// Listed literally rather than by wildcard so a newly-broken test fails loudly.
 tasks.withType<Test>().configureEach {
     if (name == "testAndroidHostTest") {
         filter {

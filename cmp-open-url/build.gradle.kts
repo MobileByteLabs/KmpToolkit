@@ -46,6 +46,9 @@ kotlin {
             // framework call aborts a test even when the code under test handled the situation
             // correctly. Returning defaults lets the real behaviour be asserted instead.
             isReturnDefaultValues = true
+
+            // Robolectric reads the merged manifest/resources.
+            isIncludeAndroidResources = true
         }
 
         withDeviceTestBuilder {
@@ -133,6 +136,12 @@ kotlin {
             // No external dependencies — uses only platform APIs
         }
 
+        // getByName: the KMP android library plugin generates no typed androidHostTest accessor.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.robolectric)
+            implementation(libs.junit)
+        }
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
@@ -206,9 +215,11 @@ apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
 tasks.withType<Test>().configureEach {
     if (name == "testAndroidHostTest") {
         filter {
-            excludeTestsMatching(
-                "com.mobilebytelabs.kmptoolkit.openurl.OpenUrlAndroidTest.openWithApp_customHint_fallsBackWithoutThrow",
-            )
+            // SEMANTIC exclusion, not an environmental one: the test's own name says
+            // "onNonAndroid" — it asserts the behaviour of the NON-Android actuals and was never
+            // meant to run here. It lives in commonTest (so it covers jvm/native/js) and this
+            // filter is what scopes it away from the Android target. Nothing to "fix": running it
+            // on Android would be asserting the wrong contract.
             excludeTestsMatching(
                 "com.mobilebytelabs.kmptoolkit.openurl.OpenUrlTest.openWithApp_CustomHint_onNonAndroid_returnsSuccessOrNoHandler",
             )

@@ -8,7 +8,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class ComposeExtensionsTest {
+/**
+ * ABSTRACT ON PURPOSE — see [ConnectivityUiScenarios] for the full reasoning.
+ *
+ * `networkMonitorProviderInstallReturnsSameInstance` calls `NetworkMonitorProvider.install()`,
+ * which on Android needs a real application `Context`. A `commonTest` class cannot carry the
+ * JUnit4 `@RunWith(RobolectricTestRunner::class)` that supplies one, so each target subclasses
+ * these scenarios and the Android subclass installs the context before they run.
+ */
+abstract class ComposeExtensionsScenarios {
 
     @Test
     fun localNetworkMonitorDefaultProviderThrowsOnAccess() {
