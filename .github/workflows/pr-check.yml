@@ -1,6 +1,7 @@
 # PR Check Workflow — fast gate on pull requests
 # Runs quality + JVM tests on changed modules only (iOS/Linux skipped for speed).
 # Full build (all modules) runs on push to dev via gradle.yml.
+# Native test EXECUTION is nightly / opt-in — see native-tests.yml.
 
 name: PR Check
 
@@ -25,3 +26,61 @@ jobs:
       run-quality: true
       run-ios-tests: false
       run-linux-tests: false
+
+  # ── Kover coverage ────────────────────────────────────────────────────────────────────────
+  # Separate job rather than an input to the reusable workflow above: ci-kmp-library.yml exposes
+  # no coverage option, and coverage is aggregated at the ROOT (KoverConventionPlugin) rather than
+  # per module, so it does not fit that workflow's per-module matrix.
+  #
+  # `koverXmlReport` runs the test tasks it needs, which on Linux means jvmTest, linuxX64Test AND
+  # testAndroidHostTest — the last executes the Robolectric suites, so this job is also the first
+  # place CI runs the Android host tests at all. Apple targets cannot run here; they are covered by
+  # native-tests.yml on macOS.
+  #
+  # Modelled on openMF/kmp-project-template's quality-gate.yml `coverage` job, with the Robolectric
+  # cache added: without it every run re-downloads a ~200 MB android-all image, which dominates the
+  # job's wall clock.
+  coverage:
+    name: Kover Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Robolectric fetches its android-all image into ~/.m2 on first use and setup-gradle does not
+      # cache that path. Keyed on the pinned SDK so bumping `robolectricSdk` in the catalog
+      # invalidates it rather than silently serving the old image.
+      - name: Cache Robolectric android-all images
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: robolectric-${{ runner.os }}-
+
+      - name: Run tests + Kover XML report
+        run: ./gradlew koverXmlReport
+
+      # Non-gating today: the verify floor is `koverLineMin=0` because coverage had never been
+      # measured on this repo before it was wired up. Raise the default in KoverConventionPlugin
+      # (or pass -PkoverLineMin=N here) to turn this into a real gate once a baseline is agreed.
+      - name: Verify coverage floor
+        run: ./gradlew koverVerify
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kover-report
+          path: '**/build/reports/kover/**'
+          if-no-files-found: warn
+
+      - name: Coverage summary
+        if: always()
+        run: bash .github/scripts/kover-summary.sh
