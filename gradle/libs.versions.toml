@@ -21,6 +21,8 @@ ktlint = "1.8.0"
 
 # Testing
 junit = "4.13.2"
+robolectric = "4.14.1"
+androidxComposeUiTest = "1.12.0"
 turbine = "1.2.0"
 coroutines = "1.11.0"
 supabase = "3.2.6"
@@ -72,6 +74,12 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 # kover-gradle-plugin on build-logic's runtime classpath transitively conflicts with
 # AGP's kotlin-gradle-plugin (kover issue #135).
 kover-gradlePlugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
+# Android host-test runtime — supplies a real android.os.Build (incl. FINGERPRINT), which
+# androidx.compose.ui.test's AndroidComposeUiTestEnvironment requires to select an idling strategy.
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+# Supplies the AndroidManifest entry for the ComponentActivity that Compose's Android UI-test
+# ActivityScenario launches; without it Robolectric reports "Unable to resolve activity for Intent".
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidxComposeUiTest" }
 
 # AndroidX
 androidx-activity = { module = "androidx.activity:activity", version.ref = "androidx-activityKtx" }

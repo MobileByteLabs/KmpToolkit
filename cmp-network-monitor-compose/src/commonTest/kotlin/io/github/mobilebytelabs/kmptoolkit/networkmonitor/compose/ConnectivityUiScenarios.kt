@@ -35,11 +35,22 @@ import kotlin.test.Test
  * offline and online branches — or leaves a stale banner on screen after reconnect — fails here
  * instead of shipping.
  *
- * `FakeNetworkMonitor` drives the transitions, so no Android runtime is involved and these run
- * on every target that compiles the module.
+ * `FakeNetworkMonitor` drives the transitions, so no real connectivity is involved.
+ *
+ * ABSTRACT ON PURPOSE. `androidx.compose.ui.test`'s Android environment reads
+ * `android.os.Build.FINGERPRINT` to choose an idling strategy, and that static field is null
+ * under the plain android.jar stub — every composition died with
+ * `NullPointerException: … because "android.os.Build.FINGERPRINT" is null`. The field is
+ * `static final` and NOT writable by reflection (verified), so the only real fix is to run the
+ * Android host variant under Robolectric, which needs a JUnit4 `@RunWith` that a commonTest class
+ * cannot carry. Keeping the scenarios here and letting each target subclass them gives every
+ * platform the runner it needs while the assertions stay written once.
+ *
+ * Subclasses: `ConnectivityUiScenarioJvmTest`, `ConnectivityUiScenarioAndroidTest` (Robolectric),
+ * `ConnectivityUiScenarioAppleTest`.
  */
 @OptIn(ExperimentalTestApi::class)
-class ConnectivityUiScenarioTest {
+abstract class ConnectivityUiScenarios {
 
     private fun wifi() = NetworkInfo(type = NetworkType.WiFi)
     private fun cellular() = NetworkInfo(type = NetworkType.Cellular, isMetered = true)

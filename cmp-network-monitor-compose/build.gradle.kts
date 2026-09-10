@@ -52,6 +52,11 @@ kotlin {
             // framework call aborts a test even when the code under test handled the situation
             // correctly. Returning defaults lets the real behaviour be asserted instead.
             isReturnDefaultValues = true
+
+            // Robolectric reads the MERGED manifest/resources; without this the
+            // ui-test-manifest activity that Compose's ActivityScenario launches is invisible
+            // and every UI test dies with "Unable to resolve activity for Intent { MAIN }".
+            isIncludeAndroidResources = true
         }
 
         withDeviceTestBuilder {
@@ -117,6 +122,14 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
 
+        // getByName: the new com.android.kotlin.multiplatform.library plugin does not generate a
+        // typed `androidHostTest` accessor the way it does for commonTest/jvmTest.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.robolectric)
+            implementation(libs.junit)
+            implementation(libs.androidx.compose.ui.test.manifest)
+        }
+
         jvmTest.dependencies {
             // Skiko's native backend, required for runComposeUiTest on the JVM/desktop target —
             // without it every composition fails with
@@ -124,6 +137,14 @@ kotlin {
             // JVM-only on purpose: the other targets bring their own renderer.
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.test)
+        }
+
+        // getByName: the new com.android.kotlin.multiplatform.library plugin does not generate a
+        // typed `androidHostTest` accessor the way it does for commonTest/jvmTest.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.robolectric)
+            implementation(libs.junit)
+            implementation(libs.androidx.compose.ui.test.manifest)
         }
 
         jvmTest.dependencies {
@@ -207,15 +228,6 @@ tasks.withType<Test>().configureEach {
                 "io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.ComposeExtensionsTest.networkMonitorProviderInstallReturnsSameInstance",
             )
 
-            // Compose UI rendering needs a renderer. The JVM/desktop target gets one from
-            // `compose.desktop.currentOs` (see jvmTest deps); the Android HOST target has none —
-            // Skiko probes an OS system property that is null under the android.jar stub and dies
-            // with `NullPointerException: Cannot invoke "String.toLowerCase(...)"`. Excluded as a
-            // whole class because every test in it composes; none fail for any other reason.
-            // They run in full on jvmTest; the Android rendering path belongs to device tests.
-            excludeTestsMatching(
-                "io.github.mobilebytelabs.kmptoolkit.networkmonitor.compose.ConnectivityUiScenarioTest",
-            )
             isFailOnNoMatchingTests = false
         }
     }
