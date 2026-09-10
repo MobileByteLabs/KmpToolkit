@@ -3,8 +3,9 @@ package com.mobilebytelabs.kmptoolkit.openurl
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import robolectric.ROBOLECTRIC_SDK
+import org.robolectric.RuntimeEnvironment
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -18,7 +19,7 @@ import kotlin.test.assertTrue
  * the same seam the ContentProvider uses on a device.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [ANDROID_HOST_TEST_SDK])
+@Config(sdk = [ROBOLECTRIC_SDK])
 class OpenUrlAndroidTest {
 
     @Before
@@ -61,6 +62,3 @@ class OpenUrlAndroidTest {
         assertTrue(result.isSuccess)
     }
 }
-
-/** Highest API level with a Robolectric image in the pinned version. */
-private const val ANDROID_HOST_TEST_SDK = 35

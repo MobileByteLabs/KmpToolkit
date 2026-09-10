@@ -94,7 +94,10 @@ tasks {
 
 gradlePlugin {
     // Required by com.gradle.plugin-publish for the Portal listing.
-    website.set("https://github.com/MobileByteLabs/KmpToolkit")
+    // website points at the PLUGIN's own README, not the repo root. The Portal review rejected
+    // the first submission with "Your plugin lacks documentation" because a reviewer following
+    // the repo-root link found a large toolkit README that never mentioned this plugin.
+    website.set("https://github.com/MobileByteLabs/KmpToolkit/blob/dev/cmp-firebase-gradle-plugin/README.md")
     vcsUrl.set("https://github.com/MobileByteLabs/KmpToolkit")
 
     plugins {
@@ -102,14 +105,18 @@ gradlePlugin {
             id = "io.github.mobilebytelabs.firebase"
             implementationClass =
                 "io.github.mobilebytelabs.kmptoolkit.firebase.gradle.CmpFirebasePlugin"
-            displayName = "cmp-firebase build setup"
+            displayName = "Firebase for Kotlin Multiplatform — build setup"
             description =
-                "Enforces the build-side setup cmp-firebase requires but cannot check from a " +
-                "published artifact: isStatic=true on every Apple framework (Firebase's SwiftPM " +
-                "products are static; a dynamic framework crashes at runtime) and a Kotlin 2.4.20 " +
-                "floor (below it the transitive SwiftPM resolution that pulls firebase-ios-sdk " +
-                "does not exist, and the build fails with an unrelated-looking linker error)."
-            tags = listOf("kotlin-multiplatform", "firebase", "swiftpm", "ios")
+                "Configures a Kotlin Multiplatform project to use Firebase via cmp-firebase. " +
+                "Adds the cmp-firebase dependency at a matching version, forces isStatic=true on " +
+                "every Apple framework (Firebase's SwiftPM products are static libraries, so a " +
+                "dynamic framework compiles and links but crashes at launch), and fails the build " +
+                "with an actionable message when Kotlin is below 2.4.20, where the transitive " +
+                "SwiftPM resolution that pulls firebase-ios-sdk does not exist and the build " +
+                "otherwise dies with an unrelated-looking \"ld: framework 'FirebaseCore' not " +
+                "found\". Documentation: " +
+                "https://github.com/MobileByteLabs/KmpToolkit/blob/dev/cmp-firebase-gradle-plugin/README.md"
+            tags = listOf("kotlin-multiplatform", "kmp", "firebase", "ios", "swiftpm", "analytics", "crashlytics")
         }
     }
 }

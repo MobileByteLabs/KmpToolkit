@@ -217,6 +217,11 @@ pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal()
 plugins { id("io.github.mobilebytelabs.firebase") version "<cmpFirebase>" }
 ```
 
+Full plugin documentation: **[cmp-firebase-gradle-plugin](../cmp-firebase-gradle-plugin/README.md)**.
+
+```kotlin
+```
+
 The plugin is published to Maven Central alongside the library; no Gradle Plugin Portal setup is
 needed. Prefer it over hand-configuring — a dynamic framework links cleanly and only crashes at
 runtime, which is not a mistake you want to debug from the crash.

@@ -6,8 +6,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import robolectric.ROBOLECTRIC_SDK
+import org.robolectric.RuntimeEnvironment
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -28,7 +29,7 @@ import kotlin.test.assertTrue
  * Android actual being merely excluded from the host run, it is exercised here for real.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [ANDROID_HOST_TEST_SDK])
+@Config(sdk = [ROBOLECTRIC_SDK])
 class NetworkMonitorAndroidScenarioTest {
 
     @Before
@@ -140,6 +141,3 @@ class NetworkMonitorAndroidScenarioTest {
         }
     }
 }
-
-/** Highest API level with a Robolectric image in the pinned version. */
-private const val ANDROID_HOST_TEST_SDK = 35

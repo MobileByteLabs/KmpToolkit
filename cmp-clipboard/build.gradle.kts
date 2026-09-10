@@ -49,6 +49,9 @@ kotlin {
             // framework call aborts a test even when the code under test handled the situation
             // correctly. Returning defaults lets the real behaviour be asserted instead.
             isReturnDefaultValues = true
+
+            // Robolectric reads the merged manifest/resources.
+            isIncludeAndroidResources = true
         }
 
         withDeviceTestBuilder {
@@ -137,6 +140,12 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             // DateTime for clipboard change timestamps
             implementation(libs.kotlinx.datetime)
+        }
+
+        // getByName: the KMP android library plugin generates no typed androidHostTest accessor.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.robolectric)
+            implementation(libs.junit)
         }
 
         commonTest.dependencies {
@@ -280,3 +289,10 @@ tasks.withType<Test>().configureEach {
         }
     }
 }
+
+// Robolectric host-test config — emulated SDK comes from `robolectricSdk` in the version
+// catalog and is code-generated into androidHostTest as `robolectric.ROBOLECTRIC_SDK`.
+apply(from = "$rootDir/robolectric-host-test.gradle.kts")
+kotlin.sourceSets.getByName("androidHostTest").kotlin.srcDir(
+    tasks.named("generateRobolectricSdkConstant"),
+)

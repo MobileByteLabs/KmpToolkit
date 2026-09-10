@@ -22,6 +22,11 @@ ktlint = "1.8.0"
 # Testing
 junit = "4.13.2"
 robolectric = "4.14.1"
+# Emulated API level for Robolectric host tests. Pinned BELOW android-compileSdk on purpose:
+# Robolectric 4.14.1 ships images only to 35 and hard-fails on a higher targetSdk. Consumed by
+# robolectric-host-test.gradle.kts, which generates robolectric.properties from it — raise here
+# and every module follows. See that file for the full rationale.
+robolectricSdk = "35"
 androidxComposeUiTest = "1.12.0"
 turbine = "1.2.0"
 coroutines = "1.11.0"

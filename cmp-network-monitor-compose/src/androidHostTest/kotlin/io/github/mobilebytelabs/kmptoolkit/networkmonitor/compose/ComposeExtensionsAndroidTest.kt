@@ -4,8 +4,9 @@ import io.github.mobilebytelabs.kmptoolkit.networkmonitor.setApplicationContext
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import robolectric.ROBOLECTRIC_SDK
+import org.robolectric.RuntimeEnvironment
 
 /**
  * Android host run of the shared compose-extension scenarios.
@@ -18,7 +19,7 @@ import org.robolectric.annotation.Config
  * skipped.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [ANDROID_HOST_TEST_SDK])
+@Config(sdk = [ROBOLECTRIC_SDK])
 class ComposeExtensionsAndroidTest : ComposeExtensionsScenarios() {
 
     @Before
@@ -26,6 +27,3 @@ class ComposeExtensionsAndroidTest : ComposeExtensionsScenarios() {
         setApplicationContext(RuntimeEnvironment.getApplication())
     }
 }
-
-/** Highest API level with a Robolectric image in the pinned version. */
-private const val ANDROID_HOST_TEST_SDK = 35
