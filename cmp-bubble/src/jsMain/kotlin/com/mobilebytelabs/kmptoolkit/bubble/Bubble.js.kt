@@ -58,4 +58,4 @@ internal class JsBubble(private val config: BubbleConfig) : Bubble {
     }
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = JsBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(JsBubble(config))

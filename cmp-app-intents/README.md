@@ -1,5 +1,8 @@
 # cmp-app-intents
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Declarative App Intents DSL for SiriKit Shortcuts + Spotlight (iOS 16+) and
 on-device runtime registry (Android, JVM, JS, wasmJs).
 

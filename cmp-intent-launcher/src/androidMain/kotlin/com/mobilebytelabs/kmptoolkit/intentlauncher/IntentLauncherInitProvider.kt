@@ -13,6 +13,7 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
+import io.github.mobilebytelabs.kmptoolkit.observe.observeInit
 
 /**
  * Zero-config Application context auto-init for [SystemIntents] on Android.
@@ -24,10 +25,14 @@ import android.net.Uri
  * Pattern mirrors `cmp-share/ShareInitProvider.kt`.
  */
 internal class IntentLauncherInitProvider : ContentProvider() {
-    override fun onCreate(): Boolean {
-        val ctx = context ?: return false
-        IntentLauncherContext.context = ctx.applicationContext
-        return true
+    override fun onCreate(): Boolean = observeInit(cmpMetadata()) {
+        val ctx = context
+        if (ctx == null) {
+            false
+        } else {
+            IntentLauncherContext.context = ctx.applicationContext
+            true
+        }
     }
 
     override fun query(

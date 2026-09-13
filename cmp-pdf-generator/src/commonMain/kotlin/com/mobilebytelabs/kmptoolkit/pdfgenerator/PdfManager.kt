@@ -9,6 +9,7 @@
  */
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -95,6 +96,7 @@ public class PdfManagerImpl(private val generator: PdfGenerator = PdfGenerator()
         options: PdfGeneratorOptions,
         fileName: String,
     ): PdfResult = generator.generate(document, output, options, fileName)
+        .also { report("pdf_generated", it, pages = document.pages.size, html = false) }
 
     override suspend fun generateFromHtml(
         html: String,
@@ -104,8 +106,27 @@ public class PdfManagerImpl(private val generator: PdfGenerator = PdfGenerator()
         options: PdfGeneratorOptions,
         fileName: String,
     ): PdfResult = generator.generateFromHtml(html, output, pageConfig, branding, options, fileName)
+        .also { report("pdf_generated", it, pages = 0, html = true) }
 
     override fun progressFlow(): Flow<PdfProgressEvent> = generator.progressFlow()
+
+    /**
+     * Reports the result CLASS and document SIZE, never the content.
+     *
+     * A PDF body is the most sensitive thing this library touches — statements, reports, invoices.
+     * Nothing derived from [PdfDocument] content or the file name leaves here.
+     */
+    private fun report(event: String, result: PdfResult, pages: Int, html: Boolean) {
+        observeLifecycle(
+            cmpMetadata(),
+            event,
+            mapOf(
+                "result" to result::class.simpleName,
+                "pages" to pages,
+                "source" to if (html) "html" else "builder",
+            ),
+        )
+    }
 }
 
 /**

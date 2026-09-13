@@ -13,6 +13,7 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
+import io.github.mobilebytelabs.kmptoolkit.observe.observeInit
 
 /**
  * Zero-config Application context auto-init.
@@ -23,10 +24,14 @@ import android.net.Uri
  * Declared in `AndroidManifest.xml` with `android:exported="false"`.
  */
 internal class ShareInitProvider : ContentProvider() {
-    override fun onCreate(): Boolean {
-        val ctx = context ?: return false
-        ShareContext.context = ctx.applicationContext
-        return true
+    override fun onCreate(): Boolean = observeInit(cmpMetadata()) {
+        val ctx = context
+        if (ctx == null) {
+            false
+        } else {
+            ShareContext.context = ctx.applicationContext
+            true
+        }
     }
 
     // Required ContentProvider stubs — never used; this provider is for init only.

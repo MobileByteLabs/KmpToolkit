@@ -1,5 +1,8 @@
 # cmp-share-compose
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Compose Multiplatform extensions for [`cmp-share`](../cmp-share/) — provides `rememberShareLauncher()` factory + Material 3 styled `ShareSheet()` and `ShareButton()` opinionated UX components.
 
 ## Why this module exists

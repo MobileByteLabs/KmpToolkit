@@ -4,6 +4,7 @@ import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorConfig
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardMonitorState
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.ClipboardUrlMatcher
 import com.mobilebytelabs.kmptoolkit.clipboard.monitor.SocialMediaUrlMatchers
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -152,7 +153,7 @@ class ClipboardManager(private val config: ClipboardManagerConfig = ClipboardMan
      *
      * @return true if copy succeeded.
      */
-    override fun copy(text: String): Boolean = copyToClipboard(text)
+    override fun copy(text: String): Boolean = copyToClipboard(text).also { report("clipboard_copy", it) }
 
     /**
      * Read text from clipboard (synchronous).
@@ -160,7 +161,7 @@ class ClipboardManager(private val config: ClipboardManagerConfig = ClipboardMan
      * @return Clipboard text, or null if empty/unavailable.
      * Note: Returns null on JS/Wasm — use [pasteAsync] instead.
      */
-    override fun paste(): String? = getFromClipboard()
+    override fun paste(): String? = getFromClipboard().also { report("clipboard_paste", it != null) }
 
     /**
      * Check if clipboard has text (synchronous).
@@ -170,7 +171,18 @@ class ClipboardManager(private val config: ClipboardManagerConfig = ClipboardMan
     /**
      * Clear the clipboard.
      */
-    override fun clear(): Unit = clearClipboard()
+    override fun clear(): Unit = clearClipboard().also { report("clipboard_clear", true) }
+
+    /**
+     * Reports that an operation HAPPENED and whether it succeeded — nothing else.
+     *
+     * Deliberately not the text, its length, or its detected content type. A clipboard routinely
+     * holds passwords and 2FA codes, and a length alone can identify which. `hasText` is not
+     * reported at all: it is called on a timer by monitors, so it would be pure noise.
+     */
+    private fun report(event: String, success: Boolean) {
+        observeLifecycle(cmpMetadata(), event, mapOf("success" to success))
+    }
 
     // ── Async Operations ────────────────────────────────────────
 

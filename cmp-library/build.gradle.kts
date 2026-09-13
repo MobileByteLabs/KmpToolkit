@@ -81,6 +81,14 @@ kotlin {
     // ========================================================================
     // watchOS Targets
     // ========================================================================
+    // These complete the standard 21-target headless matrix in ../TARGET_MATRIX.md. The section
+    // header sat here empty, so the template itself shipped 16 — and a module copied from it
+    // started 5 targets short with nothing saying so.
+    watchosX64()
+    watchosArm32()
+    watchosArm64()
+    watchosSimulatorArm64()
+    watchosDeviceArm64()
 
     // ========================================================================
     // Linux Targets

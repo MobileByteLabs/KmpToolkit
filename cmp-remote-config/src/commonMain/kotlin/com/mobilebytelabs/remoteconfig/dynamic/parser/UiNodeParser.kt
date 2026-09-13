@@ -3,6 +3,7 @@ package com.mobilebytelabs.remoteconfig.dynamic.parser
 import co.touchlab.kermit.Logger
 import com.mobilebytelabs.remoteconfig.dynamic.model.UiAction
 import com.mobilebytelabs.remoteconfig.dynamic.model.UiButtonStyle
+import com.mobilebytelabs.remoteconfig.dynamic.model.UiDocument
 import com.mobilebytelabs.remoteconfig.dynamic.model.UiNode
 import com.mobilebytelabs.remoteconfig.dynamic.model.UiTextStyle
 import kotlinx.serialization.json.Json
@@ -24,14 +25,34 @@ object UiNodeParser {
         isLenient = true
     }
 
-    fun parse(jsonString: String): UiNode? {
+    /**
+     * Highest `schema_version` this build can render.
+     *
+     * A tree declaring a HIGHER version is still parsed — unknown nodes degrade via [UiNode.Unknown]
+     * — but the caller is told, so a host can decide between rendering a partially-understood tree
+     * and falling back to its own UI. Refusing outright would strand users on a released binary the
+     * moment the server moves forward.
+     */
+    const val SUPPORTED_SCHEMA_VERSION: Int = 2
+
+    fun parse(jsonString: String): UiNode? = parseDocument(jsonString).root
+
+    /**
+     * Parse, reporting the declared schema version alongside the tree.
+     *
+     * An ABSENT `schema_version` is treated as 1 rather than rejected: every tree authored before
+     * the field existed is a v1 tree, and those are live in production today.
+     */
+    fun parseDocument(jsonString: String): UiDocument {
         return try {
             val root = json.parseToJsonElement(jsonString).jsonObject
-            val rootNode = root["root"]?.jsonObject ?: return null
-            parseNode(rootNode)
+            val declared = root["schema_version"]?.jsonPrimitive?.intOrNull ?: 1
+            val rootNode = root["root"]?.jsonObject
+                ?: return UiDocument(root = null, schemaVersion = declared)
+            UiDocument(root = parseNode(rootNode), schemaVersion = declared)
         } catch (e: Exception) {
             Logger.e(TAG) { "Failed to parse UI JSON: ${e.message}" }
-            null
+            UiDocument(root = null, schemaVersion = 1)
         }
     }
 
@@ -61,8 +82,11 @@ object UiNodeParser {
             "icon" -> parseIcon(obj)
 
             else -> {
-                Logger.w(TAG) { "Unknown node type: $type, skipping" }
-                null
+                // DEGRADE, never skip. Returning null here dropped the node AND every descendant,
+                // so a tree authored against a newer schema rendered as a blank surface on an older
+                // client with nothing logged at the point of loss.
+                Logger.w(TAG) { "Unknown node type: $type — substituting" }
+                UiNode.Unknown(type = type, raw = obj.toString())
             }
         }
     }

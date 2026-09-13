@@ -11,6 +11,10 @@ A collection of production-ready **Kotlin Multiplatform** libraries — one depe
 
 > The [Docs site](https://mobilebytelabs.github.io/KmpToolkit/) ships an API reference for every module via Dokka HTML bundled inside each Maven Central `-javadoc.jar` artifact — IntelliJ / Android Studio surface it automatically in hover popups.
 
+> **Target support:** [TARGET_MATRIX.md](TARGET_MATRIX.md) is the single source of truth for
+> which KMP targets each module ships and why — measured, with JetBrains' tier list as the
+> upstream reference.
+
 ## Modules
 
 All modules ship together at the unified `kmptoolkit.version`. Click a module to open its Wiki page (install + usage + per-platform behaviour).
@@ -39,6 +43,9 @@ All modules ship together at the unified `kmptoolkit.version`. Click a module to
 | [cmp-intent-launcher-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/Intent-Launcher-Compose) | `io.github.mobilebytelabs:cmp-intent-launcher-compose` | `@Composable rememberIntentLauncher()` + IntentPickerDialog / Sheet | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-intent-launcher-compose?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-intent-launcher-compose) |
 | [cmp-app-intents](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Intents) | `io.github.mobilebytelabs:cmp-app-intents` | Declarative App Intents DSL — SiriKit Shortcuts + Android Assistant BIIs | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-app-intents?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-app-intents) |
 | [cmp-app-intents-compose](https://github.com/MobileByteLabs/KmpToolkit/wiki/App-Intents-Compose) | `io.github.mobilebytelabs:cmp-app-intents-compose` | `@Composable AppIntentsRegistration` + Material 3 AppIntentsRegistry | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-app-intents-compose?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-app-intents-compose) |
+| [cmp-observe](cmp-observe/) | `io.github.mobilebytelabs:cmp-observe` | Library lifecycle observability — hook interface + `observeInit`/`observeLifecycle`; zero dependencies, all 21 targets | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-observe?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-observe) |
+| [cmp-observe-koin](cmp-observe-koin/) | `io.github.mobilebytelabs:cmp-observe-koin` | Koin wiring for registering observation hooks | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-observe-koin?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-observe-koin) |
+| [cmp-observe-firebase](cmp-observe-firebase/README.md) | `io.github.mobilebytelabs:cmp-observe-firebase` | Firebase hooks for cmp-observe — Analytics / Crashlytics attribution / Performance (Android + iOS) | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-observe-firebase?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-observe-firebase) |
 
 Each module is completely independent — add only what your project needs.
 

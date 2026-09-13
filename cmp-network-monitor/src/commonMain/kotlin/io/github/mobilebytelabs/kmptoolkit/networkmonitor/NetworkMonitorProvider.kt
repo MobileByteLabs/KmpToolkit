@@ -1,5 +1,6 @@
 package io.github.mobilebytelabs.kmptoolkit.networkmonitor
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -61,12 +62,23 @@ object NetworkMonitorProvider {
     fun install(config: NetworkMonitorConfig = NetworkMonitorConfig()): NetworkMonitor {
         instance?.let {
             installCount++
+            // A second install SILENTLY ignores the new config (see installCount's KDoc below).
+            // That is the module's most reported confusion and is invisible at the call site.
+            observeLifecycle(
+                cmpMetadata(),
+                "install_ignored_config",
+                mapOf("installCount" to installCount),
+            )
             return it
         }
         val monitor = createNetworkMonitor(config)
         instance = monitor
         installCount = 1
         _version.value += 1
+        // Install only, NOT per connectivity change: transitions can fire many times a minute on
+        // a flaky connection, and a hook that forwards to Analytics would be charged for each.
+        // Consumers who want transitions already have `networkChanges` as a first-class Flow.
+        observeLifecycle(cmpMetadata(), "monitor_installed", emptyMap())
         return monitor
     }
 

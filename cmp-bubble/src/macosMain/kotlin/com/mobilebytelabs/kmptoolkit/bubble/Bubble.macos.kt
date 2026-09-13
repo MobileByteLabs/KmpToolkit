@@ -214,4 +214,4 @@ internal class MacosBubble(private val config: BubbleConfig) : Bubble {
     }
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = MacosBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(MacosBubble(config))

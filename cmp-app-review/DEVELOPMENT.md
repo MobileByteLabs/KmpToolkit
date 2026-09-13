@@ -30,10 +30,10 @@ adr_refs: []
 
 | Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
 |--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
-| androidMain | ✅ | ✅ real | 0 | 2 | 2026-09-12 | (legacy:full) | — |
-| iosMain | ✅ | ✅ real | 0 | 1 | 2026-09-12 | (legacy:full) | — |
-| macosMain | ✅ | ✅ real | 0 | 1 | 2026-09-12 | (legacy:full) | — |
-| mingwMain | ✅ | ✅ real | 0 | 1 | 2026-09-12 | (legacy:full) | — |
+| androidMain | ✅ | ✅ real | 0 | 2 | 2026-09-13 | (legacy:full) | — |
+| iosMain | ✅ | ✅ real | 0 | 1 | 2026-09-13 | (legacy:full) | — |
+| macosMain | ✅ | ✅ real | 0 | 1 | 2026-09-13 | (legacy:full) | — |
+| mingwMain | ✅ | ✅ real | 0 | 1 | 2026-09-13 | (legacy:full) | — |
 
 Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
 Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
@@ -148,6 +148,10 @@ in the toolkit), `koin-core` on 20 targets via `koinMain`, `kotlinx-coroutines-c
 
 ## §8 Related
 
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — **single source of truth** for which KMP targets
+  this module must ship (21 headless / 7 Compose) and how to handle a dependency that blocks one.
+  Upstream reference: <https://kotlinlang.org/docs/native-target-support.html>.
+
 - [CONSUMPTION.md](CONSUMPTION.md) — consumer integration guide (DI setup, store ids, migration
   from a hand-written review wrapper).
 
@@ -162,25 +166,32 @@ in the toolkit), `koin-core` on 20 targets via `koinMain`, `kotlinx-coroutines-c
 
 ## §9 Observability Surface (authored — LLM-seeded)
 
-<!-- AUTHOR: WIP — initial draft from 2026-09-12. Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d). -->
+Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d). Wired 2026-09-13, when `cmp-observe`
+reached all 21 targets and every module could depend on it from `commonMain`.
 
 | Signal Tier | Status | Details |
 |-------------|--------|---------|
-| T0 (Crashlytics attribution) | enabled | custom_key: `library:cmp-app-review@UNKNOWN` (set on init by FirebaseCrashlyticsAttributionHook) |
-| T1 (config + version health)  | enabled | events: `lib_init_success`, `lib_init_failure` (FirebaseAnalyticsHealthHook) |
-| T2 (lifecycle events)         | opted-out | (author when ready — populate event_schema YAML below + flip to enabled) |
-| T3 (performance traces)       | opted-out | (opt-in per consumer; FirebasePerformanceHook wraps `*_start` / `*_end` lifecycle events) |
-| T4 (full API usage)           | opted-out | opt-in per consumer + per end-user; iOS ATT prompt required |
+| T0 (Crashlytics attribution) | enabled | `custom_key: library:cmp-app-review@<version>` — set by `FirebaseCrashlyticsAttributionHook` (`cmp-observe-firebase`) |
+| T1 (init + version health) | n/a | not applicable — this module has no initialisation step of its own |
+| T2 (lifecycle events) | enabled | `review_requested`, `store_listing_opened` |
+| T3 (performance traces) | opted-out | opt-in per consumer; `FirebasePerformanceHook` wraps init |
+| T4 (full API usage) | opted-out | opt-in per consumer + per end-user; iOS ATT prompt required |
+
+**Payload policy.** Events carry operation *shape*, never operation *content*. Enforced by review,
+and by `.github/scripts/assert-observability-wired.sh` refusing a module that generates
+`CmpMetadata` but never reports.
 
 ```yaml
 # DEVELOPMENT_OBSERVABILITY.schema.yaml-conformant block
 tiers:
   T0: enabled
-  T1: enabled
-  T2: opted-out
-custom_key_format: "library:cmp-app-review@UNKNOWN"
-event_schema: []  # populate when T2 enabled — see library-runtime-observability epic AC #12-13
-consumer_opt_in: "lib-integrate.properties#cmp-app-review.observability_opt_in"
+  T1: not-applicable
+  T2: enabled
+  T3: opted-out
+  T4: opted-out
+event_schema:
+  reports_init: false
+  lifecycle_events:
+    - review_requested
+    - store_listing_opened
 ```
-
-**Consumer opt-in:** controlled via `cmp-app-review.observability_opt_in=true` in consumer's `lib-integrate.properties`.

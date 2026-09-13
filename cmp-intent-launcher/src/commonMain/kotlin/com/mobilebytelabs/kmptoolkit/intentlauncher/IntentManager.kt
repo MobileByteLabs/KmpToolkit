@@ -9,6 +9,8 @@
  */
 package com.mobilebytelabs.kmptoolkit.intentlauncher
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
+
 /**
  * Injectable entry point for launching system intents — the type to depend on from a ViewModel,
  * repository or composable.
@@ -147,13 +149,23 @@ public class IntentManagerImpl(private val launcher: IntentLauncher? = defaultIn
         }
 
     override suspend fun launch(block: IntentBuilder.() -> Unit): IntentResult {
-        val target = launcher ?: return IntentResult.Failed(
-            IntentError.Unknown(
-                "No IntentLauncher available. On Android a launcher is Activity-scoped: obtain " +
-                    "one with ComponentActivity.intentLauncher() and pass it to IntentManagerImpl. " +
-                    "openAppSettings() and createDocument() work without one.",
-            ),
-        )
-        return target.launch(block)
+        val target = launcher
+        if (target == null) {
+            // Worth its own event: on Android this is the misconfiguration that makes every
+            // Activity-scoped operation fail, and it is otherwise only visible in the returned
+            // error string a caller may well swallow.
+            observeLifecycle(cmpMetadata(), "launch_no_launcher", emptyMap())
+            return IntentResult.Failed(
+                IntentError.Unknown(
+                    "No IntentLauncher available. On Android a launcher is Activity-scoped: obtain " +
+                        "one with ComponentActivity.intentLauncher() and pass it to IntentManagerImpl. " +
+                        "openAppSettings() and createDocument() work without one.",
+                ),
+            )
+        }
+        // Result CLASS only — an intent's extras carry user content (picked file URIs, contacts).
+        return target.launch(block).also {
+            observeLifecycle(cmpMetadata(), "intent_launched", mapOf("result" to it::class.simpleName))
+        }
     }
 }

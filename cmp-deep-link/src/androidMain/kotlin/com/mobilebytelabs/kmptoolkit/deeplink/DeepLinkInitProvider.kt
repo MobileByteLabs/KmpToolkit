@@ -4,6 +4,7 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
+import io.github.mobilebytelabs.kmptoolkit.observe.observeInit
 
 /**
  * ContentProvider auto-init: registers [DeepLinkLifecycleObserver] on the application's
@@ -16,10 +17,14 @@ import android.net.Uri
  */
 internal class DeepLinkInitProvider : ContentProvider() {
 
-    override fun onCreate(): Boolean {
-        val app = context?.applicationContext as? android.app.Application ?: return false
-        app.registerActivityLifecycleCallbacks(DeepLinkActivityCallbacks())
-        return true
+    override fun onCreate(): Boolean = observeInit(cmpMetadata()) {
+        val app = context?.applicationContext as? android.app.Application
+        if (app == null) {
+            false
+        } else {
+            app.registerActivityLifecycleCallbacks(DeepLinkActivityCallbacks())
+            true
+        }
     }
 
     override fun query(

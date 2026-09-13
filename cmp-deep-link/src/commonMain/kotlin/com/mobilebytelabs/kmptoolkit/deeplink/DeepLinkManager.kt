@@ -9,6 +9,7 @@
  */
 package com.mobilebytelabs.kmptoolkit.deeplink
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -79,6 +80,13 @@ public class DeepLinkManagerImpl : DeepLinkManager {
 
     override fun handle(uri: String) {
         DeepLinkHandler.handle(uri)
+        // Scheme only. A deep-link path and query ARE the payload — order ids, reset tokens,
+        // invite codes — so nothing beyond the scheme is reported.
+        observeLifecycle(
+            cmpMetadata(),
+            "deep_link_handled",
+            mapOf("scheme" to uri.substringBefore("://", missingDelimiterValue = "none")),
+        )
     }
 
     override fun clear() {

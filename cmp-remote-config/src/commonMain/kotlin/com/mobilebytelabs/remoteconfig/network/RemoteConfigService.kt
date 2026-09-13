@@ -1,6 +1,7 @@
 package com.mobilebytelabs.remoteconfig.network
 
 import co.touchlab.kermit.Logger
+import com.mobilebytelabs.remoteconfig.cmpMetadata
 import com.mobilebytelabs.remoteconfig.model.DeviceImpression
 import com.mobilebytelabs.remoteconfig.model.RemoteConfig
 import io.github.jan.supabase.SupabaseClient
@@ -8,6 +9,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.serializer.KotlinXSerializer
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -39,8 +41,14 @@ class RemoteConfigService(private val supabaseUrl: String, private val supabaseK
                 order("priority", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
             }
             .decodeList<RemoteConfig>()
+            .also { report("configs_fetched", mapOf("count" to it.size)) }
     } catch (e: Exception) {
         Logger.e(TAG) { "Failed to fetch configs: ${e.message}" }
+        // Worth reporting precisely BECAUSE this returns emptyList(): to the caller a fetch
+        // failure and a genuinely empty config set look identical, so without this event a
+        // remote-config outage is invisible. Exception CLASS only, never the message — a
+        // Postgrest error message can echo the query.
+        report("configs_fetch_failed", mapOf("error" to e::class.simpleName))
         emptyList()
     }
 
@@ -82,5 +90,15 @@ class RemoteConfigService(private val supabaseUrl: String, private val supabaseK
         } catch (e: Exception) {
             Logger.e(TAG) { "Failed to dismiss config: ${e.message}" }
         }
+    }
+
+    /**
+     * Reports config-pipeline shape only.
+     *
+     * Never the config ids, payloads or device id: a remote config body IS the unreleased product
+     * decision, and the device id is a stable identifier.
+     */
+    private fun report(event: String, payload: Map<String, Any?>) {
+        observeLifecycle(cmpMetadata(), event, payload)
     }
 }

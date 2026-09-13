@@ -30,16 +30,16 @@ adr_refs: []
 
 | Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
 |--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
-| androidMain | ✅ | ✅ real | 0 | 3 | 2026-06-01 | full | — |
-| iosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
-| macosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
-| jvmMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
-| jsMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
-| wasmJsMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | full | — |
-| mingwMain | 🟡 | 🟡 partial | 3 | 1 | 2026-06-01 | partial | — |
-| linuxMain | ✅ | ✅ real | 2 | 1 | 2026-06-01 | full | — |
-| tvosMain | 🟡 | 🟡 wontfix-OS | 2 | 1 | 2026-06-01 | wontfix-OS | — |
-| watchosMain | 🟡 | 🟡 partial | 4 | 1 | 2026-06-01 | partial | — |
+| androidMain | ✅ | ✅ real | 0 | 4 | 2026-09-13 | full | — |
+| iosMain | ✅ | ✅ real | 0 | 2 | 2026-09-13 | full | — |
+| macosMain | ✅ | ✅ real | 0 | 2 | 2026-09-13 | full | — |
+| jvmMain | ✅ | ✅ real | 0 | 2 | 2026-09-13 | full | — |
+| jsMain | ✅ | ✅ real | 0 | 2 | 2026-09-13 | full | — |
+| wasmJsMain | ✅ | ✅ real | 0 | 2 | 2026-09-13 | full | — |
+| mingwMain | 🟡 | 🟡 partial | 2 | 2 | 2026-09-13 | partial | — |
+| linuxMain | ✅ | ✅ real | 2 | 2 | 2026-09-13 | full | — |
+| tvosMain | ✅ | ✅ real | 0 | 3 | 2026-09-13 | (legacy:full) | — |
+| watchosMain | 🟡 | 🟡 partial | 4 | 2 | 2026-09-13 | partial | — |
 
 Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
 Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
@@ -181,6 +181,10 @@ Applies unchanged to the other platform-facade modules — `cmp-intent-launcher`
 
 ## §8 Related
 
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — **single source of truth** for which KMP targets
+  this module must ship (21 headless / 7 Compose) and how to handle a dependency that blocks one.
+  Upstream reference: <https://kotlinlang.org/docs/native-target-support.html>.
+
 | Type | Reference |
 |------|-----------|
 | GOAL.md (consumer-library-ai-bridge) | [consumer-library-ai-bridge](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/archive/2026-05/consumer-library-ai-bridge/GOAL.md) |
@@ -188,3 +192,36 @@ Applies unchanged to the other platform-facade modules — `cmp-intent-launcher`
 | ADRs | **[ADR-001 — tvOS no-share + watchOS arm32 binary-share policy](docs/ADR-001-tvos-no-share-watchos-arm32.md)** (2026-06-01) — locks tvOS share (wontfix-OS), watchOS arm32 binary share (wontfix-infra, policy-deferred to v0.5). |
 | Sync rule | [RULE-LIB-DEVELOPMENT-MD-001](../../../../../../layers/framework/rules/RULE-LIB-DEVELOPMENT-MD-001.md) |
 | External docs | [README](README.md) |
+
+---
+
+## §9 Observability Surface (authored — LLM-seeded)
+
+Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d). Wired 2026-09-13, when `cmp-observe`
+reached all 21 targets and every module could depend on it from `commonMain`.
+
+| Signal Tier | Status | Details |
+|-------------|--------|---------|
+| T0 (Crashlytics attribution) | enabled | `custom_key: library:cmp-share@<version>` — set by `FirebaseCrashlyticsAttributionHook` (`cmp-observe-firebase`) |
+| T1 (init + version health) | enabled | `lib_init`, `lib_init_complete`, `lib_init_failure` — emitted by `observeInit` at module initialisation |
+| T2 (lifecycle events) | enabled | `shared` |
+| T3 (performance traces) | opted-out | opt-in per consumer; `FirebasePerformanceHook` wraps init |
+| T4 (full API usage) | opted-out | opt-in per consumer + per end-user; iOS ATT prompt required |
+
+**Payload policy.** Events carry operation *shape*, never operation *content*. Enforced by review,
+and by `.github/scripts/assert-observability-wired.sh` refusing a module that generates
+`CmpMetadata` but never reports.
+
+```yaml
+# DEVELOPMENT_OBSERVABILITY.schema.yaml-conformant block
+tiers:
+  T0: enabled
+  T1: enabled
+  T2: enabled
+  T3: opted-out
+  T4: opted-out
+event_schema:
+  reports_init: true
+  lifecycle_events:
+    - shared
+```

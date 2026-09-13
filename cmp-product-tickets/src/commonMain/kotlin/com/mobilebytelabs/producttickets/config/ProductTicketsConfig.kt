@@ -1,5 +1,8 @@
 package com.mobilebytelabs.producttickets.config
 
+import com.mobilebytelabs.producttickets.cmpMetadata
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
+
 object ProductTicketsConfig {
     var supabaseUrl: String = ""
         private set
@@ -14,5 +17,12 @@ object ProductTicketsConfig {
         this.supabaseAnonKey = supabaseAnonKey
         this.userId = userId
         this.boardType = boardType
+        // Reports configuration, not credentials: the Supabase URL and anon key never leave here.
+        // `hasUser` matters because it is what gates Contact Support + My Tickets.
+        observeLifecycle(
+            cmpMetadata(),
+            "configured",
+            mapOf("boardType" to boardType, "hasUser" to (userId != null)),
+        )
     }
 }

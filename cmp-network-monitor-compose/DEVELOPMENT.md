@@ -30,7 +30,7 @@ adr_refs: []
 
 | Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
 |--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
-| (no src/{platform}Main/ directories found) | — | — | — | — | 2026-06-01 | — | — |
+| (no src/{platform}Main/ directories found) | — | — | — | — | 2026-09-13 | — | — |
 
 Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
 Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
@@ -114,9 +114,38 @@ fun NetworkAwareContent(
 
 ## §8 Related
 
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — **single source of truth** for which KMP targets
+  this module must ship (21 headless / 7 Compose) and how to handle a dependency that blocks one.
+  Upstream reference: <https://kotlinlang.org/docs/native-target-support.html>.
+
 | Type | Reference |
 |------|-----------|
 | GOAL.md | [consumer-library-ai-bridge](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/consumer-library-ai-bridge/GOAL.md) |
 | ADRs | _List relevant ADR-NN entries (e.g. ADR-09 for inter-app-comms modules)._ |
 | Sync rule | [RULE-LIB-DEVELOPMENT-MD-001](../../../../../../layers/framework/rules/RULE-LIB-DEVELOPMENT-MD-001.md) |
 | External docs | [README](README.md) |
+
+---
+
+## §9 Observability Surface (authored — LLM-seeded)
+
+Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d).
+
+**This module reports nothing, by design.** Every composable here delegates to
+[`cmp-network-monitor`](../cmp-network-monitor/DEVELOPMENT.md), which reports the operation. Reporting again in the
+Compose wrapper would emit two events for one user action and double every count a
+consumer's hook sees.
+
+| Signal Tier | Status | Details |
+|-------------|--------|---------|
+| T0–T4 | delegated | see [`cmp-network-monitor`](../cmp-network-monitor/DEVELOPMENT.md) §9 |
+
+```yaml
+tiers:
+  T0: delegated
+  T1: delegated
+  T2: delegated
+  T3: delegated
+  T4: delegated
+delegates_to: cmp-network-monitor
+```

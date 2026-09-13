@@ -156,7 +156,10 @@ kotlin {
         }
 
         commonMain.dependencies {
-            // No external dependencies — uses only platform APIs
+            // Reports this library's lifecycle to whatever hooks the consumer registered. Pure
+            // stdlib since the Firebase hooks moved to cmp-observe-firebase (2026-09-13), so it adds
+            // 2 lines to a consumer's Android runtime classpath and no transitive SDK.
+            implementation(project(":cmp-observe"))
         }
 
         // getByName: the KMP android library plugin generates no typed androidHostTest accessor.

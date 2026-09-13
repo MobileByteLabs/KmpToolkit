@@ -1,5 +1,8 @@
 # cmp-network-monitor
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Reactive network connectivity monitoring for **Kotlin Multiplatform** — StateFlow-based, all 21 KMP targets.
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-network-monitor)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-network-monitor)

@@ -171,6 +171,10 @@ kotlin {
             // `api`, not `implementation`: the store-listing fallback IS cmp-open-url, and a consumer
             // injecting their own UrlLauncher into AppReviewManagerImpl must see the type.
             api(project(":cmp-open-url"))
+
+            // Reports review requests to whatever hooks the consumer registered. `implementation`,
+            // not `api`: this module's public surface never exposes an observe type.
+            implementation(project(":cmp-observe"))
             implementation(libs.kotlinx.coroutines.core)
         }
 
@@ -182,6 +186,8 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            // FakeLibraryObservationHook + resetLibraryObservation ship in cmp-observe's main artifact.
+            implementation(project(":cmp-observe"))
             // requestReview() is suspend, so the shared tests need runTest.
             implementation(libs.kotlinx.coroutines.test)
         }

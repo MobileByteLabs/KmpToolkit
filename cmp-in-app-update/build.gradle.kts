@@ -149,6 +149,10 @@ kotlin {
         }
 
         commonMain.dependencies {
+
+            // Reports this library's lifecycle to hooks the consumer registered. Pure stdlib since
+            // the Firebase hooks moved to cmp-observe-firebase — 2 classpath lines, no transitive SDK.
+            implementation(project(":cmp-observe"))
             implementation(libs.kotlinx.coroutines.core)
         }
 

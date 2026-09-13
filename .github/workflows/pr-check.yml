@@ -27,6 +27,24 @@ jobs:
       run-ios-tests: false
       run-linux-tests: false
 
+  # ── Observability wiring gate ─────────────────────────────────────────────────────────────
+  # Pure text gate, so it runs in seconds and does not need Gradle or a JDK. Kept a separate job
+  # rather than a step of `coverage` so a wiring failure is attributable at a glance and does not
+  # wait on the Robolectric suites.
+  observability-gate:
+    name: Docs & Observability Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assert every metadata-generating module reports
+        run: bash .github/scripts/assert-observability-wired.sh
+      # Separate step so a docs failure is attributable at a glance. `if: always()` because the two
+      # gates are independent — an unwired module should not hide a missing README.
+      - name: Assert every module has complete docs with resolving links
+        if: always()
+        run: bash .github/scripts/assert-docs-complete.sh
+
   # ── Kover coverage ────────────────────────────────────────────────────────────────────────
   # Separate job rather than an input to the reusable workflow above: ci-kmp-library.yml exposes
   # no coverage option, and coverage is aggregated at the ROOT (KoverConventionPlugin) rather than

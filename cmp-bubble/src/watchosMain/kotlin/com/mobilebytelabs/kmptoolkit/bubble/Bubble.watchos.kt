@@ -124,4 +124,4 @@ internal class WatchOsBubble(private val config: BubbleConfig) : Bubble {
     }
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = WatchOsBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(WatchOsBubble(config))

@@ -9,6 +9,8 @@
  */
 package com.mobilebytelabs.kmptoolkit.appintents
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
+
 /**
  * Injectable entry point for app-intent registration — the type to depend on from a ViewModel or
  * app-startup component.
@@ -83,5 +85,12 @@ public class AppIntentsManagerImpl : AppIntentsManager {
 
     override fun register(config: AppIntentsConfig) {
         AppIntents.register(config)
+        // Reports the COUNT and the reach tier, never the intent ids or phrases: those are app
+        // vocabulary a consumer may treat as unreleased product surface.
+        observeLifecycle(
+            cmpMetadata(),
+            "intents_registered",
+            mapOf("count" to config.intents.size, "reach" to capabilities.assistantReach),
+        )
     }
 }

@@ -13,6 +13,7 @@ import co.touchlab.kermit.Logger
 import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.kmpPlatform
 import io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics.CrashReporter
 import io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics.provideCrashReporter
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 
 /**
  * Single, in-library setup surface for Firebase across every KMP target —
@@ -87,6 +88,9 @@ object FirebaseKit {
         if (initialized) return
         crashReporter.install()
         initialized = true
+        // `mode` distinguishes this from the config overload below: crash-reporting only, with no
+        // native Firebase app configured. That difference explains an "analytics is NoOp" report.
+        observeLifecycle(cmpMetadata(), "firebase_initialized", mapOf("mode" to "crash-only"))
     }
 
     /**
@@ -127,6 +131,18 @@ object FirebaseKit {
         platformInitializeFirebase(options)
         crashReporter.install()
         initialized = true
+        // Shape only — never the options themselves: FirebaseOptions holds the API key and
+        // project id. `hasOptions`/`hasMeasurementProtocol` are what distinguish a real init from
+        // the degraded-to-NoOp path the KDoc above describes.
+        observeLifecycle(
+            cmpMetadata(),
+            "firebase_initialized",
+            mapOf(
+                "mode" to "config",
+                "hasOptions" to (options != null),
+                "hasMeasurementProtocol" to (config.measurementProtocol != null),
+            ),
+        )
     }
 
     private const val TAG = "FirebaseKit"

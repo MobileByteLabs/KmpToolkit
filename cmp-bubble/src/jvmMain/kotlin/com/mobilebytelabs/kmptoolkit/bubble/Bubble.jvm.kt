@@ -112,4 +112,4 @@ internal class JvmBubble(private val config: BubbleConfig) : Bubble {
     // severity, so there is nothing here to map onto AWT's ERROR/WARNING message types.
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = JvmBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(JvmBubble(config))

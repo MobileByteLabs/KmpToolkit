@@ -2,6 +2,7 @@ package com.mobilebytelabs.kmptoolkit.toast
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,6 +76,18 @@ class ToastHostState : ToastDispatcher {
         position: ToastPosition,
         style: ToastStyle,
     ): ToastResult = mutex.withLock {
+        // The message is NOT reported: a toast body is user-facing copy that routinely embeds
+        // names, amounts and error detail. Shape only — duration, position, style, has-action.
+        observeLifecycle(
+            cmpMetadata(),
+            "toast_shown",
+            mapOf(
+                "duration" to duration.name,
+                "position" to position.name,
+                "style" to style::class.simpleName,
+                "hasAction" to (actionLabel != null),
+            ),
+        )
         try {
             suspendCancellableCoroutine { continuation ->
                 currentContinuation = continuation

@@ -11,6 +11,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -42,7 +43,7 @@ plugins {
 //
 // Targets: 10/10 KMP coverage.
 // - 2 "Firebase-supported" targets (android + ios) get the 3 Firebase hook impls
-//   via the firebaseHooksMain intermediate source-set. The 3 GitLive Firebase
+//   via cmp-observe-firebase (a separate artifact since 2026-09-13). The GitLive Firebase
 //   deps at v2.4.0 only intersect on {android, ios} — crashlytics has no jvm
 //   variant, perf has no macos variant, none have js/wasmJs/native.
 // - 8 "stub" targets (jvm, macos, js, wasmJs, tvos, watchos, linux, mingw) inherit
@@ -75,6 +76,15 @@ kotlin {
             libs.versions.android.minSdk
                 .get()
                 .toInt()
+
+        // JVM 11, matching every consumer. This module is the universal dependency and `observeInit`
+        // is an INLINE function, so its bytecode is inlined into the caller: built higher than the
+        // consumer, every Android compilation fails with
+        // "Cannot inline bytecode built with JVM target 17 into bytecode being built with JVM target 11".
+        // Caught on cmp-deep-link the first time an init provider used the helper.
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_11
+        }
     }
 
     iosX64()
@@ -111,56 +121,40 @@ kotlin {
     linuxArm64()
     mingwX64()
 
+    // watchOS + wasmWasi added 2026-09-13 so cmp-observe can be a commonMain dependency of the
+    // 21-target modules. Until now it shipped 15, and a module depending on it in commonMain would
+    // have been capped at that — which is why cmp-network-monitor's dependency is androidMain-only
+    // and why 22 of 23 modules generate CmpMetadata but never report anything.
+    //
+    // Nothing here needs a dependency: the core (LibraryObservation / LibraryObservationHook /
+    // CmpMetadata) is pure stdlib — kotlin.concurrent.atomics for the registry — and the GitLive
+    // Firebase hooks stay in `firebaseHooksMain`, which is attached only to androidMain + iosMain.
+    watchosX64()
+    watchosArm32()
+    watchosArm64()
+    watchosSimulatorArm64()
+    watchosDeviceArm64()
+
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmWasi {
+        nodejs()
+    }
+
     sourceSets {
         commonMain.dependencies {
-            // Interface + registry + CmpMetadata only — no transport, no deps.
-            // The 3 Google/Firebase hook impls live in firebaseHooksMain (below)
-            // and bring their own GitLive Firebase deps. GitLive Firebase doesn't
-            // publish for js/wasmJs/tvos/watchos/linux/mingw — keeping it out of
-            // commonMain lets cmp-observe ship 10 targets.
-        }
-
-        // Custom intermediate source-set: holds the 3 Firebase hook impls + their deps.
-        // Only android + ios depend on this source-set (the platform intersection of all
-        // 3 GitLive Firebase deps); the 8 stub targets (jvm/macos/js/wasmJs/tvos/watchos/
-        // linux/mingw) skip it and get an interface-only commonMain compilation.
-        //
-        // Hook files physically live in src/firebaseHooksMain/kotlin/.../hooks/.
-        val firebaseHooksMain =
-            create("firebaseHooksMain") {
-                dependsOn(commonMain.get())
-                dependencies {
-                    implementation(libs.gitlive.firebase.crashlytics)
-                    implementation(libs.gitlive.firebase.analytics)
-                    implementation(libs.gitlive.firebase.performance)
-                }
-            }
-
-        // Wire ONLY android + ios to depend on firebaseHooksMain — the platform
-        // intersection of all 3 GitLive Firebase deps at v2.4.0:
-        //   - firebase-crashlytics : android + ios + macos       (NO jvm, NO js)
-        //   - firebase-perf        : android + ios + jvm         (NO macos, NO js)
-        //   - firebase-analytics   : android + ios + jvm + macos (NO js)
-        // Intersection = { android, ios }. Bundling all 3 in firebaseHooksMain
-        // means jvm fails on crashlytics, macos fails on perf, js fails on all 3.
-        // KGP 2.x strictly validates per-target dep availability across shared
-        // source-sets and rejects the build on any unresolved platform.
-        // Net: 8 stub targets (jvm, macos, js, wasmJs, tvos, watchos, linux, mingw)
-        // inherit ONLY commonMain — they get the LibraryObservationHook interface +
-        // LibraryObservation registry + CmpMetadata data class only (no hook impls).
-        // Apps targeting those platforms register consumer-provided hooks if they
-        // need crash/analytics attribution.
-        androidMain.get().dependsOn(firebaseHooksMain)
-        iosMain.get().dependsOn(firebaseHooksMain)
-
-        // Firebase BOM supplies versions for com.google.firebase:* on Android.
-        // GitLive's firebase-{crashlytics,analytics,perf}-android transitively
-        // depend on com.google.firebase:firebase-{crashlytics,analytics,perf}
-        // WITHOUT pinned versions — the BOM resolves them. Without this, Gradle
-        // fails with "Could not find com.google.firebase:firebase-crashlytics:."
-        // (empty version). Matches the cmp-firebase pattern.
-        androidMain.dependencies {
-            implementation(project.dependencies.platform(libs.firebase.bom))
+            // NO DEPENDENCIES, deliberately. This module is the universal one: every cmp-* module
+            // generates CmpMetadata and depends on this to report itself, so anything added here lands
+            // on every consumer's classpath.
+            //
+            // The three GitLive Firebase hooks lived here until 2026-09-13 and are now
+            // cmp-observe-firebase. They pulled the Firebase BOM and three GitLive artifacts into the
+            // android and ios variants: adding `implementation(project(":cmp-observe"))` to cmp-share
+            // took its Android runtime classpath from 73 lines / 0 Firebase entries to 558 / 91. An
+            // app copying a string to the clipboard does not need an analytics SDK.
+            //
+            // What remains is pure stdlib — the registry (kotlin.concurrent.atomics), the hook
+            // interface, CmpMetadata, and the observe* helpers — which is why this ships all 21
+            // targets with no intermediate source sets.
         }
 
         commonTest.dependencies {

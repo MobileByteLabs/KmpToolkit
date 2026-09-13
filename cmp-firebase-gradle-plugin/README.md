@@ -1,5 +1,8 @@
 # cmp-firebase Gradle Plugin
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Gradle plugin that applies the build-side setup [`cmp-firebase`](../cmp-firebase/README.md) needs
 in a **Kotlin Multiplatform** app, so Firebase on iOS works without hand-configuring the parts that
 are easy to get silently wrong.

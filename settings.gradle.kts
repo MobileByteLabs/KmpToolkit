@@ -33,6 +33,7 @@ include(":cmp-network-monitor") // Network Monitor — reactive connectivity mon
 include(":cmp-network-monitor-compose") // Network Monitor Compose — Compose Multiplatform UI extensions
 // Library observability — shared hook interface + 4 default Firebase/Supabase hook impls (library-runtime-observability epic, 2026-05-30)
 include(":cmp-observe")
+include(":cmp-observe-firebase") // Observe — GitLive Firebase hook implementations (optional)
 include(":cmp-observe-koin") // Zero-config Koin companion for cmp-observe
 // Firebase Analytics — 21/21 KMP targets (GitLive on 11, Measurement Protocol HTTP on 10)
 include(":cmp-firebase") // Firebase — Analytics + Crashlytics (unified, in-library setup)

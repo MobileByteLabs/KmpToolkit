@@ -13,6 +13,13 @@ public final class io/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/mobilebytelabs/kmptoolkit/observe/LibraryLifecycleKt {
+	public static final fun observeClose (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
+	public static final fun observeInit (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static final fun observeLifecycle (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/String;Ljava/util/Map;)V
+	public static synthetic fun observeLifecycle$default (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+}
+
 public final class io/github/mobilebytelabs/kmptoolkit/observe/LibraryObservation {
 	public static final field INSTANCE Lio/github/mobilebytelabs/kmptoolkit/observe/LibraryObservation;
 	public final fun notifyClose (Lio/github/mobilebytelabs/kmptoolkit/observe/CmpMetadata;)V
