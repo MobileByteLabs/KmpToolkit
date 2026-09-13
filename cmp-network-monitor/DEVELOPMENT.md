@@ -30,16 +30,16 @@ adr_refs: []
 
 | Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
 |--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
-| androidMain | ✅ | ✅ real | 0 | 7 | 2026-06-01 | (legacy:full) | — |
-| iosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | (legacy:full) | — |
-| macosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | (legacy:full) | — |
-| jvmMain | ✅ | ✅ real | 0 | 5 | 2026-06-01 | (legacy:full) | — |
-| jsMain | ✅ | ✅ real | 0 | 5 | 2026-06-01 | (legacy:full) | — |
-| wasmJsMain | ✅ | ✅ real | 0 | 5 | 2026-06-01 | (legacy:full) | — |
-| mingwMain | ✅ | ✅ real | 0 | 5 | 2026-06-01 | (legacy:full) | — |
-| linuxMain | ✅ | ✅ real | 0 | 5 | 2026-06-01 | (legacy:full) | — |
-| tvosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | (legacy:full) | — |
-| watchosMain | ✅ | ✅ real | 0 | 1 | 2026-06-01 | (legacy:full) | — |
+| androidMain | ✅ | ✅ real | 0 | 7 | 2026-09-13 | (legacy:full) | — |
+| iosMain | ✅ | ✅ real | 0 | 1 | 2026-09-13 | (legacy:full) | — |
+| macosMain | ✅ | ✅ real | 0 | 1 | 2026-09-13 | (legacy:full) | — |
+| jvmMain | ✅ | ✅ real | 0 | 5 | 2026-09-13 | (legacy:full) | — |
+| jsMain | ✅ | ✅ real | 0 | 5 | 2026-09-13 | (legacy:full) | — |
+| wasmJsMain | ✅ | ✅ real | 0 | 5 | 2026-09-13 | (legacy:full) | — |
+| mingwMain | ✅ | ✅ real | 0 | 5 | 2026-09-13 | (legacy:full) | — |
+| linuxMain | ✅ | ✅ real | 0 | 5 | 2026-09-13 | (legacy:full) | — |
+| tvosMain | ✅ | ✅ real | 0 | 1 | 2026-09-13 | (legacy:full) | — |
+| watchosMain | ✅ | ✅ real | 0 | 1 | 2026-09-13 | (legacy:full) | — |
 
 Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
 Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
@@ -144,9 +144,47 @@ sealed class NetworkChangeEvent {
 
 ## §8 Related
 
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — **single source of truth** for which KMP targets
+  this module must ship (21 headless / 7 Compose) and how to handle a dependency that blocks one.
+  Upstream reference: <https://kotlinlang.org/docs/native-target-support.html>.
+
 | Type | Reference |
 |------|-----------|
 | GOAL.md | [consumer-library-ai-bridge](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/consumer-library-ai-bridge/GOAL.md) |
 | ADRs | _List relevant ADR-NN entries (e.g. ADR-09 for inter-app-comms modules)._ |
 | Sync rule | [RULE-LIB-DEVELOPMENT-MD-001](../../../../../../layers/framework/rules/RULE-LIB-DEVELOPMENT-MD-001.md) |
 | External docs | [README](README.md) |
+
+---
+
+## §9 Observability Surface (authored — LLM-seeded)
+
+Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d). Wired 2026-09-13, when `cmp-observe`
+reached all 21 targets and every module could depend on it from `commonMain`.
+
+| Signal Tier | Status | Details |
+|-------------|--------|---------|
+| T0 (Crashlytics attribution) | enabled | `custom_key: library:cmp-network-monitor@<version>` — set by `FirebaseCrashlyticsAttributionHook` (`cmp-observe-firebase`) |
+| T1 (init + version health) | enabled | `lib_init`, `lib_init_complete`, `lib_init_failure` — emitted by `observeInit` at module initialisation |
+| T2 (lifecycle events) | enabled | `install_ignored_config`, `monitor_installed` |
+| T3 (performance traces) | opted-out | opt-in per consumer; `FirebasePerformanceHook` wraps init |
+| T4 (full API usage) | opted-out | opt-in per consumer + per end-user; iOS ATT prompt required |
+
+**Payload policy.** Events carry operation *shape*, never operation *content*. Enforced by review,
+and by `.github/scripts/assert-observability-wired.sh` refusing a module that generates
+`CmpMetadata` but never reports.
+
+```yaml
+# DEVELOPMENT_OBSERVABILITY.schema.yaml-conformant block
+tiers:
+  T0: enabled
+  T1: enabled
+  T2: enabled
+  T3: opted-out
+  T4: opted-out
+event_schema:
+  reports_init: true
+  lifecycle_events:
+    - install_ignored_config
+    - monitor_installed
+```

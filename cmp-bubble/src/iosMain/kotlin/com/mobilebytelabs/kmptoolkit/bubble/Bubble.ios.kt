@@ -152,4 +152,4 @@ internal class IosBubble(private val config: BubbleConfig) : Bubble {
     }
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = IosBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(IosBubble(config))

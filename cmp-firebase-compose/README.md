@@ -1,5 +1,8 @@
 # cmp-firebase-compose
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Compose Multiplatform auto-tracking for [`cmp-firebase`](../cmp-firebase). Declarative analytics —
 drop a composable in and screens, clicks, and lifecycle emit automatically through your app's
 `AnalyticsHelper`. Compose-target only (Android, iOS, macOS, JVM, JS, WasmJS); the non-Compose

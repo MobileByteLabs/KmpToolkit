@@ -19,6 +19,9 @@ extra["cmp_observe_artifact"] = "io.github.mobilebytelabs:cmp-observe"
 extra["cmp_observe_koin_version"] = kmpToolkitVersion
 extra["cmp_observe_koin_artifact"] = "io.github.mobilebytelabs:cmp-observe-koin"
 
+extra["cmp_observe_firebase_version"] = kmpToolkitVersion
+extra["cmp_observe_firebase_artifact"] = "io.github.mobilebytelabs:cmp-observe-firebase"
+
 extra["cmp_share_version"] = kmpToolkitVersion
 extra["cmp_share_artifact"] = "io.github.mobilebytelabs:cmp-share"
 

@@ -1,5 +1,8 @@
 # cmp-intent-launcher-compose
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Compose Multiplatform extensions for [`cmp-intent-launcher`](../cmp-intent-launcher/) — provides `@Composable rememberIntentLauncher()`.
 
 ## Why this module exists

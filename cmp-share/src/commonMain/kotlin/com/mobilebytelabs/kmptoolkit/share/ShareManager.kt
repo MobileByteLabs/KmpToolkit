@@ -9,6 +9,8 @@
  */
 package com.mobilebytelabs.kmptoolkit.share
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
+
 /**
  * Injectable share entry point — the interface to depend on from a ViewModel, repository or
  * composable.
@@ -133,5 +135,13 @@ public class ShareManagerImpl : ShareManager {
         get() = platformShareCapabilities
 
     override suspend fun share(payload: SharePayload, options: ShareOptions): ShareResult =
-        Share.share(payload, options)
+        Share.share(payload, options).also {
+            // Payload CLASS and result CLASS only — never the shared text, URL or file path, which
+            // is the user's content and the whole point of the share.
+            observeLifecycle(
+                cmpMetadata(),
+                "shared",
+                mapOf("payload" to payload::class.simpleName, "result" to it::class.simpleName),
+            )
+        }
 }

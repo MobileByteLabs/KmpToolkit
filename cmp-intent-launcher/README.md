@@ -1,5 +1,8 @@
 # cmp-intent-launcher
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Typed Android-Intent builder with cross-platform `ActivityResult` contracts for
 Kotlin Multiplatform.
 

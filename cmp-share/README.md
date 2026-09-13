@@ -1,5 +1,8 @@
 # cmp-share
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Cross-platform share-sheet library for Kotlin Multiplatform.
 
 > **Stable API.** `@ExperimentalShareApi` is retained as a deprecated no-op so existing

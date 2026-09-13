@@ -108,6 +108,10 @@ kotlin {
         // navigation-compose, the two lifecycle-compose artifacts, koin-compose-viewmodel and the
         // two Coil artifacts. What is left resolves for all 15 targets.
         commonMain.dependencies {
+
+            // Reports this library's lifecycle to hooks the consumer registered. Pure stdlib since
+            // the Firebase hooks moved to cmp-observe-firebase — 2 classpath lines, no transitive SDK.
+            implementation(project(":cmp-observe"))
             // Supabase
             implementation(libs.supabase.postgrest)
             implementation(libs.ktor.client.core)

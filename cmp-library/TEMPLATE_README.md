@@ -58,7 +58,35 @@ include(":cmp-your-feature")
 2. Update `Platform.*.kt` files for platform-specific code
 3. Update tests in `commonTest/` and platform test directories
 
-### Step 5: Create Sample App (Optional)
+### Step 5: Declare the full target matrix
+
+Your module must ship **21 targets** (headless) or **7** (Compose) per
+[TARGET_MATRIX.md](../TARGET_MATRIX.md). Verify what you actually declared:
+
+```bash
+./gradlew :cmp-your-feature:assemble     # a missing actual fails here, not at publish
+```
+
+If a dependency does not publish for a target, **do not drop the target** — confine the dependency to
+an intermediate source set (`koinMain`, `htmlMain`, and similar; see the matrix §4). Drop a target only
+when no source-set arrangement works, and record the blocking artifact and version in a comment next to
+the target list.
+
+### Step 6: Write the module README
+
+Every module needs a `README.md`. Start it with the target-support note so the matrix stays discoverable:
+
+```markdown
+# cmp-your-feature
+
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+```
+
+Then cover: install snippet, usage, DI wiring, per-target behaviour table, and anything that will bite
+a consumer. `cmp-app-review` is a worked example, including a separate `CONSUMPTION.md` for integration.
+
+### Step 7: Create Sample App (Optional)
 
 ```bash
 cp -r samples/sample-clipboard samples/sample-your-feature
@@ -98,21 +126,30 @@ cmp-library/
 
 ## Supported Platforms
 
-This template supports **all KMP platforms**:
+**The standard is 21 targets for a headless module, 7 for a Compose module.** See
+[TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth — for the full list, the
+`androidNative*` exclusion, and what to do when a dependency blocks a target. Upstream reference:
+<https://kotlinlang.org/docs/native-target-support.html>.
+
+> ⚠️ **This template module currently declares 16 targets, not 21 — it is missing all five watchOS
+> targets.** Copying it gives you 16. Add them (`watchosX64` `watchosArm32` `watchosArm64`
+> `watchosSimulatorArm64` `watchosDeviceArm64`) unless a dependency blocks them, and record the reason
+> in `build.gradle.kts` if it does. An earlier version of this section claimed the template supported
+> "all KMP platforms" and listed watchOS in the table below, which was never true of the build file.
 
 | Platform | Source Set | Notes |
 |----------|------------|-------|
-| Android | `androidMain` | Native Android |
-| iOS | `iosMain` / `appleMain` | Arm64, Simulator |
-| macOS | `macosMain` / `appleMain` | x64, Arm64 |
-| tvOS | `tvosMain` / `appleMain` | x64, Arm64, Simulator |
-| watchOS | `watchosMain` / `appleMain` | x64, Arm32, Arm64 |
+| Android | `androidMain` | Native Android (JVM target — not `androidNative*`) |
+| iOS | `iosMain` / `appleMain` | Arm64, SimulatorArm64, X64 |
+| macOS | `macosMain` / `appleMain` | X64, Arm64 |
+| tvOS | `tvosMain` / `appleMain` | X64, Arm64, Simulator |
+| watchOS | `watchosMain` / `appleMain` | X64, Arm32, Arm64, Simulator, DeviceArm64 |
 | JVM | `jvmMain` | Desktop/Server |
 | JavaScript | `jsMain` | Browser, Node.js |
 | Wasm JS | `wasmJsMain` | Browser, Node.js |
-| Wasm WASI | `wasmWasiMain` | Node.js |
-| Linux | `linuxMain` | x64, Arm64 |
-| Windows | `mingwMain` | x64 |
+| Wasm WASI | `wasmWasiMain` | Node.js — the most commonly blocked target |
+| Linux | `linuxMain` | X64, Arm64 |
+| Windows | `mingwMain` | X64 — Tier 3 upstream; expect more per-target care |
 
 ## Example: expect/actual Pattern
 

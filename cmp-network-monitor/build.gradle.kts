@@ -149,6 +149,13 @@ kotlin {
         // All Apple targets (iOS, macOS, tvOS, watchOS) share code via appleMain automatically
 
         commonMain.dependencies {
+
+            // Was androidMain-only, because the ContentProvider was the sole caller and cmp-observe
+            // shipped 15 targets — a commonMain dependency would have capped this module's 21.
+            // cmp-observe reached the full 21-target matrix on 2026-09-13, so the scoping is obsolete
+            // and it blocked the generated `cmpMetadata()` factory, which is only emitted when
+            // commonMain can see the type.
+            implementation(project(":cmp-observe"))
             implementation(libs.kotlinx.coroutines.core)
             // NOTE: cmp-observe is intentionally NOT in commonMain.
             // cmp-observe ships only 7 of the 11 targets this module supports
@@ -160,14 +167,6 @@ kotlin {
             // Audit: cmp-observe target gap vs cmp-network-monitor → 4 missing targets
             // (tvos, watchos, linux, mingw); putting the dep in commonMain would
             // require cmp-observe to ship for those targets too.
-        }
-
-        // Android-only cmp-observe dep — NetworkMonitorInitProvider's ContentProvider
-        // is androidMain-scoped; this is the only source-set that imports cmp-observe.
-        // Other platform init paths (jvmMain/iosMain factories — future) should add
-        // their own per-source-set dep when they add notifyInit calls.
-        androidMain.dependencies {
-            implementation(project(":cmp-observe"))
         }
 
         // getByName: the KMP android library plugin generates no typed androidHostTest accessor.

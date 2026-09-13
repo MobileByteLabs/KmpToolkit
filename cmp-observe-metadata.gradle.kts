@@ -31,8 +31,12 @@
 //         const val ARTIFACT = "io.github.mobilebytelabs:cmp-share"
 //     }
 //
-// Module init paths read these constants when calling
-// `LibraryObservation.notifyInit(CmpMetadata(NAME, VERSION, ARTIFACT))`.
+// plus a `cmpMetadata()` factory returning cmp-observe's CmpMetadata, so a module reports itself
+// with `observeInit(cmpMetadata()) { … }` and never repeats the three-field construction.
+//
+// REQUIRES the applying module to depend on cmp-observe in commonMain. That is possible for every
+// module as of 2026-09-13, when cmp-observe reached the full 21-target matrix; before that it
+// shipped 15 and a commonMain dependency would have capped its consumers.
 //
 // The generated file is automatically added to commonMain.kotlin.srcDirs.
 // ============================================================================
@@ -61,17 +65,46 @@ val moduleArtifact: String =
         "io.github.mobilebytelabs:$moduleName"
     }
 
-// Derive Kotlin package: cmp-share → com.mobilebytelabs.kmptoolkit.share
+// Kotlin package for the generated file — DETECTED from the module's own sources, not assumed.
+//
+// This was previously hardcoded to `io.github.mobilebytelabs.kmptoolkit.<short>`, but the toolkit uses
+// TWO package roots: `io.github.mobilebytelabs.kmptoolkit.*` (cmp-network-monitor, cmp-observe) and
+// `com.mobilebytelabs.kmptoolkit.*` (cmp-share, cmp-open-url, cmp-clipboard, cmp-app-review, …).
+// For every module in the second group the generated CmpMetadata landed in a package its own source
+// could not see, so using it meant an explicit cross-package import of an `internal` declaration.
+//
+// That is the likeliest reason this integration sat at ONE module for four months: cmp-network-monitor
+// happens to be in the group the hardcoded guess matched, so it worked there and was friction
+// everywhere else. Reading the real package removes the trap rather than documenting it.
 val modulePackage: String =
     run {
-        // Mirror the actual source package convention used across cmp-* modules:
-        // cmp-network-monitor → io.github.mobilebytelabs.kmptoolkit.networkmonitor
-        // cmp-deep-link       → io.github.mobilebytelabs.kmptoolkit.deeplink
-        // cmp-share           → io.github.mobilebytelabs.kmptoolkit.share
-        // (hyphens are DROPPED, not converted to dots — the existing source tree uses
-        // squashed concatenation, e.g. `package …kmptoolkit.networkmonitor`.)
-        val short = moduleName.removePrefix("cmp-").replace("-", "")
-        "io.github.mobilebytelabs.kmptoolkit.$short"
+        val srcRoot = project.file("src/commonMain/kotlin")
+        val declared =
+            srcRoot
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .mapNotNull { file ->
+                    file.useLines { lines ->
+                        lines.firstOrNull { it.startsWith("package ") }?.removePrefix("package ")?.trim()
+                    }
+                }.distinct()
+                .toList()
+
+        // The module root is the longest package prefix COMMON to every declared package, compared
+        // segment-wise. Previously this took the shortest declared package, which silently assumes
+        // some file sits at the root: cmp-product-tickets has none (its files are all in .config,
+        // .di, .data.remote, .domain.model), so the shortest was `…producttickets.di` and the
+        // generated file landed inside the DI subpackage — invisible to every other file in the
+        // module. Segment-wise also matters: comparing by character length alone can pick a longer
+        // sibling over the true parent.
+        val root =
+            declared
+                .map { it.split('.') }
+                .reduceOrNull { a, b -> a.zip(b).takeWhile { (x, y) -> x == y }.map { it.first } }
+                ?.joinToString(".")
+                ?.takeIf { it.isNotEmpty() }
+
+        root ?: "io.github.mobilebytelabs.kmptoolkit.${moduleName.removePrefix("cmp-").replace("-", "")}"
     }
 
 abstract class CmpMetadataGenTask : org.gradle.api.DefaultTask() {
@@ -90,10 +123,60 @@ abstract class CmpMetadataGenTask : org.gradle.api.DefaultTask() {
     @get:org.gradle.api.tasks.OutputDirectory
     abstract val outputDir: org.gradle.api.file.DirectoryProperty
 
+    /**
+     * This script itself, as a task input.
+     *
+     * Without it the declared inputs are only the module's name/version/artifact/package, none of
+     * which change when the GENERATOR changes — so every module whose metadata was already
+     * generated stayed UP-TO-DATE and kept emitting the old file. That is how cmp-network-monitor
+     * ended up with a `CmpMetadata.kt` lacking the `cmpMetadata()` factory long after the factory
+     * was added here, failing compilation with "Unresolved reference 'cmpMetadata'" while every
+     * freshly-built module had it. PathSensitivity.NONE: the content matters, the location does not.
+     */
+    @get:org.gradle.api.tasks.InputFile
+    @get:org.gradle.api.tasks.PathSensitive(org.gradle.api.tasks.PathSensitivity.NONE)
+    abstract val generatorScript: org.gradle.api.file.RegularFileProperty
+
+    /**
+     * Whether the applying module actually depends on cmp-observe.
+     *
+     * The generated file has two halves with different requirements: the constants object needs
+     * nothing, while `cmpMetadata()` returns cmp-observe's type and therefore needs it on the
+     * commonMain classpath. Emitting both unconditionally made this script uncompilable in any
+     * module without that dependency — which is 21 of the 22 that apply it.
+     */
+    @get:org.gradle.api.tasks.Input
+    abstract val hasObserveDependency: org.gradle.api.provider.Property<Boolean>
+
     @org.gradle.api.tasks.TaskAction
     fun generate() {
         val pkgDir = outputDir.get().asFile.resolve(modulePackage.get().replace('.', '/'))
         pkgDir.mkdirs()
+        // The convenience accessor is emitted ONLY where its type can resolve. A module without
+        // cmp-observe still gets NAME/VERSION/ARTIFACT, which is what most callers actually read.
+        val observeAccessor =
+            if (hasObserveDependency.getOrElse(false)) {
+                """
+
+                /**
+                 * This module's identity, as the type cmp-observe's hooks receive.
+                 *
+                 * Generated so a call site is `observeInit(cmpMetadata()) { … }` rather than the
+                 * three-field construction plus an `import … as ObserveMetadata` alias every module
+                 * would otherwise need — the two `CmpMetadata` names (this object and cmp-observe's
+                 * data class) collide, and aliasing at 22 call sites is how the integration stayed at
+                 * one module for four months.
+                 */
+                internal fun cmpMetadata(): io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata =
+                    io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata(
+                        name = CmpMetadata.NAME,
+                        version = CmpMetadata.VERSION,
+                        artifact = CmpMetadata.ARTIFACT,
+                    )
+                """.trimIndent()
+            } else {
+                ""
+            }
         pkgDir.resolve("CmpMetadata.kt").writeText(
             """
             /*
@@ -109,6 +192,8 @@ abstract class CmpMetadataGenTask : org.gradle.api.DefaultTask() {
                 const val VERSION: String = "${moduleVersion.get()}"
                 const val ARTIFACT: String = "${moduleArtifact.get()}"
             }
+
+            $observeAccessor
             """.trimIndent(),
         )
     }
@@ -127,6 +212,21 @@ val genTask =
         moduleArtifact.set(capturedModuleArtifact)
         modulePackage.set(capturedModulePackage)
         outputDir.set(layout.buildDirectory.dir("generated/observability"))
+        generatorScript.set(rootProject.file("cmp-observe-metadata.gradle.kts"))
+        // Detected from the module's own declared dependencies rather than assumed. `provider {}`
+        // defers resolution until execution, so this reads the configuration AFTER the module's
+        // build script has finished declaring it.
+        hasObserveDependency.set(
+            provider {
+                configurations.names
+                    .filter { it.contains("ommonMain", ignoreCase = false) || it.startsWith("common") }
+                    .any { cfgName ->
+                        runCatching {
+                            configurations.getByName(cfgName).allDependencies.any { it.name == "cmp-observe" }
+                        }.getOrDefault(false)
+                    }
+            },
+        )
     }
 
 // Wire generated file into commonMain so compileKotlinCommon picks it up.

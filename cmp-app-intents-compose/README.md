@@ -1,5 +1,8 @@
 # cmp-app-intents-compose
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Compose Multiplatform extensions for [`cmp-app-intents`](../cmp-app-intents/) — `AppIntentsRegistration()` Composable for lifecycle-bound registration + `AppIntentsRegistry()` Material 3 dev/debug invocation UI.
 
 ## Why this module exists

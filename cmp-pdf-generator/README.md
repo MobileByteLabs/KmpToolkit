@@ -1,5 +1,8 @@
 # cmp-pdf-generator
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Cross-platform PDF generation library for Kotlin Multiplatform.
 
 > **Stable API.** `@ExperimentalPdfGeneratorApi` is retained as a deprecated no-op so existing
@@ -84,12 +87,11 @@ generator.generate(invoice.toDocument(), PdfOutput.Share)
 
 ## Docs
 
-- [SPEC](../idea-layer/modules/cmp-pdf-generator/SPEC.md) — full design intent
-- [API](../idea-layer/modules/cmp-pdf-generator/API.md) — every public symbol
-- [ADRs](../idea-layer/modules/cmp-pdf-generator/adrs/) — engine choices, branding model, error model, target tiers, DSL shape
+- [DEVELOPMENT.md](DEVELOPMENT.md) — public API surface, per-platform parity, engine choices
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — which targets render HTML and which fall back to `TextPdfWriter`
 - [Cookbook](docs/cookbook/) — invoice, receipt, report, image, composable-snapshot recipes
 - [Migration from mifos-x](docs/migration/from-mifos-x.md)
 
 ## License
 
-Apache 2.0 — see [LICENSE](../../LICENSE).
+Apache 2.0 — see [LICENSE](../LICENSE).

@@ -64,6 +64,21 @@ sealed class UiNode {
     data class Badge(val text: String, val color: String? = null, val backgroundColor: String? = null) : UiNode()
 
     data class Icon(val emoji: String, val size: Int = 24) : UiNode()
+
+    /**
+     * A node this build does not know how to render.
+     *
+     * Parsing an unrecognised type used to return `null`, and `parseChildren` dropped nulls — so a
+     * newer server tree silently lost whole subtrees on an older client. When the unknown node was
+     * the root, the entire surface came back empty: a blank paywall with no error anywhere, which is
+     * strictly worse than a visible gap because nothing reports it.
+     *
+     * Substituting keeps the tree SHAPE intact and hands the host something it can choose to render
+     * (a placeholder in debug, nothing in release) or count. [raw] is retained so a host can attempt
+     * its own handling — a forward-compatible node is often renderable by an app that knows the type
+     * even when this library does not.
+     */
+    data class Unknown(val type: String, val raw: String? = null) : UiNode()
 }
 
 data class UiAction(val type: String, val value: String? = null)

@@ -13,6 +13,7 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
+import io.github.mobilebytelabs.kmptoolkit.observe.observeInit
 
 /**
  * Auto-runs [FirebaseKit.initialize] at app startup so Android consumers need
@@ -33,7 +34,11 @@ internal class FirebaseInitProvider : ContentProvider() {
         // consumer's commonMain FirebaseKit.initialize(config) can pass it to GitLive's
         // Firebase.initialize on Android. Does NOT initialize Firebase itself — that is
         // the consumer's single commonMain init call.
-        runCatching { context?.applicationContext?.let { AndroidFirebaseContext.setApplicationContext(it) } }
+        // observeInit reports the context capture. The runCatching stays: this provider must not
+        // break app startup, and that predates observability.
+        observeInit(cmpMetadata()) {
+            runCatching { context?.applicationContext?.let { AndroidFirebaseContext.setApplicationContext(it) } }
+        }
         return true
     }
 

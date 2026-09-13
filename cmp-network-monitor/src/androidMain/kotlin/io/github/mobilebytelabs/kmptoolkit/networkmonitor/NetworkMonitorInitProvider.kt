@@ -5,8 +5,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
-import io.github.mobilebytelabs.kmptoolkit.observe.LibraryObservation
-import io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata as ObserveMetadata
+import io.github.mobilebytelabs.kmptoolkit.observe.observeInit
 
 /**
  * Auto-initializes the library's application context at app startup.
@@ -25,24 +24,14 @@ import io.github.mobilebytelabs.kmptoolkit.observe.CmpMetadata as ObserveMetadat
  */
 internal class NetworkMonitorInitProvider : ContentProvider() {
 
-    override fun onCreate(): Boolean {
-        val meta = ObserveMetadata(
-            name = CmpMetadata.NAME,
-            version = CmpMetadata.VERSION,
-            artifact = CmpMetadata.ARTIFACT,
-        )
-        LibraryObservation.notifyInit(meta)
-        return try {
-            context?.applicationContext?.let {
-                appContext = it
-                applicationContextHolder = it
-            }
-            LibraryObservation.notifyInitComplete(meta)
-            true
-        } catch (t: Throwable) {
-            LibraryObservation.notifyInitFailure(meta, t)
-            throw t
+    // Uses the observeInit helper rather than the three notify* calls by hand: this provider
+    // predates the helper and was the pattern the helper was extracted from.
+    override fun onCreate(): Boolean = observeInit(cmpMetadata()) {
+        context?.applicationContext?.let {
+            appContext = it
+            applicationContextHolder = it
         }
+        true
     }
 
     override fun query(

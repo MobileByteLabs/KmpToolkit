@@ -109,4 +109,4 @@ internal class MingwBubble(private val config: BubbleConfig) : Bubble {
 private fun String.psEscape(): String = replace("'", "''")
     .filterNot { it == '"' || it == '\n' || it == '\r' || it == '&' || it == '|' || it == '<' || it == '>' }
 
-actual fun createBubble(config: BubbleConfig): Bubble = MingwBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(MingwBubble(config))

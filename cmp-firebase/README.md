@@ -1,5 +1,8 @@
 # cmp-firebase
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Firebase for **Kotlin Multiplatform** — **Analytics + Crashlytics** in one module with a single in-library setup surface ([`FirebaseKit`](#setup-stays-in-the-library)). Interface + Stub/NoOp/Test variants across all 15 supported KMP targets, backed by [GitLive Firebase](https://github.com/GitLiveApp/firebase-kotlin-sdk):
 
 - **Analytics** — GitLive on **11 targets** (firebaseMain: Android, iOS×3, macOS×2, tvOS×3, JS, wasmJs), Measurement-Protocol HTTP fallback on the remaining 4 (JVM, Linux×2, mingwX64).

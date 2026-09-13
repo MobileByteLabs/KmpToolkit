@@ -9,6 +9,8 @@
  */
 package com.mobilebytelabs.kmptoolkit.appupdate
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
+
 /**
  * What happened when you asked about an update — a flat answer a `when` can exhaust.
  *
@@ -130,17 +132,32 @@ public class AppUpdateManagerImpl(
 
     override fun currentVersion(): AppVersion = AppUpdate.getCurrentVersion()
 
-    override suspend fun check(): UpdateOutcome = AppUpdate.checkForUpdate(config).toOutcome()
+    override suspend fun check(): UpdateOutcome =
+        AppUpdate.checkForUpdate(config).toOutcome().also { report("update_checked", it) }
 
     override suspend fun checkAndStart(updateType: UpdateType): UpdateOutcome {
         val result = AppUpdate.checkForUpdate(config)
         if (result !is UpdateResult.Success) return result.toOutcome()
         if (!result.updateInfo.isAvailable) return UpdateOutcome.UpToDate
         return AppUpdate.startUpdate(updateType, config).toOutcome(started = true)
+            .also { report("update_started", it) }
     }
 
     override suspend fun start(updateType: UpdateType): UpdateOutcome =
         AppUpdate.startUpdate(updateType, config).toOutcome(started = true)
+            .also { report("update_started", it) }
 
-    override fun openStore(): Boolean = AppUpdate.openStoreForUpdate(config)
+    override fun openStore(): Boolean = AppUpdate.openStoreForUpdate(config).also {
+        observeLifecycle(cmpMetadata(), "store_opened", mapOf("handled" to it))
+    }
+
+    /**
+     * Reports the outcome CLASS only.
+     *
+     * Deliberately not the version strings: an unreleased version name reaching an analytics
+     * pipeline is a product leak, and the outcome class is what diagnosis actually needs.
+     */
+    private fun report(event: String, outcome: UpdateOutcome) {
+        observeLifecycle(cmpMetadata(), event, mapOf("outcome" to outcome::class.simpleName))
+    }
 }

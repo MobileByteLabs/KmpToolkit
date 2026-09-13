@@ -95,4 +95,4 @@ internal class LinuxBubble(private val config: BubbleConfig) : Bubble {
 /** Single-quote escaping for a `sh -c` argument: close, escape, reopen. */
 private fun String.shellEscape(): String = replace("'", "'\\''")
 
-actual fun createBubble(config: BubbleConfig): Bubble = LinuxBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(LinuxBubble(config))

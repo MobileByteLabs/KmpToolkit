@@ -400,4 +400,4 @@ internal class AndroidBubble(private val config: BubbleConfig) : Bubble {
     }
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = AndroidBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(AndroidBubble(config))

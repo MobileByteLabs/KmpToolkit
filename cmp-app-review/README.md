@@ -1,5 +1,8 @@
 # cmp-app-review
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Ask the user to review your app, from `commonMain`, on every Kotlin Multiplatform target.
 
 > **Stable API.** No opt-in annotation.

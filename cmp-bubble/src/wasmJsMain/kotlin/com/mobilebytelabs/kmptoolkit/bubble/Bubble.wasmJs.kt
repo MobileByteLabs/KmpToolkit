@@ -59,4 +59,4 @@ internal class WasmJsBubble(private val config: BubbleConfig) : Bubble {
     }
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = WasmJsBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(WasmJsBubble(config))

@@ -30,7 +30,7 @@ adr_refs: []
 
 | Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
 |--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
-| (no src/{platform}Main/ directories found) | — | — | — | — | 2026-09-12 | — | — |
+| (no src/{platform}Main/ directories found) | — | — | — | — | 2026-09-13 | — | — |
 
 Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
 Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
@@ -120,9 +120,46 @@ internal object ProductTicketsClient {
 
 ## §8 Related
 
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — **single source of truth** for which KMP targets
+  this module must ship (21 headless / 7 Compose) and how to handle a dependency that blocks one.
+  Upstream reference: <https://kotlinlang.org/docs/native-target-support.html>.
+
 | Type | Reference |
 |------|-----------|
 | GOAL.md | [consumer-library-ai-bridge](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/consumer-library-ai-bridge/GOAL.md) |
 | ADRs | _List relevant ADR-NN entries (e.g. ADR-09 for inter-app-comms modules)._ |
 | Sync rule | [RULE-LIB-DEVELOPMENT-MD-001](../../../../../../layers/framework/rules/RULE-LIB-DEVELOPMENT-MD-001.md) |
 | External docs | [README](README.md) |
+
+---
+
+## §9 Observability Surface (authored — LLM-seeded)
+
+Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d). Wired 2026-09-13, when `cmp-observe`
+reached all 21 targets and every module could depend on it from `commonMain`.
+
+| Signal Tier | Status | Details |
+|-------------|--------|---------|
+| T0 (Crashlytics attribution) | enabled | `custom_key: library:cmp-product-tickets@<version>` — set by `FirebaseCrashlyticsAttributionHook` (`cmp-observe-firebase`) |
+| T1 (init + version health) | n/a | not applicable — this module has no initialisation step of its own |
+| T2 (lifecycle events) | enabled | `configured` |
+| T3 (performance traces) | opted-out | opt-in per consumer; `FirebasePerformanceHook` wraps init |
+| T4 (full API usage) | opted-out | opt-in per consumer + per end-user; iOS ATT prompt required |
+
+**Payload policy.** Events carry operation *shape*, never operation *content*. Enforced by review,
+and by `.github/scripts/assert-observability-wired.sh` refusing a module that generates
+`CmpMetadata` but never reports.
+
+```yaml
+# DEVELOPMENT_OBSERVABILITY.schema.yaml-conformant block
+tiers:
+  T0: enabled
+  T1: not-applicable
+  T2: enabled
+  T3: opted-out
+  T4: opted-out
+event_schema:
+  reports_init: false
+  lifecycle_events:
+    - configured
+```

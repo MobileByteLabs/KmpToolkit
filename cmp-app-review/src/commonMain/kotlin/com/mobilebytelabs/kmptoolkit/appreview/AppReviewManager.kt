@@ -11,6 +11,7 @@ package com.mobilebytelabs.kmptoolkit.appreview
 
 import com.mobilebytelabs.kmptoolkit.openurl.UrlLauncher
 import com.mobilebytelabs.kmptoolkit.openurl.UrlLauncherImpl
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 
 /**
  * Ask the user to review the app.
@@ -76,18 +77,39 @@ public class AppReviewManagerImpl(
             val native = requestNativeReview()
             // A native failure falls through to the store rather than surfacing an error: the user
             // asked to leave a review, and a reachable listing still satisfies that intent.
-            if (native !is AppReviewResult.Failed) return native
+            if (native !is AppReviewResult.Failed) {
+                report("review_requested", native, native = true)
+                return native
+            }
         }
         return openStoreListing()
     }
 
     override fun openStoreListing(): AppReviewResult {
-        val url = resolveStoreUrl(listing) ?: return AppReviewResult.NoStoreConfigured
-        return if (urlLauncher.open(url)) {
-            AppReviewResult.StoreOpened(url)
-        } else {
-            AppReviewResult.Failed("the platform declined to open $url")
+        val url = resolveStoreUrl(listing)
+        val result = when {
+            url == null -> AppReviewResult.NoStoreConfigured
+            urlLauncher.open(url) -> AppReviewResult.StoreOpened(url)
+            else -> AppReviewResult.Failed("the platform declined to open $url")
         }
+        report("store_listing_opened", result, native = false)
+        return result
+    }
+
+    /**
+     * Reports the OUTCOME and the route, never the store URL.
+     *
+     * The outcome is the whole diagnostic question here — a native prompt reports nothing about
+     * whether it rendered, so "how often did we fall through to the store, and did that work?" is the
+     * only observable signal. The URL adds nothing an observer can act on and would put an app
+     * identifier into a third-party analytics pipeline.
+     */
+    private fun report(event: String, result: AppReviewResult, native: Boolean) {
+        observeLifecycle(
+            cmpMetadata(),
+            event,
+            mapOf("outcome" to result::class.simpleName, "route" to if (native) "native" else "store"),
+        )
     }
 }
 

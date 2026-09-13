@@ -1,5 +1,6 @@
 package com.mobilebytelabs.kmptoolkit.bubble
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -143,3 +144,25 @@ interface Bubble {
  * @since 0.1.0
  */
 expect fun createBubble(config: BubbleConfig = BubbleConfig.Default): Bubble
+
+/**
+ * Reports a created bubble to any registered observation hook.
+ *
+ * Each platform's `createBubble` actual calls this. A commonMain wrapper around an internal
+ * `expect` would be tidier, but it MOVES the JVM symbol from `Bubble_jvmKt.createBubble` to
+ * `BubbleKt.createBubble` — a `NoSuchMethodError` for any JVM consumer compiled against an earlier
+ * artifact, which `apiCheck` correctly rejected. The Kotlin call site is identical either way, so
+ * the binary-compatible shape wins.
+ *
+ * Reports the CAPABILITY TIER the platform resolved to, which is the one thing a consumer cannot
+ * see from the call: bubbles degrade from a real floating window (Android) through an in-app
+ * overlay to nothing at all, and [Bubble.capabilityReason] explains which. No bubble title,
+ * message or action label is reported — those are user-facing copy.
+ */
+internal fun reportBubbleCreated(bubble: Bubble): Bubble = bubble.also {
+    observeLifecycle(
+        cmpMetadata(),
+        "bubble_created",
+        mapOf("capability" to it.capability.name, "reason" to it.capabilityReason),
+    )
+}

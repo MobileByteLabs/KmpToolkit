@@ -1,5 +1,8 @@
 # cmp-network-monitor-compose
 
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
 Compose Multiplatform extensions for [`cmp-network-monitor`](../cmp-network-monitor/) — drop-in
 banners, `@Composable` collectors, `CompositionLocal` injection, and subtree scoping.
 

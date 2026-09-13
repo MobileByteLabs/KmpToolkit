@@ -9,6 +9,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — **BREAKING** `cmp-observe` is now dependency-free; Firebase hooks moved to `cmp-observe-firebase`
+
+`cmp-observe` shipped the hook interface AND three Firebase hook implementations in one artifact.
+The Firebase SDKs support 4 targets, which capped `cmp-observe` at 15 — so no `cmp-*` module could
+depend on it from `commonMain` without capping its own 21-target matrix. That is why library
+self-reporting sat at 1 of 23 modules for four months.
+
+`cmp-observe` is now pure stdlib on all **21 targets** and every `cmp-*` module reports itself.
+
+**Migration** — if you register any Firebase hook, add one dependency:
+
+```kotlin
+// build.gradle.kts
+implementation("io.github.mobilebytelabs:cmp-observe-firebase:<version>")
+```
+
+Imports are unchanged (`io.github.mobilebytelabs.kmptoolkit.observe.hooks.*`); the classes moved
+artifact, not package. Nothing to change if you only use `LibraryObservation` + your own hooks.
+
+Affected: `FirebaseAnalyticsHealthHook`, `FirebaseCrashlyticsAttributionHook`,
+`FirebasePerformanceHook`.
+
+### Fixed — samples compile again: lifecycle moved to the androidx KMP coordinates
+
+`org.jetbrains.androidx.lifecycle:*` became an **empty relocation shim** at `2.11.0-beta01` (its
+common metadata holds only `root_package/0_.knm`), and Compose 1.12.0's constraints force-upgraded
+the declared `2.9.6` to exactly that shim. `androidx.lifecycle.viewmodel.compose.viewModel` therefore
+stopped resolving in `commonMain` — `sample-clipboard` had been failing to compile, unnoticed because
+`pr-check` filters `module-pattern: 'cmp-'` and never builds the samples.
+
+androidx unified its KMP publication at 2.11.0, so the catalog now points at `androidx.lifecycle:*`
+(which ships real `-metadata` jars) at `2.11.0`. No published `cmp-*` module depends on lifecycle;
+this affects the samples only.
+
+### Changed — `cmp-library` 16 → 21 targets, `cmp-observe-koin` 15 → 20
+
+`cmp-library` (the template every new module is copied from) had a `watchOS Targets` section header
+with nothing under it, so it shipped 16 of the standard 21 and each copy started five short.
+`cmp-observe-koin` gains the same five; `wasmWasi` stays blocked by koin-core. See
+[TARGET_MATRIX.md](TARGET_MATRIX.md) §5.
+
+### Added — a README for every module
+
+All 27 `cmp-*` modules now ship a `README.md` (13 were missing one), each documenting the real public
+API and referencing `TARGET_MATRIX.md` as the target SoT. A stale duplicate of the module template's
+README that had been copied into `cmp-open-url` is removed.
+
+### Added — every `cmp-*` module now reports its own lifecycle
+
+All 15 headless modules call `observeInit` at initialisation and `observeLifecycle` on their primary
+operations, so a consumer registering one hook sees init, failure and operation events from the whole
+toolkit. Events carry operation **shape**, never content: a clipboard copy reports success but not
+the text, a toast reports duration and style but not the message, a PDF reports page count and result
+class but not the document. A new CI gate (`.github/scripts/assert-observability-wired.sh`) fails any
+module that generates `CmpMetadata` but never reports.
+
+
 ### Added — `cmp-app-review`: one commonMain call, the right review route on every target
 
 New module. Call it from shared code; it resolves per platform with no `expect`/`actual` and no

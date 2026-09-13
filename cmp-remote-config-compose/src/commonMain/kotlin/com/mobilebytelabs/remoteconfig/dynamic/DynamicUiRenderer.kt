@@ -43,16 +43,33 @@ import com.mobilebytelabs.remoteconfig.dynamic.model.UiTextStyle
 fun DynamicUiRenderer(node: UiNode, onAction: (UiAction) -> Unit) {
     when (node) {
         is UiNode.Column -> DynamicColumn(node, onAction)
+
         is UiNode.Row -> DynamicRow(node, onAction)
+
         is UiNode.Box -> DynamicBox(node, onAction)
+
         is UiNode.Text -> DynamicText(node)
+
         is UiNode.Image -> DynamicImage(node)
+
         is UiNode.Button -> DynamicButton(node, onAction)
+
         is UiNode.Spacer -> DynamicSpacer(node)
+
         is UiNode.Divider -> DynamicDivider(node)
+
         is UiNode.Card -> DynamicCard(node, onAction)
+
         is UiNode.Badge -> DynamicBadge(node)
+
         is UiNode.Icon -> DynamicIcon(node)
+
+        // Renders nothing. An Unknown node is a node type this library version does not know —
+        // emitted by the parser instead of throwing, so one unrecognised node in a remotely
+        // delivered document cannot blank the whole screen. Deliberately NOT an `else`: an else
+        // would silently swallow a future UiNode variant that genuinely needs a renderer, which
+        // is exactly the class of bug an exhaustive `when` exists to catch.
+        is UiNode.Unknown -> Unit
     }
 }
 

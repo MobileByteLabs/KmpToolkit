@@ -30,7 +30,7 @@ adr_refs: []
 
 | Target | Source-set present | Real impl | UnsupportedPlatform stub | .kt count | Last reviewed | Coverage | Notes |
 |--------|:------------------:|:---------:|:------------------------:|:---------:|---------------|----------|-------|
-| (no src/{platform}Main/ directories found) | — | — | — | — | 2026-09-12 | — | — |
+| (no src/{platform}Main/ directories found) | — | — | — | — | 2026-09-13 | — | — |
 
 Legend (Real impl): ✅ real impl, 🟡 partial / wontfix-OS / wontfix-infra / legacy stub, ⛔ not declared, — N/A.
 Legend (Coverage enum, since 2026-06-01): `full` (all public-API methods backed by OS primitive) · `partial` (most real; some typed UnsupportedPlatform fallbacks for contracts that don't apply) · `wontfix-OS` (OS lacks the primitive) · `wontfix-infra` (impl possible but CI/toolchain blocks it) · `(legacy:full|stub)` (auto-derived; pre-opt-in modules — add a `// LD-2-coverage: {enum}` comment to the platform's primary `.kt` file to graduate). See `RULE-LIB-DEVELOPMENT-MD-001` LD-2 + ADRs for accepted wontfix cases.
@@ -115,6 +115,10 @@ internal object ActionDispatcher {
 
 ## §8 Related
 
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — **single source of truth** for which KMP targets
+  this module must ship (21 headless / 7 Compose) and how to handle a dependency that blocks one.
+  Upstream reference: <https://kotlinlang.org/docs/native-target-support.html>.
+
 | Type | Reference |
 |------|-----------|
 | GOAL.md | [consumer-library-ai-bridge](../../../../../../plan-layer/project-plans/mbs/kmp-toolkit/active/consumer-library-ai-bridge/GOAL.md) |
@@ -126,25 +130,23 @@ internal object ActionDispatcher {
 
 ## §9 Observability Surface (authored — LLM-seeded)
 
-<!-- AUTHOR: WIP — initial draft from 2026-09-12. Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d). -->
+Per RULE-LIB-OBSERVABILITY-SURFACE-001 (LD-9a..LD-9d).
+
+**This module reports nothing, by design.** Every composable here delegates to
+[`cmp-remote-config`](../cmp-remote-config/DEVELOPMENT.md), which reports the operation. Reporting again in the
+Compose wrapper would emit two events for one user action and double every count a
+consumer's hook sees.
 
 | Signal Tier | Status | Details |
 |-------------|--------|---------|
-| T0 (Crashlytics attribution) | enabled | custom_key: `library:cmp-remote-config-compose@UNKNOWN` (set on init by FirebaseCrashlyticsAttributionHook) |
-| T1 (config + version health)  | enabled | events: `lib_init_success`, `lib_init_failure` (FirebaseAnalyticsHealthHook) |
-| T2 (lifecycle events)         | opted-out | (author when ready — populate event_schema YAML below + flip to enabled) |
-| T3 (performance traces)       | opted-out | (opt-in per consumer; FirebasePerformanceHook wraps `*_start` / `*_end` lifecycle events) |
-| T4 (full API usage)           | opted-out | opt-in per consumer + per end-user; iOS ATT prompt required |
+| T0–T4 | delegated | see [`cmp-remote-config`](../cmp-remote-config/DEVELOPMENT.md) §9 |
 
 ```yaml
-# DEVELOPMENT_OBSERVABILITY.schema.yaml-conformant block
 tiers:
-  T0: enabled
-  T1: enabled
-  T2: opted-out
-custom_key_format: "library:cmp-remote-config-compose@UNKNOWN"
-event_schema: []  # populate when T2 enabled — see library-runtime-observability epic AC #12-13
-consumer_opt_in: "lib-integrate.properties#cmp-remote-config-compose.observability_opt_in"
+  T0: delegated
+  T1: delegated
+  T2: delegated
+  T3: delegated
+  T4: delegated
+delegates_to: cmp-remote-config
 ```
-
-**Consumer opt-in:** controlled via `cmp-remote-config-compose.observability_opt_in=true` in consumer's `lib-integrate.properties`.

@@ -9,6 +9,8 @@
  */
 package com.mobilebytelabs.kmptoolkit.openurl
 
+import io.github.mobilebytelabs.kmptoolkit.observe.observeLifecycle
+
 /**
  * Injectable URL opening — the type to depend on from a ViewModel, repository or composable.
  *
@@ -68,11 +70,33 @@ public interface UrlLauncher {
  */
 public class UrlLauncherImpl : UrlLauncher {
 
-    override fun open(url: String): Boolean = openUrl(url)
+    override fun open(url: String): Boolean = openUrl(url).also { report("url_opened", url, it) }
 
-    override fun openInBrowser(url: String): Boolean = com.mobilebytelabs.kmptoolkit.openurl.openInBrowser(url)
+    override fun openInBrowser(url: String): Boolean =
+        com.mobilebytelabs.kmptoolkit.openurl.openInBrowser(url).also { report("url_opened_in_browser", url, it) }
 
-    override fun openWith(url: String, appHint: AppHint): OpenUrlResult = openWithApp(url, appHint)
+    override fun openWith(url: String, appHint: AppHint): OpenUrlResult = openWithApp(url, appHint).also {
+        observeLifecycle(
+            cmpMetadata(),
+            "url_opened_with_app",
+            mapOf("scheme" to url.scheme(), "hint" to appHint::class.simpleName, "result" to it::class.simpleName),
+        )
+    }
 
+    // canOpen is a pure query with no side effect — reporting it would drown the signal in noise.
     override fun canOpen(url: String): Boolean = com.mobilebytelabs.kmptoolkit.openurl.canOpen(url)
+
+    /**
+     * Reports the SCHEME, never the URL.
+     *
+     * A URL routinely carries a session token, a password-reset nonce or a document id, and hooks
+     * forward what they receive to Crashlytics and Analytics. The scheme plus the outcome answers the
+     * question an observer actually has — "are my mailto: links failing on this platform?" — without
+     * putting user data into a third-party pipeline.
+     */
+    private fun report(event: String, url: String, handled: Boolean) {
+        observeLifecycle(cmpMetadata(), event, mapOf("scheme" to url.scheme(), "handled" to handled))
+    }
+
+    private fun String.scheme(): String = substringBefore("://", missingDelimiterValue = "none")
 }

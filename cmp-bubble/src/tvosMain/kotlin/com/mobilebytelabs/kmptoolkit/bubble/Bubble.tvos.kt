@@ -36,4 +36,4 @@ internal class TvosBubble(private val config: BubbleConfig) : Bubble {
     override fun dismiss() {}
 }
 
-actual fun createBubble(config: BubbleConfig): Bubble = TvosBubble(config)
+actual fun createBubble(config: BubbleConfig): Bubble = reportBubbleCreated(TvosBubble(config))
