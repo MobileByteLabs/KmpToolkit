@@ -23,6 +23,7 @@ implementation("io.github.mobilebytelabs:cmp-toast:<version>")
 | `ToastDuration` / `ToastPosition` / `ToastStyle` | Presentation |
 | `ClipboardToastHost` / `showCopiedToast(...)` | Ready-made "Copied" feedback |
 | `FakeToastDispatcher` | Test double, shipped in the main artifact |
+| `toastModule` | Koin module — binds ONE `ToastHostState` and exposes that same instance as `ToastDispatcher` |
 
 ## Usage
 

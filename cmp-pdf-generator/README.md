@@ -85,6 +85,17 @@ val invoice = InvoiceTemplate(
 generator.generate(invoice.toDocument(), PdfOutput.Share)
 ```
 
+## Dependency injection
+
+`pdfModule` binds `PdfManager`, so a ViewModel or repository can inject it instead of reaching for the
+top-level entry points. A `single`: the generator carries a progress flow callers subscribe to, and a second instance would emit to nobody.
+
+```kotlin
+startKoin { modules(pdfModule) }
+
+class MyViewModel(private val manager: PdfManager) : ViewModel()
+```
+
 ## Docs
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) — public API surface, per-platform parity, engine choices

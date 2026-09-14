@@ -20,6 +20,7 @@ implementation("io.github.mobilebytelabs:cmp-product-tickets-compose:<version>")
 | `NavGraphBuilder.ticketDetailDestination(onBackClick)` | Detail, vote and comment |
 | `NavController.navigateToProductTickets()` / `navigateToCreateTicket(type)` / `navigateToTicketDetail(id)` | Navigation |
 | `ProductTicketsState` / `TicketDetailState` / `TicketsTab` | UI state |
+| `productTicketsModule` | Koin module — the UI layer's ViewModels |
 
 ## Usage
 
