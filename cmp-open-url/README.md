@@ -21,6 +21,7 @@ implementation("io.github.mobilebytelabs:cmp-open-url:<version>")
 | `String.open()` / `.openInBrowser()` / `.openWith(hint)` / `.canOpen()` | Extension sugar |
 | `UrlLauncher` / `UrlLauncherImpl` | Injectable facade |
 | `FakeUrlLauncher` | Test double, shipped in the main artifact |
+| `openUrlModule` | Koin module — binds `UrlLauncher` |
 
 ## Usage
 
