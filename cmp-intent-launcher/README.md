@@ -170,6 +170,17 @@ class LegacyFragment : Fragment() {
 }
 ```
 
+## Dependency injection
+
+`intentLauncherModule` binds `IntentManager`, so a ViewModel or repository can inject it instead of reaching for the
+top-level entry points. Declared with an explicit lambda rather than `singleOf`, so the platform launcher resolves correctly.
+
+```kotlin
+startKoin { modules(intentLauncherModule) }
+
+class MyViewModel(private val manager: IntentManager) : ViewModel()
+```
+
 ## ⚠️ JS / wasmJs user-gesture requirement
 
 The hidden `<input type=file>` element approach REQUIRES `.launch()` to be invoked

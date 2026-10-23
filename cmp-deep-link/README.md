@@ -20,6 +20,7 @@ implementation("io.github.mobilebytelabs:cmp-deep-link:<version>")
 | `DeepLinkManager.lastReceived: StateFlow<DeepLink?>` | Observe the latest link |
 | `deepLinkParser { }` | Declarative pattern → a typed destination |
 | `FakeDeepLinkManager` | Test double, shipped in the main artifact |
+| `deepLinkModule` | Koin module — binds `DeepLinkManager` |
 
 ## Usage
 

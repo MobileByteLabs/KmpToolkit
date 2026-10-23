@@ -106,6 +106,17 @@ suspend fun shareReport(summary: String, pdfUri: String, chartPng: ByteArray) {
 }
 ```
 
+## Dependency injection
+
+`shareModule` binds `ShareManager`, so a ViewModel or repository can inject it instead of reaching for the
+top-level entry points. Stateless, so it is a `single`.
+
+```kotlin
+startKoin { modules(shareModule) }
+
+class MyViewModel(private val manager: ShareManager) : ViewModel()
+```
+
 ## Per-platform setup notes
 
 ### Android — zero-config
