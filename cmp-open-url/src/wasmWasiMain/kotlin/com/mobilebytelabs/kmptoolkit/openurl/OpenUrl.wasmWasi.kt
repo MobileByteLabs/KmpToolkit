@@ -76,3 +76,6 @@ actual fun openWithApp(url: String, appHint: AppHint): OpenUrlResult {
  * still carries it out of the process. What the host then does with it is the host's business.
  */
 actual fun canOpen(url: String): Boolean = url.isNotBlank()
+
+/** No in-app browser on this platform — the system browser is the closest equivalent. */
+actual fun openInApp(url: String): Boolean = openInBrowser(url)

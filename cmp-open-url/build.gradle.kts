@@ -173,7 +173,8 @@ kotlin {
         }
 
         androidMain.dependencies {
-            // no extra deps — Intent/PackageManager/Uri are in the Android SDK
+            // Chrome Custom Tabs for openInApp(); everything else is the Android SDK (Intent/PackageManager/Uri).
+            implementation(libs.androidx.browser)
         }
     }
 }

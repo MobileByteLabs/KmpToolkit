@@ -97,4 +97,40 @@ class UrlLauncherTest {
         assertEquals(canOpen("https://example.com"), impl.canOpen("https://example.com"))
         assertEquals(canOpen(""), impl.canOpen(""))
     }
+
+    @Test
+    fun openInApp_is_recorded_and_distinguishable_from_a_browser_open() {
+        val urls = FakeUrlLauncher()
+        assertTrue(urls.openInApp("https://example.com/privacy"))
+        urls.openInBrowser("https://example.com/elsewhere")
+
+        assertEquals(listOf("https://example.com/privacy"), urls.openedInApp)
+        assertEquals(2, urls.opened.size, "an in-app open is still an open")
+        urls.reset()
+        assertTrue(urls.openedInApp.isEmpty())
+    }
+
+    @Test
+    fun openInApp_defaults_to_openInBrowser_for_existing_implementers() {
+        // A consumer's own UrlLauncher written before openInApp existed must keep compiling and behave sanely.
+        var browserCalls = 0
+        val legacy = object : UrlLauncher {
+            override fun open(url: String) = true
+            override fun openInBrowser(url: String): Boolean {
+                browserCalls++
+                return true
+            }
+            override fun openWith(url: String, appHint: AppHint) = OpenUrlResult.Success
+            override fun canOpen(url: String) = true
+        }
+        assertTrue(legacy.openInApp("https://example.com"))
+        assertEquals(1, browserCalls)
+    }
+
+    @Test
+    fun refused_url_is_not_recorded_as_opened_in_app() {
+        val urls = FakeUrlLauncher(canOpenPredicate = { false })
+        assertFalse(urls.openInApp("https://example.com"))
+        assertTrue(urls.openedInApp.isEmpty())
+    }
 }

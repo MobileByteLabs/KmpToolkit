@@ -1,7 +1,9 @@
 package com.mobilebytelabs.kmptoolkit.openurl
 
 import platform.Foundation.NSURL
+import platform.SafariServices.SFSafariViewController
 import platform.UIKit.UIApplication
+import platform.UIKit.UIViewController
 
 actual fun openUrl(url: String): Boolean {
     val nsUrl = NSURL.URLWithString(url) ?: return false
@@ -19,6 +21,25 @@ actual fun openUrl(url: String): Boolean {
 }
 
 actual fun openInBrowser(url: String): Boolean = openUrl(url)
+
+/**
+ * `SFSafariViewController` presented over whatever is on top, so it works from a modal or a sheet too.
+ * Safari only shows http(s) — any other scheme goes to [openUrl]. Must be called on the main thread, as any
+ * UIKit presentation (a Compose click handler already is).
+ */
+actual fun openInApp(url: String): Boolean {
+    val nsUrl = NSURL.URLWithString(url) ?: return false
+    val scheme = nsUrl.scheme?.lowercase()
+    if (scheme != "http" && scheme != "https") return openUrl(url)
+    return try {
+        var top: UIViewController = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return openUrl(url)
+        while (true) top = top.presentedViewController ?: break
+        top.presentViewController(SFSafariViewController(uRL = nsUrl), animated = true, completion = null)
+        true
+    } catch (_: Throwable) {
+        openUrl(url)
+    }
+}
 
 actual fun openWithApp(url: String, appHint: AppHint): OpenUrlResult {
     // G6 fix (inter-app-comms-suite 03-open-url-g6-fix): rewrite URL per AppHint

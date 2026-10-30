@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `cmp-open-url`: `openInApp(url)` — an in-app browser per platform
+
+Show a page (privacy policy, terms, help) without the user leaving the app:
+
+- **Android** — Chrome Custom Tabs (`androidx.browser` 1.10.0, new dependency of `cmp-open-url`); degrades to the plain
+  VIEW intent when no Custom Tabs browser is installed.
+- **iOS** — `SFSafariViewController`, presented over the top-most view controller; non-http(s) schemes go to `openUrl`.
+- **Everything else** — no in-app browser exists, so it is `openInBrowser`.
+
+Available as the top-level `openInApp(url)` and as `UrlLauncher.openInApp(url)` — a default method delegating to
+`openInBrowser`, so existing `UrlLauncher` implementations compile unchanged. `FakeUrlLauncher.openedInApp` records
+calls for tests.
+
 ### Fixed — `cmp-firebase` crash reporting no longer overrides an app's "collection off" (GDPR consent)
 
 `FirebaseCrashReporter.install()` called `setCrashlyticsCollectionEnabled(true)`. On Android, `install()` runs from

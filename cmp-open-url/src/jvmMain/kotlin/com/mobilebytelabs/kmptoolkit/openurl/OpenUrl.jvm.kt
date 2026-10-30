@@ -52,3 +52,6 @@ private fun xdgOpen(url: String): Boolean = try {
 } catch (_: Exception) {
     false
 }
+
+/** No in-app browser on this platform — the system browser is the closest equivalent. */
+actual fun openInApp(url: String): Boolean = openInBrowser(url)

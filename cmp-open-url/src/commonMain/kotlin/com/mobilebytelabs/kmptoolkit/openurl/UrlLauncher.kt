@@ -55,6 +55,12 @@ public interface UrlLauncher {
     /** Open [url] in a browser specifically, bypassing any app that claims the link. */
     public fun openInBrowser(url: String): Boolean
 
+    /**
+     * Open [url] in a browser shown inside the app (Custom Tabs / SFSafariViewController; a plain browser where
+     * the platform has none). Defaulted, so existing implementers compile unchanged.
+     */
+    public fun openInApp(url: String): Boolean = openInBrowser(url)
+
     /** Open [url] with a specific kind of app — mail client, maps, dialer. */
     public fun openWith(url: String, appHint: AppHint = AppHint.DEFAULT): OpenUrlResult
 
@@ -74,6 +80,9 @@ public class UrlLauncherImpl : UrlLauncher {
 
     override fun openInBrowser(url: String): Boolean =
         com.mobilebytelabs.kmptoolkit.openurl.openInBrowser(url).also { report("url_opened_in_browser", url, it) }
+
+    override fun openInApp(url: String): Boolean =
+        com.mobilebytelabs.kmptoolkit.openurl.openInApp(url).also { report("url_opened_in_app", url, it) }
 
     override fun openWith(url: String, appHint: AppHint): OpenUrlResult = openWithApp(url, appHint).also {
         observeLifecycle(
