@@ -9,6 +9,8 @@
  */
 package io.github.mobilebytelabs.kmptoolkit.firebase.crashlytics
 
+import io.github.mobilebytelabs.kmptoolkit.firebase.analytics.TestAnalyticsHelper
+import io.github.mobilebytelabs.kmptoolkit.firebase.testing.FakeCrashReporter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -71,6 +73,31 @@ class LoggingCrashReporterTest {
     fun install_is_safe_to_call() {
         // Fallback install() is a documented no-op; must not throw.
         LoggingCrashReporter(platform = "jvm").install()
+    }
+
+    @Test
+    fun withdrawn_consent_stops_the_ga4_mirror_but_keeps_the_local_report() {
+        val sink = TestAnalyticsHelper()
+        val reporter = LoggingCrashReporter(platform = "jvm", analyticsSink = { sink })
+
+        reporter.setCollectionEnabled(false)
+        reporter.recordException(thrown { throw IllegalStateException("no consent") })
+        assertTrue(sink.events.isEmpty(), "nothing may leave the device without consent")
+        assertEquals("IllegalStateException", reporter.lastReport?.throwableClass, "local report still built")
+
+        reporter.setCollectionEnabled(true)
+        reporter.recordException(thrown { throw IllegalStateException("consented") })
+        assertEquals(1, sink.events.size, "consent given again resumes the mirror")
+    }
+
+    @Test
+    fun fake_reporter_records_consent_changes() {
+        val fake = FakeCrashReporter()
+        fake.setCollectionEnabled(false)
+        fake.setCollectionEnabled(true)
+        assertEquals(listOf(false, true), fake.collectionChanges)
+        fake.reset()
+        assertTrue(fake.collectionChanges.isEmpty())
     }
 
     @Test

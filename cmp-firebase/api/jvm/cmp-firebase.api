@@ -701,12 +701,14 @@ public abstract interface class io/github/mobilebytelabs/kmptoolkit/firebase/cra
 	public abstract fun log (Ljava/lang/String;)V
 	public abstract fun recordException (Ljava/lang/Throwable;ZLjava/util/Map;)V
 	public static synthetic fun recordException$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
+	public fun setCollectionEnabled (Z)V
 	public abstract fun setCustomKey (Ljava/lang/String;Ljava/lang/String;)V
 	public abstract fun setUserId (Ljava/lang/String;)V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter$DefaultImpls {
 	public static synthetic fun recordException$default (Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
+	public static fun setCollectionEnabled (Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter;Z)V
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporterExtensionsKt {
@@ -730,6 +732,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/Logg
 	public fun install ()V
 	public fun log (Ljava/lang/String;)V
 	public fun recordException (Ljava/lang/Throwable;ZLjava/util/Map;)V
+	public fun setCollectionEnabled (Z)V
 	public fun setCustomKey (Ljava/lang/String;Ljava/lang/String;)V
 	public fun setUserId (Ljava/lang/String;)V
 }
@@ -740,6 +743,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/NoOp
 	public fun install ()V
 	public fun log (Ljava/lang/String;)V
 	public fun recordException (Ljava/lang/Throwable;ZLjava/util/Map;)V
+	public fun setCollectionEnabled (Z)V
 	public fun setCustomKey (Ljava/lang/String;Ljava/lang/String;)V
 	public fun setUserId (Ljava/lang/String;)V
 }
@@ -819,6 +823,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/testing/FakeAnal
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/testing/FakeCrashReporter : io/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReporter {
 	public fun <init> ()V
 	public final fun getBreadcrumbs ()Ljava/util/List;
+	public final fun getCollectionChanges ()Ljava/util/List;
 	public final fun getCustomKeys ()Ljava/util/Map;
 	public final fun getInstalled ()Z
 	public fun getLastReport ()Lio/github/mobilebytelabs/kmptoolkit/firebase/crashlytics/CrashReport;
@@ -828,6 +833,7 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/testing/FakeCras
 	public fun log (Ljava/lang/String;)V
 	public fun recordException (Ljava/lang/Throwable;ZLjava/util/Map;)V
 	public final fun reset ()V
+	public fun setCollectionEnabled (Z)V
 	public fun setCustomKey (Ljava/lang/String;Ljava/lang/String;)V
 	public fun setUserId (Ljava/lang/String;)V
 }

@@ -110,6 +110,17 @@ fun openTransfer_withAmount_returnsDialog() = runTest {
 }
 ```
 
+## Dependency injection
+
+`appIntentsModule` binds `AppIntentsManager`, so a ViewModel or repository can inject it instead of reaching for the
+top-level entry points. Stateless, so it is a `single`.
+
+```kotlin
+startKoin { modules(appIntentsModule) }
+
+class MyViewModel(private val manager: AppIntentsManager) : ViewModel()
+```
+
 ## iOS consumer setup (file-copy workflow)
 
 The library ships two Swift artifacts in `cmp-app-intents/swift/`:

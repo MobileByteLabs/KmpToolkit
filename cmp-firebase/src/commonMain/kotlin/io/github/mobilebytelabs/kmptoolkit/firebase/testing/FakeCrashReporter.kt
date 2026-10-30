@@ -61,6 +61,9 @@ public class FakeCrashReporter : CrashReporter {
     public var installed: Boolean = false
         private set
 
+    /** Every [setCollectionEnabled] call, in order — assert a consent change reached the reporter. */
+    public val collectionChanges: MutableList<Boolean> = mutableListOf()
+
     override fun recordException(throwable: Throwable, fatal: Boolean, extraKeys: Map<String, String>) {
         recorded += RecordedCrash(throwable, fatal, extraKeys)
     }
@@ -85,6 +88,10 @@ public class FakeCrashReporter : CrashReporter {
      * Always `null`: [CrashReport] is built by the real reporter from platform state this fake has
      * no access to. Assert against [recorded] instead, which carries everything a caller supplied.
      */
+    override fun setCollectionEnabled(enabled: Boolean) {
+        collectionChanges += enabled
+    }
+
     override val lastReport: CrashReport? = null
 
     /** Forget everything recorded. */
@@ -94,5 +101,6 @@ public class FakeCrashReporter : CrashReporter {
         customKeys.clear()
         userId = null
         installed = false
+        collectionChanges.clear()
     }
 }

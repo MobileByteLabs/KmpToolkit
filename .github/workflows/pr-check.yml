@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   pr-check:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.9.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.10.0
     with:
       module-pattern: 'cmp-'
       java-version: '21'
@@ -26,6 +26,9 @@ jobs:
       run-quality: true
       run-ios-tests: false
       run-linux-tests: false
+      # Compile All Targets builds every CHANGED module for every target; a PR touching most of the library
+      # (e.g. #186: 8 modules) ran past the old fixed 30-minute cap mid-compile, twice, with no error.
+      compile-timeout-minutes: 60
 
   # ── Observability wiring gate ─────────────────────────────────────────────────────────────
   # Pure text gate, so it runs in seconds and does not need Gradle or a JDK. Kept a separate job
