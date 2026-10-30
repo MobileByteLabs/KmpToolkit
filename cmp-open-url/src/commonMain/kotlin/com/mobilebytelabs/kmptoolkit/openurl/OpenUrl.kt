@@ -25,6 +25,21 @@ expect fun openUrl(url: String): Boolean
 expect fun openInBrowser(url: String): Boolean
 
 /**
+ * Opens [url] in a browser shown INSIDE the app, so the user reads it without leaving — a privacy policy,
+ * terms, a help article.
+ *
+ * - **Android** — Chrome Custom Tabs (`androidx.browser`): the user's browser renders it over the app,
+ *   with its cookies and autofill, and Back returns to the app. Without a Custom Tabs browser installed it
+ *   degrades to the plain VIEW intent.
+ * - **iOS** — `SFSafariViewController`, presented over the top-most view controller.
+ * - **Everywhere else** (desktop, web, macOS, tvOS, watchOS, Linux, Windows, WASI) — there is no in-app
+ *   browser, so this is [openInBrowser].
+ *
+ * @return `true` if something was shown; `false` for an unparseable URL or no handler. Never throws.
+ */
+expect fun openInApp(url: String): Boolean
+
+/**
  * Opens [url] with a preference for the app category described by [appHint].
  *
  * Per-platform behaviour:

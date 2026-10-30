@@ -50,3 +50,6 @@ actual fun canOpen(url: String): Boolean {
     val nsUrl = NSURL.URLWithString(url) ?: return false
     return UIApplication.sharedApplication.canOpenURL(nsUrl)
 }
+
+/** No in-app browser on this platform — the system browser is the closest equivalent. */
+actual fun openInApp(url: String): Boolean = openInBrowser(url)

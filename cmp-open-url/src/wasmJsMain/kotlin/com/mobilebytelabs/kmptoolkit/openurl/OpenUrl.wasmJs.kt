@@ -18,3 +18,6 @@ actual fun canOpen(url: String): Boolean = true // browser environment always ca
 
 @JsFun("(url, target) => window.open(url, target)")
 private external fun wasmWindowOpen(url: String, target: String): JsAny?
+
+/** No in-app browser on this platform — the system browser is the closest equivalent. */
+actual fun openInApp(url: String): Boolean = openInBrowser(url)

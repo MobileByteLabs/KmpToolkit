@@ -43,12 +43,18 @@ public class FakeUrlLauncher(
     /** Every successful open, in order. */
     public val opened: MutableList<OpenedUrl> = mutableListOf()
 
+    /** Every URL passed to [openInApp] and accepted, in order — a subset of [opened]. */
+    public val openedInApp: MutableList<String> = mutableListOf()
+
     /** Every open that was refused because [canOpenPredicate] said no. */
     public val refused: MutableList<String> = mutableListOf()
 
     override fun open(url: String): Boolean = record(url, AppHint.DEFAULT, browser = false)
 
     override fun openInBrowser(url: String): Boolean = record(url, AppHint.BROWSER, browser = true)
+
+    override fun openInApp(url: String): Boolean =
+        record(url, AppHint.BROWSER, browser = true).also { if (it) openedInApp += url }
 
     override fun openWith(url: String, appHint: AppHint): OpenUrlResult =
         if (record(url, appHint, browser = false)) OpenUrlResult.Success else OpenUrlResult.NoHandler
@@ -58,6 +64,7 @@ public class FakeUrlLauncher(
     /** Forget every recorded and refused URL. */
     public fun reset() {
         opened.clear()
+        openedInApp.clear()
         refused.clear()
     }
 

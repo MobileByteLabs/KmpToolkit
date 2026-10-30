@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 
 actual fun openUrl(url: String): Boolean = try {
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -21,6 +22,22 @@ actual fun openInBrowser(url: String): Boolean = try {
         .addCategory(Intent.CATEGORY_BROWSABLE)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     OpenUrlContext.context.startActivity(intent)
+    true
+} catch (_: ActivityNotFoundException) {
+    false
+} catch (_: Exception) {
+    false
+}
+
+/**
+ * Chrome Custom Tabs over the app. `launchUrl` itself falls back to the plain VIEW intent when no browser
+ * supports Custom Tabs, so this only returns `false` when nothing at all can show the URL. NEW_TASK because
+ * [OpenUrlContext] holds the application context, not an Activity.
+ */
+actual fun openInApp(url: String): Boolean = try {
+    val tab = CustomTabsIntent.Builder().setShowTitle(true).build()
+    tab.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    tab.launchUrl(OpenUrlContext.context, Uri.parse(url))
     true
 } catch (_: ActivityNotFoundException) {
     false

@@ -49,3 +49,6 @@ actual fun openWithApp(url: String, appHint: AppHint): OpenUrlResult {
 /** Whether watchOS routes this scheme. There is no `canOpenURL` on watchOS, so the list is ours. */
 actual fun canOpen(url: String): Boolean =
     SUPPORTED_SCHEMES.any { url.startsWith(it, ignoreCase = true) } && NSURL.URLWithString(url) != null
+
+/** No in-app browser on this platform — the system browser is the closest equivalent. */
+actual fun openInApp(url: String): Boolean = openInBrowser(url)

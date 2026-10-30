@@ -60,6 +60,7 @@ public final class com/mobilebytelabs/kmptoolkit/openurl/OpenUrlResult$Success :
 
 public final class com/mobilebytelabs/kmptoolkit/openurl/OpenUrl_jvmKt {
 	public static final fun canOpen (Ljava/lang/String;)Z
+	public static final fun openInApp (Ljava/lang/String;)Z
 	public static final fun openInBrowser (Ljava/lang/String;)Z
 	public static final fun openUrl (Ljava/lang/String;)Z
 	public static final fun openWithApp (Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/openurl/AppHint;)Lcom/mobilebytelabs/kmptoolkit/openurl/OpenUrlResult;
@@ -77,12 +78,14 @@ public final class com/mobilebytelabs/kmptoolkit/openurl/UrlExtensionsKt {
 public abstract interface class com/mobilebytelabs/kmptoolkit/openurl/UrlLauncher {
 	public abstract fun canOpen (Ljava/lang/String;)Z
 	public abstract fun open (Ljava/lang/String;)Z
+	public fun openInApp (Ljava/lang/String;)Z
 	public abstract fun openInBrowser (Ljava/lang/String;)Z
 	public abstract fun openWith (Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/openurl/AppHint;)Lcom/mobilebytelabs/kmptoolkit/openurl/OpenUrlResult;
 	public static synthetic fun openWith$default (Lcom/mobilebytelabs/kmptoolkit/openurl/UrlLauncher;Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/openurl/AppHint;ILjava/lang/Object;)Lcom/mobilebytelabs/kmptoolkit/openurl/OpenUrlResult;
 }
 
 public final class com/mobilebytelabs/kmptoolkit/openurl/UrlLauncher$DefaultImpls {
+	public static fun openInApp (Lcom/mobilebytelabs/kmptoolkit/openurl/UrlLauncher;Ljava/lang/String;)Z
 	public static synthetic fun openWith$default (Lcom/mobilebytelabs/kmptoolkit/openurl/UrlLauncher;Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/openurl/AppHint;ILjava/lang/Object;)Lcom/mobilebytelabs/kmptoolkit/openurl/OpenUrlResult;
 }
 
@@ -90,6 +93,7 @@ public final class com/mobilebytelabs/kmptoolkit/openurl/UrlLauncherImpl : com/m
 	public fun <init> ()V
 	public fun canOpen (Ljava/lang/String;)Z
 	public fun open (Ljava/lang/String;)Z
+	public fun openInApp (Ljava/lang/String;)Z
 	public fun openInBrowser (Ljava/lang/String;)Z
 	public fun openWith (Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/openurl/AppHint;)Lcom/mobilebytelabs/kmptoolkit/openurl/OpenUrlResult;
 }
@@ -104,8 +108,10 @@ public final class com/mobilebytelabs/kmptoolkit/openurl/testing/FakeUrlLauncher
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun canOpen (Ljava/lang/String;)Z
 	public final fun getOpened ()Ljava/util/List;
+	public final fun getOpenedInApp ()Ljava/util/List;
 	public final fun getRefused ()Ljava/util/List;
 	public fun open (Ljava/lang/String;)Z
+	public fun openInApp (Ljava/lang/String;)Z
 	public fun openInBrowser (Ljava/lang/String;)Z
 	public fun openWith (Ljava/lang/String;Lcom/mobilebytelabs/kmptoolkit/openurl/AppHint;)Lcom/mobilebytelabs/kmptoolkit/openurl/OpenUrlResult;
 	public final fun reset ()V

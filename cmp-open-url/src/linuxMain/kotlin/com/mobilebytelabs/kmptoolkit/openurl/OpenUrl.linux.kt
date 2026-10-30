@@ -20,3 +20,6 @@ actual fun openWithApp(url: String, appHint: AppHint): OpenUrlResult = try {
 }
 
 actual fun canOpen(url: String): Boolean = true // assume xdg-open is present on Linux desktop
+
+/** No in-app browser on this platform — the system browser is the closest equivalent. */
+actual fun openInApp(url: String): Boolean = openInBrowser(url)
