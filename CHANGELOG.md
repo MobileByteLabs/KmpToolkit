@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `cmp-firebase` crash reporting no longer overrides an app's "collection off" (GDPR consent)
+
+`FirebaseCrashReporter.install()` called `setCrashlyticsCollectionEnabled(true)`. On Android, `install()` runs from
+`FirebaseInitProvider` at process start, so every launch switched Crashlytics collection **on** — overriding an app's
+`firebase_crashlytics_collection_enabled=false` meta-data, and persisting (Crashlytics stores the flag). An app that
+gated crash reporting on consent was collecting from first launch regardless.
+
+- `install()` no longer touches collection; the app's declared platform default stands.
+- New `CrashReporter.setCollectionEnabled(enabled)` — the consent switch. `false` stops forwarding to native Crashlytics
+  **and** the GA4 `app_crash` mirror, and calls `deleteUnsentReports()` so nothing captured while consent was withheld
+  is uploaded later; `lastReport` is still built locally. Default no-op on the interface, so existing implementers
+  compile unchanged. `FakeCrashReporter.collectionChanges` records calls for tests.
+- **Migration:** an app that relied on `install()` forcing collection on — despite declaring it off — now gets what it
+  declared. To collect, either remove the `false` meta-data or call `setCollectionEnabled(true)` (e.g. from stored
+  consent at startup; Crashlytics persists the value, so pass the stored choice on every start).
+
 ### Changed — **BREAKING** `cmp-observe` is now dependency-free; Firebase hooks moved to `cmp-observe-firebase`
 
 `cmp-observe` shipped the hook interface AND three Firebase hook implementations in one artifact.

@@ -45,11 +45,25 @@ interface CrashReporter {
     fun setUserId(userId: String)
 
     /**
-     * Enable collection and install whatever automatic capture the platform
-     * allows. Idempotent. Called by
+     * Install whatever automatic capture the platform allows. Idempotent. Called by
      * [io.github.mobilebytelabs.kmptoolkit.firebase.FirebaseKit.initialize].
+     *
+     * It does NOT switch collection on: the app's declared platform default stands (Android
+     * `firebase_crashlytics_collection_enabled` meta-data, Apple `FirebaseCrashlyticsCollectionEnabled`),
+     * and only [setCollectionEnabled] changes it. An app that gates crash reporting on consent keeps it
+     * off from the very first launch.
      */
     fun install()
+
+    /**
+     * Give or withdraw permission to send crash data off the device — the consent switch (GDPR Art. 7).
+     *
+     * `false` stops forwarding to every remote sink (native Crashlytics and the GA4 `app_crash` mirror) and
+     * discards reports the SDK cached but has not sent; [lastReport] is still built locally. `true`
+     * resumes forwarding. Persisted by the native SDK, so call it with the user's stored choice on every
+     * start. Default: no-op, for reporters that send nothing anywhere.
+     */
+    fun setCollectionEnabled(enabled: Boolean) {}
 
     /** The most recent structured report, or `null` before the first record. */
     val lastReport: CrashReport?

@@ -46,12 +46,20 @@ class FirebaseCrashReporter(
     private var userId: String? = null
     private var _lastReport: CrashReport? = null
 
+    /**
+     * Whether reports may leave the device. True until told otherwise, which preserves the SDK's own default;
+     * an app gating on consent calls [setCollectionEnabled] with the stored choice at start.
+     */
+    private var collectionEnabled = true
+
     override val lastReport: CrashReport? get() = _lastReport
 
     override fun recordException(throwable: Throwable, fatal: Boolean, extraKeys: Map<String, String>) {
-        extraKeys.forEach { (k, v) -> runCatching { crashlytics.setCustomKey(k, v) } }
-        runCatching { crashlytics.recordException(throwable) }
-            .onFailure { Logger.w(TAG) { "native recordException failed: ${it.message}" } }
+        if (collectionEnabled) {
+            extraKeys.forEach { (k, v) -> runCatching { crashlytics.setCustomKey(k, v) } }
+            runCatching { crashlytics.recordException(throwable) }
+                .onFailure { Logger.w(TAG) { "native recordException failed: ${it.message}" } }
+        }
 
         val keys = buildMap {
             putAll(stickyKeys)
@@ -64,18 +72,20 @@ class FirebaseCrashReporter(
             customKeys = keys,
             breadcrumbs = breadcrumbs.toList(),
         )
-        // Mirror to the single all-platform GA4 crash view alongside native Crashlytics.
-        analyticsSink?.logCrash(
-            platform = platform,
-            exceptionType = throwable::class.simpleName ?: "Throwable",
-            fatal = fatal,
-        )
+        // Mirror to the single all-platform GA4 crash view alongside native Crashlytics — only with consent.
+        if (collectionEnabled) {
+            analyticsSink?.logCrash(
+                platform = platform,
+                exceptionType = throwable::class.simpleName ?: "Throwable",
+                fatal = fatal,
+            )
+        }
     }
 
     override fun log(message: String) {
         breadcrumbs.addLast(message)
         while (breadcrumbs.size > MAX_BREADCRUMBS) breadcrumbs.removeFirst()
-        runCatching { crashlytics.log(message) }
+        if (collectionEnabled) runCatching { crashlytics.log(message) }
     }
 
     override fun setCustomKey(key: String, value: String) {
@@ -95,7 +105,18 @@ class FirebaseCrashReporter(
         stickyKeys[ParamKeys.PLATFORM] = platform
         runCatching { crashlytics.setCustomKey(ParamKeys.PLATFORM, platform) }
             .onFailure { Logger.w(TAG) { "could not set platform custom key: ${it.message}" } }
-        runCatching { crashlytics.setCrashlyticsCollectionEnabled(true) }
-            .onFailure { Logger.w(TAG) { "could not enable Crashlytics collection: ${it.message}" } }
+        // Collection is deliberately NOT forced on here. It used to be (`setCrashlyticsCollectionEnabled(true)`),
+        // and because Android runs this from FirebaseInitProvider at process start, that overrode an app's
+        // `firebase_crashlytics_collection_enabled=false` meta-data on every launch — and persisted. The app's
+        // declared default now stands; consent flows through setCollectionEnabled.
+    }
+
+    override fun setCollectionEnabled(enabled: Boolean) {
+        collectionEnabled = enabled
+        runCatching { crashlytics.setCrashlyticsCollectionEnabled(enabled) }
+            .onFailure { Logger.w(TAG) { "could not set Crashlytics collection to $enabled: ${it.message}" } }
+        // Withdrawal also discards what the SDK cached but has not sent — otherwise it would be uploaded the
+        // next time collection is enabled, i.e. data captured while consent was withheld.
+        if (!enabled) runCatching { crashlytics.deleteUnsentReports() }
     }
 }

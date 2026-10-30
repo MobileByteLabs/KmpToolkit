@@ -59,6 +59,9 @@ class LoggingCrashReporter(private val platform: String = kmpPlatform) : CrashRe
     private var userId: String? = null
     private var _lastReport: CrashReport? = null
 
+    /** Whether crashes are mirrored to the GA4 `app_crash` view; the local JSON log is always written. */
+    private var collectionEnabled = true
+
     override val lastReport: CrashReport? get() = _lastReport
 
     override fun recordException(throwable: Throwable, fatal: Boolean, extraKeys: Map<String, String>) {
@@ -75,7 +78,13 @@ class LoggingCrashReporter(private val platform: String = kmpPlatform) : CrashRe
         )
         _lastReport = report
         Logger.e(TAG) { "🔥 crash captured (fatal=$fatal)\n${report.toJson(pretty = true)}" }
-        analyticsSink?.logCrash(platform = platform, exceptionType = report.throwableClass, fatal = fatal)
+        if (collectionEnabled) {
+            analyticsSink?.logCrash(
+                platform = platform,
+                exceptionType = report.throwableClass,
+                fatal = fatal,
+            )
+        }
     }
 
     override fun log(message: String) {
@@ -97,5 +106,9 @@ class LoggingCrashReporter(private val platform: String = kmpPlatform) : CrashRe
             "LoggingCrashReporter active on '$platform'. GitLive Crashlytics is unavailable here — " +
                 "route your global/coroutine exception handler to recordException() to capture crashes."
         }
+    }
+
+    override fun setCollectionEnabled(enabled: Boolean) {
+        collectionEnabled = enabled
     }
 }
