@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.10.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.11.1
     with:
       module-pattern: 'cmp-'
       java-version: '21'

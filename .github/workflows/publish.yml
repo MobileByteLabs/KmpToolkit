@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   publish:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.10.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.11.1
     with:
       module-pattern: 'cmp-'
       module: ${{ inputs.module || '' }}
