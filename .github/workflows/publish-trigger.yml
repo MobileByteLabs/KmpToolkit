@@ -17,7 +17,7 @@ on:
 
 jobs:
   trigger-publish:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-on-development-push.yml@v1.10.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-on-development-push.yml@v1.11.1
     with:
       publish_workflow_name: 'publish.yml'
       debounce_minutes: 30

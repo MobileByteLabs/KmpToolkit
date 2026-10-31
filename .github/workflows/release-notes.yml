@@ -23,7 +23,7 @@ on:
 
 jobs:
   enrich:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/release-notes-from-changelog.yml@v1.10.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/release-notes-from-changelog.yml@v1.11.1
     permissions:
       contents: write
     with:

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   pr-check:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.10.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.11.1
     with:
       module-pattern: 'cmp-'
       java-version: '21'
@@ -36,7 +36,7 @@ jobs:
   # wait on the Robolectric suites.
   observability-gate:
     name: Docs & Observability Gates
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -63,7 +63,7 @@ jobs:
   # job's wall clock.
   coverage:
     name: Kover Coverage
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
