@@ -104,7 +104,14 @@ val modulePackage: String =
                 ?.joinToString(".")
                 ?.takeIf { it.isNotEmpty() }
 
-        root ?: "io.github.mobilebytelabs.kmptoolkit.${moduleName.removePrefix("cmp-").replace("-", "")}"
+        val detected = root ?: "io.github.mobilebytelabs.kmptoolkit.${moduleName.removePrefix("cmp-").replace("-", "")}"
+
+        // A `cmp-x-compose` module's sources (`….ui`, `….di`) share the headless `cmp-x` module's package
+        // root, so both detected the SAME package and both shipped `<root>.CmpMetadata` — a duplicate class
+        // that fails every Android consumer depending on the pair (checkDebugDuplicateClasses, seen with
+        // cmp-product-tickets 3.5.34/3.5.35 in reels-downloader). The compose sibling gets its own segment.
+        // No -compose module references its CmpMetadata from source, so the move is invisible to them.
+        if (moduleName.endsWith("-compose") && !detected.endsWith(".compose")) "$detected.compose" else detected
     }
 
 abstract class CmpMetadataGenTask : org.gradle.api.DefaultTask() {
@@ -150,6 +157,10 @@ abstract class CmpMetadataGenTask : org.gradle.api.DefaultTask() {
 
     @org.gradle.api.tasks.TaskAction
     fun generate() {
+        // The output dir is this task's alone (build/generated/observability) and is a Kotlin srcDir, so
+        // anything left in it compiles. Without the wipe, a package change leaves the OLD CmpMetadata.kt
+        // beside the new one — exactly how the pre-fix `<root>.CmpMetadata` kept shipping duplicates.
+        outputDir.get().asFile.deleteRecursively()
         val pkgDir = outputDir.get().asFile.resolve(modulePackage.get().replace('.', '/'))
         pkgDir.mkdirs()
         // The convenience accessor is emitted ONLY where its type can resolve. A module without
