@@ -121,7 +121,12 @@ tasks.register("fix") {
 val swiftLibRoot: File? =
     runCatching {
         check(System.getProperty("os.name").startsWith("Mac")) { "Apple toolchain lookup is macOS-only" }
-        val developerDir = providers.exec { commandLine("xcode-select", "-p") }.standardOutput.asText.get().trim()
+        val developerDir =
+            providers
+                .exec { commandLine("xcode-select", "-p") }
+                .standardOutput.asText
+                .get()
+                .trim()
         File(developerDir, "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift").takeIf { it.isDirectory }
     }.getOrNull()
 
@@ -130,16 +135,17 @@ subprojects {
         val root = swiftLibRoot ?: return@withId
         extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
             targets.withType(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget::class.java).configureEach {
-                val sdk = when (konanTarget.name) {
-                    "ios_arm64" -> "iphoneos"
-                    "ios_x64", "ios_simulator_arm64" -> "iphonesimulator"
-                    "macos_arm64", "macos_x64" -> "macosx"
-                    "tvos_arm64" -> "appletvos"
-                    "tvos_x64", "tvos_simulator_arm64" -> "appletvsimulator"
-                    "watchos_arm32", "watchos_arm64", "watchos_device_arm64" -> "watchos"
-                    "watchos_x64", "watchos_simulator_arm64" -> "watchsimulator"
-                    else -> null
-                } ?: return@configureEach
+                val sdk =
+                    when (konanTarget.name) {
+                        "ios_arm64" -> "iphoneos"
+                        "ios_x64", "ios_simulator_arm64" -> "iphonesimulator"
+                        "macos_arm64", "macos_x64" -> "macosx"
+                        "tvos_arm64" -> "appletvos"
+                        "tvos_x64", "tvos_simulator_arm64" -> "appletvsimulator"
+                        "watchos_arm32", "watchos_arm64", "watchos_device_arm64" -> "watchos"
+                        "watchos_x64", "watchos_simulator_arm64" -> "watchsimulator"
+                        else -> null
+                    } ?: return@configureEach
                 val dir = File(root, sdk).takeIf { it.isDirectory } ?: return@configureEach
                 binaries.all { linkerOpts("-L${dir.absolutePath}") }
             }
