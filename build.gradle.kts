@@ -107,3 +107,48 @@ tasks.register("fix") {
     description = "Applies all automatic fixes including Spotless formatting"
     dependsOn("spotlessApply")
 }
+
+// Swift-interop link path for Apple native binaries (supabase-kt 3.8.0+).
+//
+// supabase-kt 3.8.0's auth-kt pulls dev.whyoleg.cryptography's "optimal" provider → CryptoKit on Apple,
+// whose cinterop klib carries a HARDCODED Swift runtime path under `/Applications/Xcode.app/...`. With
+// Xcode installed under any other name (Xcode-26.5.0.app, xcodes, ...) the swiftCompatibility* archives
+// are not found and linking the test executables fails with
+//   Undefined symbols: __swift_FORCE_LOAD_$_swiftCompatibility56
+// Resolve the ACTIVE toolchain from `xcode-select -p` and add its per-SDK lib dir as an explicit -L.
+// Same recipe as cmp-paycraft (which hit it first), extended to every Apple target the toolkit builds.
+// No-op off macOS or where a directory is absent.
+val swiftLibRoot: File? =
+    runCatching {
+        check(System.getProperty("os.name").startsWith("Mac")) { "Apple toolchain lookup is macOS-only" }
+        val developerDir =
+            providers
+                .exec { commandLine("xcode-select", "-p") }
+                .standardOutput.asText
+                .get()
+                .trim()
+        File(developerDir, "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift").takeIf { it.isDirectory }
+    }.getOrNull()
+
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        val root = swiftLibRoot ?: return@withId
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+            targets.withType(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget::class.java).configureEach {
+                val sdk =
+                    when (konanTarget.name) {
+                        "ios_arm64" -> "iphoneos"
+                        "ios_x64", "ios_simulator_arm64" -> "iphonesimulator"
+                        "macos_arm64", "macos_x64" -> "macosx"
+                        "tvos_arm64" -> "appletvos"
+                        "tvos_x64", "tvos_simulator_arm64" -> "appletvsimulator"
+                        "watchos_arm32", "watchos_arm64", "watchos_device_arm64" -> "watchos"
+                        "watchos_x64", "watchos_simulator_arm64" -> "watchsimulator"
+                        else -> null
+                    } ?: return@configureEach
+                val dir = File(root, sdk).takeIf { it.isDirectory } ?: return@configureEach
+                binaries.all { linkerOpts("-L${dir.absolutePath}") }
+            }
+        }
+    }
+}
