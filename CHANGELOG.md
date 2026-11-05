@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `cmp-share`: receive content shared INTO the app
+
+`cmp-share` only shared out; every app that is a share target (downloaders, savers, note apps) hand-parsed the
+launch Intent. Now:
+
+- **`SharedContent`** (common) — `Text(text, subject)` or `File(uri, mimeType)`; `SharedContent.parse(...)` is the
+  platform-free rule (an `ACTION_SEND` with a non-text stream is a `File`, otherwise non-blank text is `Text`, anything
+  else — a normal launch, a deep link — is null).
+- **`ShareReceiver.fromIntent(intent)`** (Android) — call it with the launch Intent and from `onNewIntent`. The Activity
+  still declares its own `ACTION_SEND` intent filter for the types it accepts. iOS receives shares through an app-level
+  Share Extension, which has no in-process equivalent, so there is no iOS reader.
+
+### Fixed — `cmp-firebase`: the background lifecycle event is now actually recorded
+
+`AppLifecycleTracker.onEnterBackground()` logged `app_background`, a name Firebase Analytics reserves: on device
+Firebase logs "Name is reserved" and drops it, so backgrounding never reached GA4. It is now `app_backgrounded`
+(`EventTypes.APP_BACKGROUND`). `app_foreground` / `app_launch` are unchanged. A GA4 report or BigQuery query keyed on
+`app_background` never had data, so there is nothing to migrate — point it at `app_backgrounded`.
+
 ### Added — `cmp-open-url`: `openInApp(url)` — an in-app browser per platform
 
 Show a page (privacy policy, terms, help) without the user leaving the app:
