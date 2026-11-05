@@ -182,8 +182,6 @@ public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/Analyt
 }
 
 public final class io/github/mobilebytelabs/kmptoolkit/firebase/analytics/AppLifecycleTracker {
-	public static final field EVENT_BACKGROUND Ljava/lang/String;
-	public static final field EVENT_FOREGROUND Ljava/lang/String;
 	public fun <init> (Lio/github/mobilebytelabs/kmptoolkit/firebase/analytics/AnalyticsHelper;)V
 	public final fun markAppLaunchComplete ()V
 	public final fun markAppLaunchStart ()V

@@ -109,7 +109,10 @@ object EventTypes {
 
     // Performance
     const val APP_LAUNCH = "app_launch"
-    const val APP_BACKGROUND = "app_background"
+
+    // Not `app_background`: Firebase Analytics reserves that name and drops the event on device
+    // ("Name is reserved"), so backgrounding was never recorded.
+    const val APP_BACKGROUND = "app_backgrounded"
     const val APP_FOREGROUND = "app_foreground"
     const val LOADING_TIME = "loading_time"
     const val STATE_TRANSITIONED = "state_transitioned"

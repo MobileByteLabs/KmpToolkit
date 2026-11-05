@@ -55,7 +55,7 @@ class AppLifecycleTracker(private val analytics: AnalyticsHelper) {
     /** Call when the app moves to background. Records the timestamp for the next foreground. */
     fun onEnterBackground() {
         backgroundedAt = now()
-        analytics.logEvent(AnalyticsEvent(EVENT_BACKGROUND))
+        analytics.logEvent(AnalyticsEvent(EventTypes.APP_BACKGROUND))
     }
 
     /** Call when the app returns to foreground. Emits `app_foreground` with the time away. */
@@ -65,13 +65,8 @@ class AppLifecycleTracker(private val analytics: AnalyticsHelper) {
         val params = buildList {
             awayMs?.let { add(Param("time_away_ms", it.toString())) }
         }
-        analytics.logEvent(AnalyticsEvent(EVENT_FOREGROUND, params))
+        analytics.logEvent(AnalyticsEvent(EventTypes.APP_FOREGROUND, params))
     }
 
     private fun now(): Long = Clock.System.now().toEpochMilliseconds()
-
-    private companion object {
-        const val EVENT_BACKGROUND = "app_background"
-        const val EVENT_FOREGROUND = "app_foreground"
-    }
 }
