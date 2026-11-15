@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!--
+          Captures the application Context and registers the activity tracker before
+          Application.onCreate, so a consumer needs no init call. Without this entry the provider
+          never ran: the context stayed null and every Android check returned "Context not
+          available". Mirrors cmp-app-review. exported=false: nothing outside the app may query it.
+        -->
+        <provider
+            android:name="com.mobilebytelabs.kmptoolkit.appupdate.AppUpdateInitProvider"
+            android:authorities="${applicationId}.cmp-in-app-update-init"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
+</manifest>

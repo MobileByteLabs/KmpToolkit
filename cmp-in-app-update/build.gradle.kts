@@ -45,7 +45,10 @@ kotlin {
 
         withJava()
 
-        withHostTestBuilder {}.configure {}
+        withHostTestBuilder {}.configure {
+            // Robolectric reads the merged manifest/resources — the init provider test needs it.
+            isIncludeAndroidResources = true
+        }
 
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
@@ -165,6 +168,13 @@ kotlin {
             implementation(libs.play.app.update)
             implementation(libs.play.app.update.ktx)
         }
+
+        // getByName: the KMP android library plugin generates no typed androidHostTest accessor.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.robolectric)
+            implementation(libs.junit)
+            implementation(libs.kotlinx.coroutines.test)
+        }
     }
 }
 
@@ -217,3 +227,10 @@ mavenPublishing {
 
 // Library Runtime Observability — auto-generate CmpMetadata.kt for cmp-observe hooks (epic 2026-05-30)
 apply(from = "$rootDir/cmp-observe-metadata.gradle.kts")
+
+// Robolectric host-test config — emulated SDK comes from `robolectricSdk` in the version
+// catalog and is code-generated into androidHostTest as `robolectric.ROBOLECTRIC_SDK`.
+apply(from = "$rootDir/robolectric-host-test.gradle.kts")
+kotlin.sourceSets.getByName("androidHostTest").kotlin.srcDir(
+    tasks.named("generateRobolectricSdkConstant"),
+)
