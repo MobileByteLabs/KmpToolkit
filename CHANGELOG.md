@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `cmp-in-app-update`: Android now actually shows the update
+
+On Android no app ever saw an update prompt, for two reasons:
+
+- **The init provider was never registered.** The module had no `AndroidManifest.xml`, so `AppUpdateInitProvider` never
+  ran, the context stayed null and every check returned `Error("Context not available")` before asking Play.
+- **`startUpdate` never launched Play's flow.** It checked availability and returned it, leaving a comment telling the
+  caller to use an Activity API the module does not have.
+
+`startUpdate` now launches Play's flow in the resumed Activity (tracked through lifecycle callbacks, as `cmp-app-review`
+does, and waited for briefly so a check from app start-up is not lost), resumes an IMMEDIATE update the user
+backgrounded, and installs a FLEXIBLE update that has finished downloading. A cancelled flow returns
+`UpdateResult.Cancelled`. Play only offers in-app updates to an app installed from Play. Covered by Robolectric tests
+against Play's `FakeAppUpdateManager`.
+
 ### Added — `cmp-share`: receive content shared INTO the app
 
 `cmp-share` only shared out; every app that is a share target (downloaders, savers, note apps) hand-parsed the

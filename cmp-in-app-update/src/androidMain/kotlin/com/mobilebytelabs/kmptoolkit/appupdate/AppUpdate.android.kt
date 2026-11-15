@@ -1,6 +1,8 @@
 package com.mobilebytelabs.kmptoolkit.appupdate
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.Application
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
@@ -9,13 +11,20 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
+import com.google.android.play.core.appupdate.AppUpdateManager as PlayAppUpdateManager
 
 // Android implementation of AppUpdate using Google Play In-App Updates API.
 // This implementation uses AppUpdateManagerFactory to check for and download
@@ -28,15 +37,55 @@ import kotlin.coroutines.resume
 // - FLEXIBLE: Downloads in background, user can continue using app
 // - IMMEDIATE: Blocking update, user must update before continuing
 
-/** Application context obtained automatically via ContentProvider. */
-@SuppressLint("StaticFieldLeak")
-private var appContext: Context? = null
-
 /**
- * Internal function to set the application context.
+ * Application context, the resumed Activity, and the Play manager factory.
+ *
+ * The Activity is needed because Play's update flow is an Activity-scoped UI; the context alone can
+ * only ask whether an update exists. Tracked through lifecycle callbacks, as cmp-app-review does,
+ * so a consumer passes nothing.
  */
-internal fun setAppUpdateContext(context: Context) {
-    appContext = context.applicationContext
+internal object AppUpdateContext {
+    @SuppressLint("StaticFieldLeak")
+    private var appContext: Context? = null
+    internal val resumed = MutableStateFlow<WeakReference<Activity>?>(null)
+
+    /** Swapped for Play's FakeAppUpdateManager in tests. */
+    var managerFactory: (Context) -> PlayAppUpdateManager = AppUpdateManagerFactory::create
+
+    val context: Context? get() = appContext
+
+    fun attach(ctx: Context) {
+        val app = ctx.applicationContext
+        appContext = app
+        (app as? Application)?.registerActivityLifecycleCallbacks(Callbacks)
+    }
+
+    /**
+     * The resumed Activity, waiting up to [timeoutMillis] for one. A check started from app start-up
+     * (a ViewModel init, say) can run a frame before the first onResume; failing it there would drop
+     * the one update check per launch.
+     */
+    suspend fun awaitResumedActivity(timeoutMillis: Long = 5_000): Activity? =
+        resumed.value?.get() ?: withTimeoutOrNull(timeoutMillis) {
+            resumed.first { it?.get() != null }?.get()
+        }
+
+    private object Callbacks : Application.ActivityLifecycleCallbacks {
+        override fun onActivityResumed(activity: Activity) {
+            resumed.value = WeakReference(activity)
+        }
+
+        override fun onActivityPaused(activity: Activity) {
+            // Cleared on pause so an update flow can never target a dead Activity.
+            if (resumed.value?.get() === activity) resumed.value = null
+        }
+
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+        override fun onActivityStarted(activity: Activity) = Unit
+        override fun onActivityStopped(activity: Activity) = Unit
+        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+        override fun onActivityDestroyed(activity: Activity) = Unit
+    }
 }
 
 /**
@@ -44,7 +93,7 @@ internal fun setAppUpdateContext(context: Context) {
  */
 class AppUpdateInitProvider : ContentProvider() {
     override fun onCreate(): Boolean {
-        context?.let { setAppUpdateContext(it) }
+        context?.let { AppUpdateContext.attach(it) }
         return true
     }
 
@@ -73,11 +122,11 @@ actual object AppUpdate {
             return UpdateResult.NotSupported("Android updates disabled in configuration")
         }
 
-        val context = appContext
+        val context = AppUpdateContext.context
             ?: return UpdateResult.Error("Context not available. App not properly initialized.")
 
         return try {
-            val appUpdateManager = AppUpdateManagerFactory.create(context)
+            val appUpdateManager = AppUpdateContext.managerFactory(context)
             val appUpdateInfo = appUpdateManager.appUpdateInfo.await()
 
             val currentVersion = getCurrentVersion()
@@ -131,7 +180,7 @@ actual object AppUpdate {
      * Gets the currently installed app version.
      */
     actual fun getCurrentVersion(): AppVersion {
-        val context = appContext ?: return AppVersion.UNKNOWN
+        val context = AppUpdateContext.context ?: return AppVersion.UNKNOWN
 
         return try {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -160,10 +209,11 @@ actual object AppUpdate {
     }
 
     /**
-     * Starts the in-app update flow.
+     * Starts Play's in-app update flow in the resumed Activity.
      *
-     * Note: This requires an Activity context. For full functionality,
-     * use the Android-specific extension functions with Activity.
+     * Before, this checked availability and returned it without launching anything, so no Android
+     * app ever saw the update dialog. It now launches the flow, resumes an IMMEDIATE update the user
+     * backgrounded, and installs a FLEXIBLE update that has finished downloading.
      */
     actual suspend fun startUpdate(
         updateType: com.mobilebytelabs.kmptoolkit.appupdate.UpdateType,
@@ -174,50 +224,74 @@ actual object AppUpdate {
             return UpdateResult.NotSupported("Android updates disabled in configuration")
         }
 
-        val context = appContext
+        val context = AppUpdateContext.context
             ?: return UpdateResult.Error("Context not available. App not properly initialized.")
 
         return try {
-            val appUpdateManager = AppUpdateManagerFactory.create(context)
+            val appUpdateManager = AppUpdateContext.managerFactory(context)
             val appUpdateInfo = appUpdateManager.appUpdateInfo.await()
 
-            if (appUpdateInfo.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE) {
+            // A FLEXIBLE download finished earlier: install it rather than offer it again. Play
+            // restarts the app, so the task is not awaited.
+            if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                appUpdateManager.completeUpdate()
+                return UpdateResult.Success(availableInfo(context, appUpdateInfo, updateType))
+            }
+
+            val availability = appUpdateInfo.updateAvailability()
+            val resuming = availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
+            if (availability != UpdateAvailability.UPDATE_AVAILABLE && !resuming) {
                 return UpdateResult.Success(UpdateInfo.noUpdate(getCurrentVersion()))
             }
 
-            val playUpdateType = when (updateType) {
-                com.mobilebytelabs.kmptoolkit.appupdate.UpdateType.IMMEDIATE -> AppUpdateType.IMMEDIATE
-                com.mobilebytelabs.kmptoolkit.appupdate.UpdateType.FLEXIBLE -> AppUpdateType.FLEXIBLE
+            // Only an IMMEDIATE flow can be in progress; resume it as one.
+            val playUpdateType = when {
+                resuming -> AppUpdateType.IMMEDIATE
+                updateType == com.mobilebytelabs.kmptoolkit.appupdate.UpdateType.IMMEDIATE -> AppUpdateType.IMMEDIATE
                 else -> AppUpdateType.FLEXIBLE
             }
 
-            if (!appUpdateInfo.isUpdateTypeAllowed(playUpdateType)) {
+            if (!resuming && !appUpdateInfo.isUpdateTypeAllowed(playUpdateType)) {
                 return UpdateResult.Error(
                     "Update type ${updateType.name} is not allowed for this update",
                 )
             }
 
-            // For starting the actual update flow, we need an Activity
-            // Return success with info that update is available
-            // The consumer should use Android-specific APIs with Activity
-            UpdateResult.Success(
-                UpdateInfo.available(
-                    currentVersion = getCurrentVersion(),
-                    latestVersion = AppVersion(
-                        major = 0,
-                        minor = 0,
-                        patch = 0,
-                        versionName = "Unknown",
-                        versionCode = appUpdateInfo.availableVersionCode().toLong(),
-                    ),
-                    updateType = updateType,
-                    storeUrl = "https://play.google.com/store/apps/details?id=${context.packageName}",
-                ),
-            )
+            val activity = AppUpdateContext.awaitResumedActivity()
+                ?: return UpdateResult.Error("No resumed Activity to launch the update flow into")
+
+            val resultCode = appUpdateManager.startUpdateFlow(
+                appUpdateInfo,
+                activity,
+                AppUpdateOptions.newBuilder(playUpdateType).build(),
+            ).await()
+
+            when (resultCode) {
+                Activity.RESULT_OK -> UpdateResult.Success(availableInfo(context, appUpdateInfo, updateType))
+                Activity.RESULT_CANCELED -> UpdateResult.Cancelled
+                else -> UpdateResult.Error("Update flow failed (result code $resultCode)")
+            }
         } catch (e: Exception) {
             UpdateResult.Error("Failed to start update: ${e.message}", e)
         }
     }
+
+    private fun availableInfo(
+        context: Context,
+        appUpdateInfo: AppUpdateInfo,
+        updateType: com.mobilebytelabs.kmptoolkit.appupdate.UpdateType,
+    ) = UpdateInfo.available(
+        currentVersion = getCurrentVersion(),
+        latestVersion = AppVersion(
+            major = 0,
+            minor = 0,
+            patch = 0,
+            versionName = "Unknown",
+            versionCode = appUpdateInfo.availableVersionCode().toLong(),
+        ),
+        updateType = updateType,
+        storeUrl = "https://play.google.com/store/apps/details?id=${context.packageName}",
+    )
 
     /**
      * Opens Google Play Store to the app's page.
@@ -228,7 +302,7 @@ actual object AppUpdate {
             return false
         }
 
-        val context = appContext ?: return false
+        val context = AppUpdateContext.context ?: return false
         val packageName = config.packageName ?: context.packageName
 
         return try {

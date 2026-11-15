@@ -17,7 +17,7 @@ native mechanism on each platform with three resolver options for desktop/JVM.
 
 | Platform | Implementation |
 |----------|---------------|
-| Android | Google Play In-App Updates API |
+| Android | Google Play In-App Updates API — launches the flow in the resumed Activity; only for an app installed from Play |
 | iOS | iTunes Lookup API + App Store |
 | macOS | iTunes Lookup API + App Store |
 | JVM | Custom version check (GitHub / Supabase / custom URL) |
