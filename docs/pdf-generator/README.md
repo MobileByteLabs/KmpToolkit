@@ -57,7 +57,7 @@ generator.generateFromHtml(html, PdfOutput.Save, fileName = "invoice-2026-0042.p
 | Android | WebView + PrintManager / native PdfDocument |
 | iOS 14+ | WKWebView.createPDF / PDFKit |
 | macOS 11+ | WKWebView.createPDF / PDFKit |
-| JVM | OpenHTMLToPDF / Apache PDFBox |
+| JVM | Apache PDFBox; HTML route needs OpenHTMLToPDF added by the app (LGPL, opt-in) |
 | JS (browser+Node) | iframe+print / pdf-lib |
 | wasmJs (browser+Node) | iframe+print / pdf-lib |
 

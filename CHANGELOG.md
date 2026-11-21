@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `cmp-pdf-generator`: the JVM HTML engine is now opt-in (licence)
+
+On the JVM, HTML → PDF is rendered by OpenHTMLToPDF, which is LGPL-2.1-or-later. It used to be a normal dependency, so
+every desktop app using this Apache-2.0 library shipped an LGPL library whether or not it rendered HTML. It is now
+`compileOnly`: it is no longer in the published dependencies (and neither are Batik and `xml-apis`, which came with it).
+
+- **If you render HTML to PDF on the JVM** (`generateFromHtml`, `generateAndSharePdf`, or a document containing
+  `PdfElement.Html`), add `com.openhtmltopdf:openhtmltopdf-pdfbox` and `com.openhtmltopdf:openhtmltopdf-svg-support`
+  (1.0.10) to your JVM dependencies. Without them those calls fail with `PdfError.UnsupportedFeature` naming the two
+  artifacts.
+- **The `pdf { }` DSL route is unchanged** — it uses Apache PDFBox and needs nothing extra.
+- Android, iOS, macOS, JS and wasmJs are unaffected.
+
 ### Fixed — `cmp-in-app-update`: Android now actually shows the update
 
 On Android no app ever saw an update prompt, for two reasons:

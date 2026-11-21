@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 /**
  * JVM smoke test — generates a real PDF byte stream and asserts the magic prefix.
- * Runs against the OpenHTMLToPDF stack and the PDFBox DSL renderer.
+ * Runs against the PDFBox DSL renderer and the opt-in OpenHTMLToPDF stack (on the test classpath).
  */
 class JvmPdfSmokeTest {
     @Test

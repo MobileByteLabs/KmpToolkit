@@ -4,8 +4,6 @@
 
 package com.mobilebytelabs.kmptoolkit.pdfgenerator
 
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
-import com.openhtmltopdf.svgsupport.BatikSVGDrawer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -20,8 +18,9 @@ import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
 /**
- * JVM (Desktop) implementation. Uses OpenHTMLToPDF for HTML route + JvmNativePdfRenderer
- * (Apache PDFBox direct) for DSL route.
+ * JVM (Desktop) implementation. The DSL route uses JvmNativePdfRenderer (Apache PDFBox direct). The
+ * HTML route uses OpenHTMLToPDF when the app has added it — see [JvmHtmlEngine]; without it the HTML
+ * route fails with [PdfError.UnsupportedFeature].
  */
 public actual class PdfGenerator public actual constructor() {
     private val progress = MutableSharedFlow<PdfProgressEvent>(extraBufferCapacity = 32)
@@ -30,14 +29,7 @@ public actual class PdfGenerator public actual constructor() {
         val outputFile = pickSaveFile("$fileName.pdf") ?: return
         val finalHtml = htmlContent.injectPageConfigCss(pageConfig)
         withContext(Dispatchers.IO) {
-            outputFile.outputStream().use { out ->
-                PdfRendererBuilder()
-                    .useSVGDrawer(BatikSVGDrawer())
-                    .useFastMode()
-                    .withHtmlContent(finalHtml, null)
-                    .toStream(out)
-                    .run()
-            }
+            outputFile.outputStream().use { out -> JvmHtmlEngine.render(finalHtml, out) }
             openWithDefaultApp(outputFile)
         }
     }
@@ -97,12 +89,7 @@ public actual class PdfGenerator public actual constructor() {
     private suspend fun renderHtmlToBytes(html: String, pageConfig: PageConfig): ByteArray =
         withContext(Dispatchers.IO) {
             val bao = ByteArrayOutputStream()
-            PdfRendererBuilder()
-                .useSVGDrawer(BatikSVGDrawer())
-                .useFastMode()
-                .withHtmlContent(html, null)
-                .toStream(bao)
-                .run()
+            JvmHtmlEngine.render(html, bao)
             bao.toByteArray()
         }
 
