@@ -249,14 +249,20 @@ kotlin {
         }
 
         jvmMain.dependencies {
-            implementation(libs.openhtmltopdf.pdfbox)
-            implementation(libs.openhtmltopdf.svg.support)
+            // OpenHTMLToPDF is LGPL-2.1-or-later. compileOnly keeps it out of the published
+            // dependencies, so consumers of this Apache-2.0 library do not inherit it; an app that
+            // wants the HTML route on the JVM adds it itself (JvmHtmlEngine, README).
+            compileOnly(libs.openhtmltopdf.pdfbox)
+            compileOnly(libs.openhtmltopdf.svg.support)
             implementation(libs.pdfbox)
             implementation(libs.kotlinx.coroutines.swing)
         }
 
         jvmTest.dependencies {
             implementation(libs.kotlin.test.junit)
+            // Stands in for an app that opted in to the HTML route.
+            implementation(libs.openhtmltopdf.pdfbox)
+            implementation(libs.openhtmltopdf.svg.support)
         }
 
         jsMain.dependencies {

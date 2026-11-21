@@ -24,11 +24,26 @@ Cross-platform PDF generation library for Kotlin Multiplatform.
 | Platform | HTML route | DSL route | Notes |
 |----------|------------|-----------|-------|
 | Android | WebView + PrintManager | `android.graphics.pdf.PdfDocument` | Min SDK from kmp-toolkit policy |
-| JVM (Desktop) | OpenHTMLToPDF | Apache PDFBox direct | ~10MB transitive |
+| JVM (Desktop) | OpenHTMLToPDF (opt-in, LGPL — see below) | Apache PDFBox direct | DSL route needs nothing extra |
 | iOS | `WKWebView.createPDF` | `PDFKit` | iOS 14+ |
 | macOS | `WKWebView.createPDF` | `PDFKit` | macOS 11+ |
 | JS (Browser+Node) | iframe + `window.print()` | `pdf-lib` (npm) | Browser: needs user gesture for print |
 | wasmJs (Browser+Node) | iframe + `window.print()` | Deferred (pdf-lib wasmJs interop pending) | HTML route only in v1; needs `kotlinx-browser` dep |
+
+### HTML → PDF on the JVM is opt-in
+
+The JVM HTML engine, OpenHTMLToPDF, is LGPL-2.1-or-later, so this Apache-2.0 library does not bundle it. To render HTML
+on desktop, add it to your app and take on its licence terms (ship the LGPL text, keep the library replaceable — for
+example, exclude it from obfuscation):
+
+```kotlin
+// your desktop (JVM) source set
+implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
+implementation("com.openhtmltopdf:openhtmltopdf-svg-support:1.0.10")
+```
+
+Without it, `generateFromHtml`, `generateAndSharePdf` and documents containing `PdfElement.Html` fail on the JVM with
+`PdfError.UnsupportedFeature`. The `pdf { }` DSL route works without it.
 
 > **Not targeted:** tvOS, watchOS, Linux native, mingwX64, wasmWasi.
 > Per the [Kotlin Multiplatform target tiers](https://kotlinlang.org/docs/native-target-support.html),
